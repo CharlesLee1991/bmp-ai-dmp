@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import useSWR from "swr";
 import {
   PieChart, Pie, Cell, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
 import {
   PARTNER_MAP, AGE_LABEL, AGE_ORDER, SIDO_LIST,
-  REGION_DATA, INDUSTRY_DATA, SEOUL_SGG, fmt
+  REGION_DATA, INDUSTRY_DATA, SEOUL_SGG, fmt,
+  type RegionRow, type IndustryRow, type SggRow
 } from "@/lib/data";
 
 const P = {
@@ -17,9 +19,22 @@ const P = {
   green: "#34d399", glow: "rgba(0,229,195,0.12)"
 };
 
+// ─── API fetcher ───
+const fetcher = (url: string) => fetch(url).then(r => r.json());
+
+function buildUrl(sido: string, sex: string, age: string) {
+  const p = new URLSearchParams();
+  if (sido !== "전체") p.set("sido", sido);
+  if (sex !== "all") p.set("sex", sex);
+  if (age !== "all") p.set("age", age);
+  const qs = p.toString();
+  return `/api/dashboard${qs ? "?" + qs : ""}`;
+}
+
+// ─── UI Components ───
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="chip" style={{
+    <button onClick={onClick} style={{
       padding: "5px 14px", borderRadius: 20, fontSize: 11, fontWeight: active ? 700 : 400,
       cursor: "pointer", border: `1px solid ${active ? P.accent : P.border}`,
       transition: "all .2s",
@@ -43,49 +58,89 @@ function Stat({ label, value, sub, color }: { label: string; value: string; sub?
   );
 }
 
+// ─── Static fallback helpers ───
+function getStaticAgeSex(sido: string, sex: string, age: string) {
+  let d = REGION_DATA;
+  if (sido !== "전체") d = d.filter(r => r.s === sido);
+  if (sex !== "all") d = d.filter(r => r.x === sex);
+  if (age !== "all") d = d.filter(r => r.a === age);
+  const map: Record<string, { a: string; M: number; F: number }> = {};
+  d.forEach(r => {
+    if (!map[r.a]) map[r.a] = { a: r.a, M: 0, F: 0 };
+    if (r.x === "M") map[r.a].M += r.u;
+    if (r.x === "F") map[r.a].F += r.u;
+  });
+  return AGE_ORDER.map(k => map[k] || { a: k, M: 0, F: 0 });
+}
+
+function getStaticRegion(sido: string, sex: string, age: string) {
+  if (sido === "서울특별시") return SEOUL_SGG.map(r => ({ name: r.n, users: r.u }));
+  let d = REGION_DATA;
+  if (sex !== "all") d = d.filter(r => r.x === sex);
+  if (age !== "all") d = d.filter(r => r.a === age);
+  const map: Record<string, number> = {};
+  d.forEach(r => { map[r.s] = (map[r.s] || 0) + r.u; });
+  return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, users]) => ({ name, users }));
+}
+
+// ─── Main Dashboard ───
 export default function Dashboard() {
   const [sido, setSido] = useState("전체");
   const [sex, setSex] = useState("all");
   const [age, setAge] = useState("all");
 
-  const filtered = useMemo(() => {
-    let d = REGION_DATA;
-    if (sido !== "전체") d = d.filter(r => r.s === sido);
-    if (sex !== "all") d = d.filter(r => r.x === sex);
-    if (age !== "all") d = d.filter(r => r.a === age);
-    return d;
-  }, [sido, sex, age]);
+  const url = buildUrl(sido, sex, age);
+  const { data: apiData, isLoading, error } = useSWR(url, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+    keepPreviousData: true,
+  });
 
+  const isLive = apiData?.success === true;
+  const api = apiData?.data;
+  const meta = apiData?.meta;
+
+  // ─── Transform API → chart data (or fallback to static) ───
   const ageChart = useMemo(() => {
-    const map: Record<string, { age: string; M: number; F: number }> = {};
-    filtered.forEach(r => {
-      if (!map[r.a]) map[r.a] = { age: r.a, M: 0, F: 0 };
+    if (!isLive || !api?.age_sex) return getStaticAgeSex(sido, sex, age);
+    const map: Record<string, { a: string; M: number; F: number }> = {};
+    (api.age_sex as { a: string; x: string; u: number }[]).forEach(r => {
+      if (!map[r.a]) map[r.a] = { a: r.a, M: 0, F: 0 };
       if (r.x === "M") map[r.a].M += r.u;
       if (r.x === "F") map[r.a].F += r.u;
     });
-    return AGE_ORDER.map(k => map[k] || { age: k, M: 0, F: 0 });
-  }, [filtered]);
+    return AGE_ORDER.map(k => map[k] || { a: k, M: 0, F: 0 });
+  }, [isLive, api, sido, sex, age]);
+
+  const industryData = useMemo(() => {
+    if (!isLive || !api?.industry) return INDUSTRY_DATA;
+    return (api.industry as { code: string; users: number }[]);
+  }, [isLive, api]);
 
   const regionRank = useMemo(() => {
-    if (sido === "서울특별시") return SEOUL_SGG.map(r => ({ name: r.n, users: r.u }));
-    const map: Record<string, number> = {};
-    let d = REGION_DATA;
-    if (sex !== "all") d = d.filter(r => r.x === sex);
-    if (age !== "all") d = d.filter(r => r.a === age);
-    d.forEach(r => { map[r.s] = (map[r.s] || 0) + r.u; });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, users]) => ({ name, users }));
-  }, [sido, sex, age]);
+    if (!isLive || !api?.region) return getStaticRegion(sido, sex, age);
+    return (api.region as { name: string; users: number }[]);
+  }, [isLive, api, sido, sex, age]);
 
+  // ─── Summary ───
   let mT = 0, fT = 0;
-  ageChart.forEach(r => { mT += r.M; fT += r.F; });
+  if (isLive && api?.summary) {
+    mT = api.summary.male || 0;
+    fT = api.summary.female || 0;
+  } else {
+    ageChart.forEach(r => { mT += r.M; fT += r.F; });
+  }
   const total = mT + fT;
   const pieData = [{ name: "남성", value: mT, c: P.m }, { name: "여성", value: fT, c: P.f }];
   const maxBar = Math.max(...ageChart.map(r => Math.max(r.M, r.F)), 1);
-  const barData = ageChart.map(r => ({ name: AGE_LABEL[r.age], 남성: r.M, 여성: r.F }));
-  const topAge = ageChart.reduce((a, b) => (a.M + a.F) > (b.M + b.F) ? a : b, { M: 0, F: 0, age: "-" });
+  const barData = ageChart.map(r => ({ name: AGE_LABEL[r.a] || r.a, 남성: r.M, 여성: r.F }));
+  const topAge = ageChart.reduce((a, b) => (a.M + a.F) > (b.M + b.F) ? a : b, { M: 0, F: 0, a: "-" });
 
   const anyFilter = sido !== "전체" || sex !== "all" || age !== "all";
   const reset = () => { setSido("전체"); setSex("all"); setAge("all"); };
+
+  const responseMs = meta?.response_ms;
+  const industryFiltered = isLive && anyFilter;
 
   return (
     <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text }}>
@@ -109,8 +164,15 @@ export default function Dashboard() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: P.green, boxShadow: `0 0 8px ${P.green}` }} />
-          <span style={{ fontSize: 11, color: P.sub }}>매일 04:00 갱신</span>
+          {isLoading && <span style={{ fontSize: 10, color: P.f, fontWeight: 600 }}>Loading...</span>}
+          <span style={{
+            width: 7, height: 7, borderRadius: "50%",
+            background: isLive ? P.green : error ? "#ef4444" : P.sub,
+            boxShadow: isLive ? `0 0 8px ${P.green}` : "none"
+          }} />
+          <span style={{ fontSize: 11, color: P.sub }}>
+            {isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "매일 04:00 갱신"}
+          </span>
         </div>
       </header>
 
@@ -150,8 +212,8 @@ export default function Dashboard() {
       <div style={{ padding: "16px 28px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         <Stat label="총 이용자" value={fmt(total)} sub="필터 적용 결과" />
         <Stat label="남녀 비율" value={total > 0 ? `${Math.round(mT / total * 100)}:${Math.round(fT / total * 100)}` : "-"} sub={`M ${fmt(mT)} · F ${fmt(fT)}`} color={P.m} />
-        <Stat label="주력 연령대" value={AGE_LABEL[topAge.age] || "-"} sub={`${fmt(topAge.M + topAge.F)}명`} color={P.f} />
-        <Stat label="응답 속도" value="< 50ms" sub="Supabase RPC" color={P.green} />
+        <Stat label="주력 연령대" value={AGE_LABEL[topAge.a] || "-"} sub={`${fmt(topAge.M + topAge.F)}명`} color={P.f} />
+        <Stat label="응답 속도" value={responseMs ? `${responseMs}ms` : "< 50ms"} sub={isLive ? "Supabase RPC LIVE" : "Supabase RPC"} color={P.green} />
       </div>
 
       {/* ─── MAIN GRID ─── */}
@@ -162,12 +224,12 @@ export default function Dashboard() {
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
             🏪 업종 소분류 TOP 12
           </h3>
-          {INDUSTRY_DATA.map((it, i) => {
-            const w = it.users / INDUSTRY_DATA[0].users * 100;
+          {industryData.map((it, i) => {
+            const w = industryData[0] ? it.users / industryData[0].users * 100 : 0;
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7 }}>
                 <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {PARTNER_MAP[it.code]}
+                  {PARTNER_MAP[it.code] || it.code}
                 </span>
                 <div style={{ flex: 1, height: 20, background: "rgba(255,255,255,.03)", borderRadius: 4, overflow: "hidden" }}>
                   <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, ${P.accent}88, ${P.accent}11)`, transition: "width .5s" }} />
@@ -176,7 +238,7 @@ export default function Dashboard() {
               </div>
             );
           })}
-          {anyFilter && <p style={{ fontSize: 9, color: P.sub, marginTop: 10, textAlign: "center", fontStyle: "italic", opacity: .7 }}>* 업종 데이터는 필터 미적용</p>}
+          {!isLive && anyFilter && <p style={{ fontSize: 9, color: P.sub, marginTop: 10, textAlign: "center", fontStyle: "italic", opacity: .7 }}>* 업종 데이터는 필터 미적용 (Fallback 모드)</p>}
         </div>
 
         {/* CENTER: 차트 */}
@@ -232,7 +294,7 @@ export default function Dashboard() {
             <p style={{ fontSize: 11, color: P.sub, margin: "0 0 8px", fontWeight: 600 }}>인구 피라미드</p>
             {ageChart.map((row, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4, height: 22 }}>
-                <span style={{ fontSize: 10, color: P.sub, width: 36, textAlign: "right", flexShrink: 0 }}>{AGE_LABEL[row.age]}</span>
+                <span style={{ fontSize: 10, color: P.sub, width: 36, textAlign: "right", flexShrink: 0 }}>{AGE_LABEL[row.a] || row.a}</span>
                 <div style={{ display: "flex", flex: 1, gap: 2 }}>
                   <div style={{ display: "flex", justifyContent: "flex-end", flex: 1 }}>
                     <div style={{
@@ -261,10 +323,10 @@ export default function Dashboard() {
         {/* RIGHT: Region */}
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}`, display: "flex", flexDirection: "column" }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            📍 {sido === "서울특별시" ? "서울 시군구별" : "지역별 이용자"}
+            📍 {sido !== "전체" ? `${sido} 시군구별` : "지역별 이용자"}
           </h3>
           <div style={{ flex: 1, overflow: "auto" }}>
-            {regionRank.slice(0, 17).map((r, i) => {
+            {regionRank.slice(0, 25).map((r, i) => {
               const pct = regionRank[0] ? (r.users / regionRank[0].users * 100) : 0;
               return (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
@@ -291,7 +353,7 @@ export default function Dashboard() {
 
       {/* ─── FOOTER ─── */}
       <footer style={{ textAlign: "center", padding: "14px 0 20px", fontSize: 10, color: "rgba(107,122,153,.5)", borderTop: `1px solid ${P.border}` }}>
-        2026.02.27 · BizSpring DMP · 9큐브 · BQ FDW → Supabase · Phase B: API 연동 예정
+        {isLive ? `LIVE · Supabase RPC ${responseMs}ms` : "Static Fallback"} · BizSpring DMP · 9큐브 · BQ FDW → Supabase
       </footer>
     </div>
   );
