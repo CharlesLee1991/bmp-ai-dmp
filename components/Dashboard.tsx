@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import useSWR from "swr";
+import { createClient } from "@/lib/supabase/browser";
 import {
   PieChart, Pie, Cell, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid
@@ -88,6 +89,12 @@ export default function Dashboard() {
   const [sido, setSido] = useState("전체");
   const [sex, setSex] = useState("all");
   const [age, setAge] = useState("all");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sb = createClient();
+    sb.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+  }, []);
 
   const url = buildUrl(sido, sex, age);
   const { data: apiData, isLoading, error } = useSWR(url, fetcher, {
@@ -164,6 +171,19 @@ export default function Dashboard() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {userEmail && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}>
+              <span style={{ fontSize: 11, color: P.sub }}>{userEmail}</span>
+              <button onClick={async () => {
+                const sb = createClient();
+                await sb.auth.signOut();
+                window.location.href = "/login";
+              }} style={{
+                padding: "4px 10px", borderRadius: 6, border: `1px solid ${P.border}`,
+                background: "transparent", color: P.sub, cursor: "pointer", fontSize: 10
+              }}>로그아웃</button>
+            </div>
+          )}
           {isLoading && <span style={{ fontSize: 10, color: P.f, fontWeight: 600 }}>Loading...</span>}
           <span style={{
             width: 7, height: 7, borderRadius: "50%",
