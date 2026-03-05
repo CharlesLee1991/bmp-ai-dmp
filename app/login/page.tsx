@@ -13,12 +13,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [error, setError] = useState("");
-  const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("loading");
     setError("");
+
+    const supabase = createClient();
 
     // 1) 화이트리스트 확인
     const { data: access } = await supabase.rpc("dmp_check_access", { p_email: email });
