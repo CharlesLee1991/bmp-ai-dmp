@@ -37,9 +37,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 로그인 페이지와 auth 콜백은 통과
+  // 로그인 페이지, auth 콜백, API는 통과
   const { pathname } = request.nextUrl;
-  if (pathname === "/login" || pathname.startsWith("/auth/")) {
+  if (pathname === "/login" || pathname.startsWith("/auth/") || pathname.startsWith("/api/")) {
     return supabaseResponse;
   }
 
