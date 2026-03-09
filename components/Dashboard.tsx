@@ -96,6 +96,41 @@ export default function Dashboard() {
     sb.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
   }, []);
 
+  // ─── Target Export ───
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportName, setExportName] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [exportResult, setExportResult] = useState<any>(null);
+
+  const handleExport = async (env: "dev" | "prod") => {
+    const name = exportName.trim() || `DMP_${sido}_${sex === "all" ? "전체" : sex === "M" ? "남성" : "여성"}_${age === "all" ? "전체" : AGE_LABEL[age]}`;
+    setExporting(true);
+    setExportResult(null);
+    try {
+      const filters: Record<string, string> = {};
+      if (sex !== "all") filters.sex = sex;
+      if (age !== "all") filters.age_group = age;
+      if (sido !== "전체") filters.region = sido;
+      const resp = await fetch(
+        "https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenR0d2dxYWhoemxycW96bGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Nzc4ODYsImV4cCI6MjA2NTE1Mzg4Nn0.RCa4oahcW4grLkRdW33tph0LJfwwIL7RPe87smUZTmo",
+          },
+          body: JSON.stringify({ segment_name: name, filters, env }),
+        }
+      );
+      const data = await resp.json();
+      setExportResult(data);
+    } catch (e: any) {
+      setExportResult({ success: false, error: e.message });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const url = buildUrl(sido, sex, age);
   const { data: apiData, isLoading, error } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
@@ -226,6 +261,14 @@ export default function Dashboard() {
             borderRadius: 16, padding: "4px 14px", cursor: "pointer", fontWeight: 600
           }}>✕ 초기화</button>
         )}
+
+        <div style={{ marginLeft: "auto" }}>
+          <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); }} style={{
+            padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
+            background: "linear-gradient(135deg, #4f8ff7, #00e5c3)", color: "#0c0f1a",
+            border: "none", letterSpacing: "-0.02em"
+          }}>🚀 런컴 타겟 전송</button>
+        </div>
       </div>
 
       {/* ─── STATS ─── */}
@@ -370,6 +413,84 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ─── EXPORT MODAL ─── */}
+      {exportOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
+          onClick={() => !exporting && setExportOpen(false)}>
+          <div style={{ background: P.card, borderRadius: 16, padding: 28, border: `1px solid ${P.border}`, width: 420, maxWidth: "90vw" }}
+            onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 16px", color: P.accent }}>🚀 런컴 타겟 전송</h3>
+
+            <div style={{ fontSize: 12, color: P.sub, marginBottom: 12 }}>현재 필터 조건</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>
+                시도: {sido}
+              </span>
+              <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>
+                성별: {sex === "all" ? "전체" : sex === "M" ? "남성" : "여성"}
+              </span>
+              <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>
+                연령: {age === "all" ? "전체" : AGE_LABEL[age]}
+              </span>
+              <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>
+                예상 {fmt(total)}명
+              </span>
+            </div>
+
+            <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>세그먼트 이름</div>
+            <input value={exportName} onChange={e => setExportName(e.target.value)}
+              placeholder={`DMP_${sido}_${sex === "all" ? "전체" : sex}_${age === "all" ? "전체" : age}`}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
+
+            {!exportResult && !exporting && (
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => handleExport("dev")} style={{
+                  flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  background: P.bg, color: P.f, border: `1px solid ${P.f}44`
+                }}>🧪 개발 전송</button>
+                <button onClick={() => handleExport("prod")} style={{
+                  flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  background: "linear-gradient(135deg, #4f8ff7, #00e5c3)", color: "#0c0f1a", border: "none"
+                }}>🚀 상용 전송</button>
+              </div>
+            )}
+
+            {exporting && (
+              <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: P.accent }}>
+                ⏳ ADID 추출 → S3 업로드 → 런컴 API 전송 중...
+              </div>
+            )}
+
+            {exportResult && (
+              <div style={{
+                marginTop: 4, padding: 14, borderRadius: 8, fontSize: 12,
+                background: exportResult.success ? "rgba(52,211,153,0.1)" : "rgba(239,68,68,0.1)",
+                border: `1px solid ${exportResult.success ? P.green : "#ef4444"}44`
+              }}>
+                {exportResult.success ? (
+                  <>
+                    <div style={{ fontWeight: 700, color: P.green, marginBottom: 8 }}>✅ 전송 성공!</div>
+                    <div>런컴 ID: <strong>{exportResult.data.runcomm_target_id}</strong></div>
+                    <div>ADID 건수: <strong>{fmt(exportResult.data.ads_id_count)}</strong></div>
+                    <div>환경: <strong>{exportResult.data.env}</strong></div>
+                    <div style={{ color: P.sub, marginTop: 4 }}>소요: {exportResult.meta?.elapsed_ms}ms</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontWeight: 700, color: "#ef4444", marginBottom: 4 }}>❌ 전송 실패</div>
+                    <div style={{ color: P.sub }}>{exportResult.error}</div>
+                  </>
+                )}
+                <button onClick={() => setExportOpen(false)} style={{
+                  marginTop: 12, width: "100%", padding: "8px", borderRadius: 8, fontSize: 12,
+                  background: P.bg, color: P.sub, border: `1px solid ${P.border}`, cursor: "pointer"
+                }}>닫기</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ─── FOOTER ─── */}
       <footer style={{ textAlign: "center", padding: "14px 0 20px", fontSize: 10, color: "rgba(107,122,153,.5)", borderTop: `1px solid ${P.border}` }}>
