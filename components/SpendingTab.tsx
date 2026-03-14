@@ -9,13 +9,13 @@ import {
 import { fmt } from "@/lib/data";
 
 const P = {
-  bg: "#0c0f1a", card: "#141827", border: "#1e2440",
-  text: "#e8ecf4", sub: "#6b7a99",
-  accent: "#00e5c3", green: "#34d399",
-  glow: "rgba(0,229,195,0.12)"
+  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
+  text: "#1a202c", sub: "#718096",
+  accent: "#0d9488", green: "#10b981",
+  glow: "rgba(13,148,136,0.08)"
 };
 
-const COLORS = ["#00e5c3", "#4f8ff7", "#f7a84f", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#fb7185", "#818cf8", "#2dd4bf", "#e879f9", "#facc15"];
+const COLORS = ["#0d9488", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#10b981", "#eab308", "#60a5fa", "#f43f5e", "#6366f1", "#14b8a6", "#d946ef", "#ca8a04"];
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -161,7 +161,7 @@ export default function SpendingTab({ sido, sex, age }: Props) {
             <div style={{ height: 200 }}>
               <ResponsiveContainer>
                 <LineChart data={trendData.rows}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
                   <XAxis dataKey="ym_label" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={50} />
                   <Tooltip
@@ -196,7 +196,7 @@ export default function SpendingTab({ sido, sex, age }: Props) {
                   <span style={{
                     width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 9, fontWeight: 700, flexShrink: 0,
-                    background: i < 3 ? P.accent : "rgba(255,255,255,.06)", color: i < 3 ? P.bg : P.sub
+                    background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "#fff" : P.sub
                   }}>{i + 1}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
@@ -209,7 +209,7 @@ export default function SpendingTab({ sido, sex, age }: Props) {
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,.04)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ flex: 1, height: 4, background: "rgba(0,0,0,.04)", borderRadius: 2, overflow: "hidden" }}>
                         <div style={{ height: "100%", background: COLORS[i % COLORS.length], borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .65 }} />
                       </div>
                       <span style={{ fontSize: 9, color: P.sub, flexShrink: 0 }}>{fmtAmt(item.total_amt)}</span>

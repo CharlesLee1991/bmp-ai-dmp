@@ -9,9 +9,9 @@ import {
 import { fmt } from "@/lib/data";
 
 const P = {
-  bg: "#0c0f1a", card: "#141827", border: "#1e2440",
-  text: "#e8ecf4", sub: "#6b7a99",
-  accent: "#00e5c3", green: "#34d399",
+  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
+  text: "#1a202c", sub: "#718096",
+  accent: "#0d9488", green: "#10b981",
 };
 
 const CARD_COLORS: Record<string, string> = {
@@ -129,7 +129,7 @@ export default function CardComparisonTab() {
             <button key={m} onClick={() => setMonths(m)} style={{
               padding: "5px 14px", borderRadius: 20, fontSize: 11, fontWeight: months === m ? 700 : 400,
               cursor: "pointer", border: `1px solid ${months === m ? P.accent : P.border}`,
-              background: months === m ? "rgba(0,229,195,0.12)" : "transparent",
+              background: months === m ? "rgba(13,148,136,0.08)" : "transparent",
               color: months === m ? P.accent : P.sub
             }}>{m}개월</button>
           ))}
@@ -192,7 +192,7 @@ export default function CardComparisonTab() {
                 avg: s.avg_per_txn,
                 fill: CARD_COLORS[s.card_source] || "#888"
               }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmtAmt(Number(v))} width={50} />
                 <Tooltip contentStyle={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }}
@@ -215,7 +215,7 @@ export default function CardComparisonTab() {
           <div style={{ height: 220 }}>
             <ResponsiveContainer>
               <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
                 <XAxis dataKey="ym" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={50} />
                 <Tooltip contentStyle={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }}
@@ -253,8 +253,8 @@ export default function CardComparisonTab() {
                       <span style={{
                         width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 9, fontWeight: 700, flexShrink: 0,
-                        background: i === 0 ? CARD_COLORS[src] || "#888" : "rgba(255,255,255,.06)",
-                        color: i === 0 ? P.bg : P.sub
+                        background: i === 0 ? CARD_COLORS[src] || "#888" : "rgba(0,0,0,.06)",
+                        color: i === 0 ? "#fff" : P.sub
                       }}>{i + 1}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.subcategory}</div>

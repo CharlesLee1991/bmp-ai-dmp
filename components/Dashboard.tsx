@@ -15,10 +15,10 @@ import SpendingTab from "./SpendingTab";
 import CardComparisonTab from "./CardComparisonTab";
 
 const P = {
-  bg: "#0c0f1a", card: "#141827", border: "#1e2440",
-  text: "#e8ecf4", sub: "#6b7a99",
-  m: "#4f8ff7", f: "#f7a84f", accent: "#00e5c3",
-  green: "#34d399", glow: "rgba(0,229,195,0.12)"
+  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
+  text: "#1a202c", sub: "#718096",
+  m: "#3b82f6", f: "#f59e0b", accent: "#0d9488",
+  green: "#10b981", glow: "rgba(13,148,136,0.08)"
 };
 
 // ─── API fetcher ───
@@ -227,9 +227,9 @@ export default function Dashboard() {
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{
             width: 40, height: 40, borderRadius: 10,
-            background: "linear-gradient(135deg, #4f8ff7, #00e5c3)",
+            background: "linear-gradient(135deg, #3b82f6, #0d9488)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 18, fontWeight: 900, color: "#0c0f1a"
+            fontSize: 18, fontWeight: 900, color: "#ffffff"
           }}>D</div>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
@@ -245,7 +245,7 @@ export default function Dashboard() {
           <span style={{
             width: 7, height: 7, borderRadius: "50%",
             background: isLive ? P.green : error ? "#ef4444" : P.sub,
-            boxShadow: isLive ? `0 0 8px ${P.green}` : "none"
+            boxShadow: isLive ? `0 0 6px ${P.green}` : "none"
           }} />
           <span style={{ fontSize: 11, color: P.sub }}>
             {isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "매일 04:00 갱신"}
@@ -325,7 +325,7 @@ export default function Dashboard() {
           {tab === "audience" && (
             <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); }} style={{
               padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
-              background: "linear-gradient(135deg, #4f8ff7, #00e5c3)", color: "#0c0f1a",
+              background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#ffffff",
               border: "none", letterSpacing: "-0.02em"
             }}>🚀 런컴 타겟 전송</button>
           )}
@@ -339,7 +339,7 @@ export default function Dashboard() {
       {hasCategory && (
         <div style={{
           margin: "12px 28px 0", padding: "12px 18px", borderRadius: 10,
-          background: "linear-gradient(135deg, rgba(79,143,247,0.1), rgba(0,229,195,0.1))",
+          background: "linear-gradient(135deg, rgba(59,130,246,0.06), rgba(13,148,136,0.06))",
           border: `1px solid ${P.accent}44`,
           display: "flex", alignItems: "center", justifyContent: "space-between"
         }}>
@@ -398,7 +398,7 @@ export default function Dashboard() {
                 <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {PARTNER_MAP[it.code] || it.code}
                 </span>
-                <div style={{ flex: 1, height: 20, background: "rgba(255,255,255,.03)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ flex: 1, height: 20, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
                   <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, ${P.accent}88, ${P.accent}11)`, transition: "width .5s" }} />
                 </div>
                 <span style={{ fontSize: 10, fontWeight: 700, color: P.text, minWidth: 38, textAlign: "right" }}>{fmt(it.users)}</span>
@@ -442,7 +442,7 @@ export default function Dashboard() {
             <div style={{ flex: 1, height: 185 }}>
               <ResponsiveContainer>
                 <BarChart data={barData} barCategoryGap="18%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
                   <XAxis dataKey="name" tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={44} />
                   <Tooltip
@@ -496,18 +496,18 @@ export default function Dashboard() {
             {regionRank.slice(0, 25).map((r, i) => {
               const pct = regionRank[0] ? (r.users / regionRank[0].users * 100) : 0;
               return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,.05)" }}>
                   <span style={{
                     width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 9, fontWeight: 700, flexShrink: 0,
-                    background: i < 3 ? P.accent : "rgba(255,255,255,.06)", color: i < 3 ? P.bg : P.sub
+                    background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "#fff" : P.sub
                   }}>{i + 1}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
                       <span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
                       <span style={{ fontSize: 10, fontWeight: 700, color: P.accent, flexShrink: 0 }}>{fmt(r.users)}</span>
                     </div>
-                    <div style={{ height: 3, background: "rgba(255,255,255,.04)", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: 3, background: "rgba(0,0,0,.04)", borderRadius: 2, overflow: "hidden" }}>
                       <div style={{ height: "100%", background: i < 3 ? P.accent : P.m, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .65 }} />
                     </div>
                   </div>
@@ -532,7 +532,7 @@ export default function Dashboard() {
 
       {/* ─── EXPORT MODAL ─── */}
       {exportOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
           onClick={() => !exporting && setExportOpen(false)}>
           <div style={{ background: P.card, borderRadius: 16, padding: 28, border: `1px solid ${P.border}`, width: 420, maxWidth: "90vw" }}
             onClick={e => e.stopPropagation()}>
@@ -572,7 +572,7 @@ export default function Dashboard() {
                 }}>🧪 개발 전송</button>
                 <button onClick={() => handleExport("prod")} style={{
                   flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                  background: "linear-gradient(135deg, #4f8ff7, #00e5c3)", color: "#0c0f1a", border: "none"
+                  background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#ffffff", border: "none"
                 }}>🚀 상용 전송</button>
               </div>
             )}
