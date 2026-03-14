@@ -12,6 +12,7 @@ import {
   type RegionRow, type IndustryRow, type SggRow
 } from "@/lib/data";
 import SpendingTab from "./SpendingTab";
+import CardComparisonTab from "./CardComparisonTab";
 
 const P = {
   bg: "#0c0f1a", card: "#141827", border: "#1e2440",
@@ -89,7 +90,7 @@ export default function Dashboard() {
   const [sido, setSido] = useState("전체");
   const [sex, setSex] = useState("all");
   const [age, setAge] = useState("all");
-  const [tab, setTab] = useState<"audience" | "spending">("audience");
+  const [tab, setTab] = useState<"audience" | "spending" | "cards">("audience");
 
   // ─── Target Export ───
   const [exportOpen, setExportOpen] = useState(false);
@@ -218,6 +219,7 @@ export default function Dashboard() {
         {([
           { id: "audience" as const, label: "👥 오디언스", icon: "" },
           { id: "spending" as const, label: "💳 소비 트렌드", icon: "" },
+          { id: "cards" as const, label: "🏦 카드사 비교", icon: "" },
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: "12px 24px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400,
@@ -421,6 +423,11 @@ export default function Dashboard() {
       {/* ─── SPENDING TAB ─── */}
       {tab === "spending" && (
         <SpendingTab sido={sido} sex={sex} age={age} />
+      )}
+
+      {/* ─── CARDS TAB ─── */}
+      {tab === "cards" && (
+        <CardComparisonTab />
       )}
 
       {/* ─── EXPORT MODAL ─── */}
