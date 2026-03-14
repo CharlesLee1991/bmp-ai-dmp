@@ -91,6 +91,42 @@ export default function Dashboard() {
   const [sex, setSex] = useState("all");
   const [age, setAge] = useState("all");
   const [tab, setTab] = useState<"audience" | "spending" | "cards">("audience");
+  const [majorCat, setMajorCat] = useState("all");
+  const [middleCat, setMiddleCat] = useState("all");
+
+  // ─── Category hierarchy ───
+  const { data: catData } = useSWR("/api/categories", fetcher, {
+    revalidateOnFocus: false, dedupingInterval: 300000,
+  });
+  const categories: { major: string; codeCount: number; middles: { middle: string; codeCount: number }[] }[] =
+    catData?.success ? catData.data : [];
+  const middles = majorCat !== "all" ? categories.find(c => c.major === majorCat)?.middles || [] : [];
+
+  // ─── Segment Preview (업종 선택 시) ───
+  const segKey = `${sido}|${sex}|${age}|${majorCat}|${middleCat}`;
+  const hasCategory = majorCat !== "all";
+  const { data: segData, isLoading: segLoading } = useSWR(
+    hasCategory ? `/api/segment-preview#${segKey}` : null,
+    async () => {
+      const segs: { seg: string; value: string }[] = [];
+      if (sex !== "all") segs.push({ seg: "gender", value: sex });
+      if (age !== "all") segs.push({ seg: "age", value: age });
+      if (sido !== "전체") segs.push({ seg: "region", value: sido });
+      if (middleCat !== "all") {
+        segs.push({ seg: "middle_category", value: middleCat });
+      } else if (majorCat !== "all") {
+        segs.push({ seg: "major_category", value: majorCat });
+      }
+      const res = await fetch("/api/segment-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ segments: segs }),
+      });
+      return res.json();
+    },
+    { revalidateOnFocus: false, dedupingInterval: 30000, keepPreviousData: true }
+  );
+  const segEstimate = segData?.success ? segData.data : null;
 
   // ─── Target Export ───
   const [exportOpen, setExportOpen] = useState(false);
@@ -99,7 +135,8 @@ export default function Dashboard() {
   const [exportResult, setExportResult] = useState<any>(null);
 
   const handleExport = async (env: "dev" | "prod") => {
-    const name = exportName.trim() || `DMP_${sido}_${sex === "all" ? "전체" : sex === "M" ? "남성" : "여성"}_${age === "all" ? "전체" : AGE_LABEL[age]}`;
+    const catLabel = middleCat !== "all" ? middleCat : majorCat !== "all" ? majorCat : "";
+    const name = exportName.trim() || `DMP_${sido}_${sex === "all" ? "전체" : sex === "M" ? "남성" : "여성"}_${age === "all" ? "전체" : AGE_LABEL[age]}${catLabel ? "_" + catLabel : ""}`;
     setExporting(true);
     setExportResult(null);
     try {
@@ -107,6 +144,8 @@ export default function Dashboard() {
       if (sex !== "all") filters.sex = sex;
       if (age !== "all") filters.age_group = age;
       if (sido !== "전체") filters.region = sido;
+      if (middleCat !== "all") filters.middle_category = middleCat;
+      else if (majorCat !== "all") filters.major_category = majorCat;
       const resp = await fetch(
         "https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export",
         {
@@ -174,8 +213,8 @@ export default function Dashboard() {
   const barData = ageChart.map(r => ({ name: AGE_LABEL[r.a] || r.a, 남성: r.M, 여성: r.F }));
   const topAge = ageChart.reduce((a, b) => (a.M + a.F) > (b.M + b.F) ? a : b, { M: 0, F: 0, a: "-" });
 
-  const anyFilter = sido !== "전체" || sex !== "all" || age !== "all";
-  const reset = () => { setSido("전체"); setSex("all"); setAge("all"); };
+  const anyFilter = sido !== "전체" || sex !== "all" || age !== "all" || majorCat !== "all";
+  const reset = () => { setSido("전체"); setSex("all"); setAge("all"); setMajorCat("all"); setMiddleCat("all"); };
 
   const responseMs = meta?.response_ms;
   const industryFiltered = isLive && anyFilter;
@@ -253,6 +292,27 @@ export default function Dashboard() {
           <Chip key={o.id} label={o.l} active={age === o.id} onClick={() => setAge(o.id)} />
         )}
 
+        <span style={{ width: 1, height: 20, background: P.border, margin: "0 6px" }} />
+        <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em" }}>업종</span>
+        <select value={majorCat} onChange={e => { setMajorCat(e.target.value); setMiddleCat("all"); }} style={{
+          padding: "6px 10px", borderRadius: 8, border: `1px solid ${majorCat !== "all" ? P.accent : P.border}`,
+          fontSize: 12, background: majorCat !== "all" ? P.glow : P.card, color: majorCat !== "all" ? P.accent : P.text,
+          cursor: "pointer", outline: "none", minWidth: 100, fontWeight: majorCat !== "all" ? 700 : 400
+        }}>
+          <option value="all">전체</option>
+          {categories.map(c => <option key={c.major} value={c.major}>{c.major} ({c.codeCount})</option>)}
+        </select>
+        {majorCat !== "all" && middles.length > 0 && (
+          <select value={middleCat} onChange={e => setMiddleCat(e.target.value)} style={{
+            padding: "6px 10px", borderRadius: 8, border: `1px solid ${middleCat !== "all" ? P.accent : P.border}`,
+            fontSize: 12, background: middleCat !== "all" ? P.glow : P.card, color: middleCat !== "all" ? P.accent : P.text,
+            cursor: "pointer", outline: "none", minWidth: 100, fontWeight: middleCat !== "all" ? 700 : 400
+          }}>
+            <option value="all">중분류 전체</option>
+            {middles.map(m => <option key={m.middle} value={m.middle}>{m.middle} ({m.codeCount})</option>)}
+          </select>
+        )}
+
         {anyFilter && (
           <button onClick={reset} style={{
             marginLeft: 8, fontSize: 10, color: P.accent,
@@ -275,6 +335,46 @@ export default function Dashboard() {
       {/* ─── AUDIENCE TAB ─── */}
       {tab === "audience" && (
         <>
+      {/* ─── SEGMENT PREVIEW BANNER ─── */}
+      {hasCategory && (
+        <div style={{
+          margin: "12px 28px 0", padding: "12px 18px", borderRadius: 10,
+          background: "linear-gradient(135deg, rgba(79,143,247,0.1), rgba(0,229,195,0.1))",
+          border: `1px solid ${P.accent}44`,
+          display: "flex", alignItems: "center", justifyContent: "space-between"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 16 }}>🎯</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: P.accent }}>
+                세그먼트 프리뷰
+                {segLoading && <span style={{ fontWeight: 400, color: P.sub, marginLeft: 8 }}>계산 중...</span>}
+              </div>
+              <div style={{ fontSize: 11, color: P.sub, marginTop: 2 }}>
+                {middleCat !== "all" ? `${majorCat} > ${middleCat}` : majorCat}
+                {sex !== "all" && ` · ${sex === "M" ? "남성" : "여성"}`}
+                {age !== "all" && ` · ${AGE_LABEL[age]}`}
+                {sido !== "전체" && ` · ${sido}`}
+              </div>
+            </div>
+          </div>
+          {segEstimate && (
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: P.accent, letterSpacing: "-0.03em" }}>
+                  {fmt(segEstimate.estimated_audience)}
+                  <span style={{ fontSize: 12, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span>
+                </div>
+                <div style={{ fontSize: 10, color: P.sub }}>
+                  전체 {fmt(segEstimate.total_audience)}명 중 {(segEstimate.selectivity * 100).toFixed(1)}%
+                  {segData?.meta?.response_time_ms && ` · ${segData.meta.response_time_ms}ms`}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ─── STATS ─── */}
       <div style={{ padding: "16px 28px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         <Stat label="총 이용자" value={fmt(total)} sub="필터 적용 결과" />
@@ -449,8 +549,13 @@ export default function Dashboard() {
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>
                 연령: {age === "all" ? "전체" : AGE_LABEL[age]}
               </span>
+              {majorCat !== "all" && (
+                <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.accent}44`, color: P.accent, fontWeight: 600 }}>
+                  업종: {middleCat !== "all" ? `${majorCat} > ${middleCat}` : majorCat}
+                </span>
+              )}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>
-                예상 {fmt(total)}명
+                예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명
               </span>
             </div>
 
@@ -510,7 +615,7 @@ export default function Dashboard() {
 
       {/* ─── FOOTER ─── */}
       <footer style={{ textAlign: "center", padding: "14px 0 20px", fontSize: 10, color: "rgba(107,122,153,.5)", borderTop: `1px solid ${P.border}` }}>
-        {isLive ? `LIVE · Supabase RPC ${responseMs}ms` : "Static Fallback"} · BizSpring DMP · 12큐브 · BQ FDW → Supabase
+        {isLive ? `LIVE · Supabase RPC ${responseMs}ms` : "Static Fallback"} · BizSpring DMP · 13큐브 · BQ FDW → Supabase
       </footer>
     </div>
   );
