@@ -11,6 +11,7 @@ import {
   REGION_DATA, INDUSTRY_DATA, SEOUL_SGG, fmt,
   type RegionRow, type IndustryRow, type SggRow
 } from "@/lib/data";
+import SpendingTab from "./SpendingTab";
 
 const P = {
   bg: "#0c0f1a", card: "#141827", border: "#1e2440",
@@ -88,6 +89,7 @@ export default function Dashboard() {
   const [sido, setSido] = useState("전체");
   const [sex, setSex] = useState("all");
   const [age, setAge] = useState("all");
+  const [tab, setTab] = useState<"audience" | "spending">("audience");
 
   // ─── Target Export ───
   const [exportOpen, setExportOpen] = useState(false);
@@ -194,7 +196,7 @@ export default function Dashboard() {
               DMP Audience Explorer
             </h1>
             <p style={{ fontSize: 11, color: P.sub, margin: 0 }}>
-              BizSpring · Supabase Cube · BQ 80억행 → 141만행
+              BizSpring · Supabase Cube · BQ 80억행 → 141만행+
             </p>
           </div>
         </div>
@@ -210,6 +212,21 @@ export default function Dashboard() {
           </span>
         </div>
       </header>
+
+      {/* ─── TAB NAV ─── */}
+      <div style={{ padding: "0 28px", display: "flex", gap: 0, borderBottom: `1px solid ${P.border}` }}>
+        {([
+          { id: "audience" as const, label: "👥 오디언스", icon: "" },
+          { id: "spending" as const, label: "💳 소비 트렌드", icon: "" },
+        ]).map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: "12px 24px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400,
+            cursor: "pointer", border: "none", borderBottom: `2px solid ${tab === t.id ? P.accent : "transparent"}`,
+            background: "transparent", color: tab === t.id ? P.accent : P.sub,
+            transition: "all .2s", letterSpacing: "-0.02em"
+          }}>{t.label}</button>
+        ))}
+      </div>
 
       {/* ─── FILTERS ─── */}
       <div style={{ padding: "16px 28px", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", borderBottom: `1px solid ${P.border}` }}>
@@ -243,14 +260,19 @@ export default function Dashboard() {
         )}
 
         <div style={{ marginLeft: "auto" }}>
-          <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); }} style={{
-            padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
-            background: "linear-gradient(135deg, #4f8ff7, #00e5c3)", color: "#0c0f1a",
-            border: "none", letterSpacing: "-0.02em"
-          }}>🚀 런컴 타겟 전송</button>
+          {tab === "audience" && (
+            <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); }} style={{
+              padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
+              background: "linear-gradient(135deg, #4f8ff7, #00e5c3)", color: "#0c0f1a",
+              border: "none", letterSpacing: "-0.02em"
+            }}>🚀 런컴 타겟 전송</button>
+          )}
         </div>
       </div>
 
+      {/* ─── AUDIENCE TAB ─── */}
+      {tab === "audience" && (
+        <>
       {/* ─── STATS ─── */}
       <div style={{ padding: "16px 28px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         <Stat label="총 이용자" value={fmt(total)} sub="필터 적용 결과" />
@@ -393,6 +415,13 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+        </>
+      )}
+
+      {/* ─── SPENDING TAB ─── */}
+      {tab === "spending" && (
+        <SpendingTab sido={sido} sex={sex} age={age} />
+      )}
 
       {/* ─── EXPORT MODAL ─── */}
       {exportOpen && (
@@ -474,7 +503,7 @@ export default function Dashboard() {
 
       {/* ─── FOOTER ─── */}
       <footer style={{ textAlign: "center", padding: "14px 0 20px", fontSize: 10, color: "rgba(107,122,153,.5)", borderTop: `1px solid ${P.border}` }}>
-        {isLive ? `LIVE · Supabase RPC ${responseMs}ms` : "Static Fallback"} · BizSpring DMP · 9큐브 · BQ FDW → Supabase
+        {isLive ? `LIVE · Supabase RPC ${responseMs}ms` : "Static Fallback"} · BizSpring DMP · 12큐브 · BQ FDW → Supabase
       </footer>
     </div>
   );
