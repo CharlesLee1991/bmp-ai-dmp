@@ -13,6 +13,8 @@ import {
 } from "@/lib/data";
 import SpendingTab from "./SpendingTab";
 import CardComparisonTab from "./CardComparisonTab";
+import ExportHistoryTab from "./ExportHistoryTab";
+import type { DmpUser } from "@/lib/auth";
 
 const P = {
   bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
@@ -145,16 +147,18 @@ function getStaticRegion(sidos: string[], sexes: string[], ages: string[]) {
 // ═══════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════
-export default function Dashboard() {
+export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout: () => void }) {
   const [sidos, setSidos] = useState<string[]>([]);
   const [sexes, setSexes] = useState<string[]>([]);
   const [ages, setAges] = useState<string[]>([]);
   const [majorCats, setMajorCats] = useState<string[]>([]);
   const [middleCats, setMiddleCats] = useState<string[]>([]);
-  const [tab, setTab] = useState<"audience" | "spending" | "cards">("audience");
+  const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports">("audience");
+  const isAdmin = user.role === "admin";
 
   const [exportOpen, setExportOpen] = useState(false);
   const [exportName, setExportName] = useState("");
+  const [exportMemo, setExportMemo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportResult, setExportResult] = useState<any>(null);
 
@@ -204,8 +208,8 @@ export default function Dashboard() {
 
   /* export */
   const handleExport = async (env: "dev" | "prod") => {
-    const catLabel = middleCats.length ? middleCats.join("+") : majorCats.length ? majorCats.join("+") : "";
-    const name = exportName.trim() || `DMP_${sidos.length ? sidos.join("+") : "전국"}_${!sexes.length ? "전체" : sexes.map(s => s === "M" ? "남" : s === "F" ? "여" : "미상").join("")}_${!ages.length ? "전체" : ages.map(a => AGE_LABEL[a] || a).join("+")}${catLabel ? "_" + catLabel : ""}`;
+    const datePart = new Date().toISOString().slice(2,10).replace(/-/g,"");
+    const name = exportName.trim() || `DMP_${datePart}${filterParts.length ? "_" + filterParts.join("_") : ""}`;
     setExporting(true); setExportResult(null);
     try {
       const filters: Record<string, string> = {};
@@ -223,6 +227,38 @@ export default function Dashboard() {
     } catch (e: any) { setExportResult({ success: false, error: e.message }); }
     finally { setExporting(false); }
   };
+
+  // 전송 결과를 이력에 저장
+  useEffect(() => {
+    if (!exportResult || !exportResult.success) return;
+    const saveHistory = async () => {
+      try {
+        await fetch("/api/exports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            segment_name: exportName.trim() || `DMP_${new Date().toISOString().slice(2,10).replace(/-/g,"")}${filterParts.length ? "_" + filterParts.join("_") : ""}`,
+            filters: (() => {
+              const f: Record<string, string> = {};
+              if (sexes.length) f.sex = sexes.join(",");
+              if (ages.length) f.age_group = ages.join(",");
+              if (sidos.length) f.region = sidos.join(",");
+              if (middleCats.length) f.middle_category = middleCats.join(",");
+              else if (majorCats.length) f.major_category = majorCats.join(",");
+              return f;
+            })(),
+            audience_count: exportResult.data?.ads_id_count || 0,
+            env: exportResult.data?.env || "dev",
+            runcomm_target_id: exportResult.data?.runcomm_target_id || null,
+            status: "success",
+            memo: exportMemo,
+            response_data: exportResult,
+          }),
+        });
+      } catch {}
+    };
+    saveHistory();
+  }, [exportResult]);
 
   const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); };
 
@@ -271,16 +307,37 @@ export default function Dashboard() {
             <p style={{ fontSize: 11, color: P.sub, margin: 0 }}>BizSpring · 13큐브 · 15세그먼트 키 · 멀티셀렉트</p>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {isLoading && <span style={{ fontSize: 10, color: P.f, fontWeight: 600 }}>Loading...</span>}
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: isLive ? P.green : error ? "#ef4444" : P.sub, boxShadow: isLive ? `0 0 8px ${P.green}` : "none" }} />
           <span style={{ fontSize: 11, color: P.sub }}>{isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "..."}</span>
+          <span style={{ width: 1, height: 16, background: P.border }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+              background: isAdmin ? "linear-gradient(135deg, #3b82f6, #0d9488)" : P.border,
+              fontSize: 11, fontWeight: 700, color: isAdmin ? "#fff" : P.sub
+            }}>{user.display_name[0]}</div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: P.text }}>{user.display_name}</div>
+              <div style={{ fontSize: 9, color: P.sub }}>{isAdmin ? "관리자" : "광고주"}</div>
+            </div>
+            <button onClick={onLogout} style={{
+              marginLeft: 4, padding: "4px 10px", borderRadius: 6, fontSize: 10, cursor: "pointer",
+              background: "transparent", border: `1px solid ${P.border}`, color: P.sub
+            }}>로그아웃</button>
+          </div>
         </div>
       </header>
 
       {/* TAB */}
       <div style={{ padding: "0 28px", display: "flex", gap: 0, borderBottom: `1px solid ${P.border}` }}>
-        {([{ id: "audience" as const, label: "👥 오디언스" }, { id: "spending" as const, label: "💳 소비 트렌드" }, { id: "cards" as const, label: "🏦 카드사 비교" }]).map(t => (
+        {([
+          { id: "audience" as const, label: "👥 오디언스", roles: ["admin", "advertiser"] },
+          { id: "spending" as const, label: "💳 소비 트렌드", roles: ["admin"] },
+          { id: "cards" as const, label: "🏦 카드사 비교", roles: ["admin"] },
+          { id: "exports" as const, label: "📋 전송 이력", roles: ["admin", "advertiser"] },
+        ]).filter(t => t.roles.includes(user.role)).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "12px 24px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", border: "none", borderBottom: `2px solid ${tab === t.id ? P.accent : "transparent"}`, background: "transparent", color: tab === t.id ? P.accent : P.sub, transition: "all .2s" }}>{t.label}</button>
         ))}
       </div>
@@ -325,7 +382,7 @@ export default function Dashboard() {
             {filterParts.length > 0 && <span style={{ fontSize: 10, color: P.sub }}>{filterParts.join(" · ")}</span>}
           </div>
           {tab === "audience" && (
-            <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 런컴 타겟 전송</button>
+            <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 런컴 타겟 전송</button>
           )}
         </div>
       </div>
@@ -444,6 +501,7 @@ export default function Dashboard() {
 
       {tab === "spending" && <SpendingTab sido={sidos.length ? sidos[0] : "전체"} sex={sexes.length ? sexes[0] : "all"} age={ages.length ? ages[0] : "all"} />}
       {tab === "cards" && <CardComparisonTab />}
+      {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
 
       {/* EXPORT MODAL */}
       {exportOpen && (
@@ -458,8 +516,14 @@ export default function Dashboard() {
               {majorCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.accent}44`, color: P.accent, fontWeight: 600 }}>업종: {middleCats.length ? middleCats.join(", ") : majorCats.join(", ")}</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
-            <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>세그먼트 이름</div>
-            <input value={exportName} onChange={e => setExportName(e.target.value)} placeholder="자동 생성됨" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
+            <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
+            <input value={exportName} onChange={e => setExportName(e.target.value)}
+              placeholder={`DMP_${new Date().toISOString().slice(2,10).replace(/-/g,"")}${filterParts.length ? "_" + filterParts.join("_") : ""}`}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 12 }} />
+            <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>메모 (선택)</div>
+            <input value={exportMemo} onChange={e => setExportMemo(e.target.value)}
+              placeholder="전송 목적, 캠페인명 등"
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
             {!exportResult && !exporting && (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => handleExport("dev")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: P.bg, color: P.f, border: `1px solid ${P.f}44` }}>🧪 개발 전송</button>
