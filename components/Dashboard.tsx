@@ -14,6 +14,7 @@ import {
 import SpendingTab from "./SpendingTab";
 import CardComparisonTab from "./CardComparisonTab";
 import ExportHistoryTab from "./ExportHistoryTab";
+import ShoppingProductsTab from "./ShoppingProductsTab";
 import type { DmpUser } from "@/lib/auth";
 
 const P = {
@@ -153,7 +154,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [ages, setAges] = useState<string[]>([]);
   const [majorCats, setMajorCats] = useState<string[]>([]);
   const [middleCats, setMiddleCats] = useState<string[]>([]);
-  const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports">("audience");
+  const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports" | "shopping">("audience");
   const isAdmin = user.role === "admin";
 
   const [exportOpen, setExportOpen] = useState(false);
@@ -334,9 +335,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       <div style={{ padding: "0 28px", display: "flex", gap: 0, borderBottom: `1px solid ${P.border}` }}>
         {([
           { id: "audience" as const, label: "👥 오디언스", roles: ["admin", "advertiser"] },
+          { id: "exports" as const, label: "📋 전송 이력", roles: ["admin", "advertiser"] },
           { id: "spending" as const, label: "💳 소비 트렌드", roles: ["admin"] },
           { id: "cards" as const, label: "🏦 카드사 비교", roles: ["admin"] },
-          { id: "exports" as const, label: "📋 전송 이력", roles: ["admin", "advertiser"] },
+          { id: "shopping" as const, label: "🛒 쇼핑상품", roles: ["admin"] },
         ]).filter(t => t.roles.includes(user.role)).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "12px 24px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", border: "none", borderBottom: `2px solid ${tab === t.id ? P.accent : "transparent"}`, background: "transparent", color: tab === t.id ? P.accent : P.sub, transition: "all .2s" }}>{t.label}</button>
         ))}
@@ -502,6 +504,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {tab === "spending" && <SpendingTab sido={sidos.length ? sidos[0] : "전체"} sex={sexes.length ? sexes[0] : "all"} age={ages.length ? ages[0] : "all"} />}
       {tab === "cards" && <CardComparisonTab />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
+      {tab === "shopping" && <ShoppingProductsTab />}
 
       {/* EXPORT MODAL */}
       {exportOpen && (
