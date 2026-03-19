@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import useSWR from "swr";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
-  AreaChart, Area, PieChart, Pie, Cell,
+  AreaChart, Area, PieChart, Pie, Cell, LineChart, Line,
   ResponsiveContainer, Legend
 } from "recharts";
 import { fmt } from "@/lib/data";
@@ -85,6 +85,7 @@ export default function ShoppingProductsTab() {
   const [ageGroup, setAgeGroup] = useState("");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"cnt" | "revenue" | "avg_price" | "change">("cnt");
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
   const params = new URLSearchParams();
   params.set("days", String(days));
@@ -121,6 +122,13 @@ export default function ShoppingProductsTab() {
   const totalPlatformCnt = platforms.reduce((s, p) => s + p.cnt, 0);
   const elapsedMs = data?.elapsed_ms;
   const period = data?.period;
+
+  /* Product detail modal data */
+  const { data: detailData, isLoading: detailLoading } = useSWR(
+    selectedProduct ? `/api/shopping/detail?title=${encodeURIComponent(selectedProduct)}&days=30` : null,
+    fetcher, { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
+  const detail = detailData?.success ? detailData : null;
 
   function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
     return (
@@ -297,7 +305,8 @@ export default function ShoppingProductsTab() {
                   const isUp = !p.isNew && p.change > 0;
                   const isDown = !p.isNew && p.change < 0;
                   return (
-                    <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}
+                    <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                      onClick={() => setSelectedProduct(p.title)}
                       onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
                       onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                       <td style={{ padding: "6px 12px", fontWeight: 800, color: i < 3 ? P.accent : P.sub, fontSize: i < 3 ? 13 : 11 }}>
@@ -335,6 +344,116 @@ export default function ShoppingProductsTab() {
           </div>
         )}
       </div>
+
+      {/* ── PRODUCT DETAIL MODAL ── */}
+      {selectedProduct && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
+          onClick={() => setSelectedProduct(null)}>
+          <div style={{ background: P.card, borderRadius: 16, padding: 0, border: `1px solid ${P.border}`, width: 720, maxWidth: "94vw", maxHeight: "90vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.15)" }}
+            onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${P.border}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: P.accent, fontWeight: 700, marginBottom: 4 }}>📦 상품 상세 추세</div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedProduct}</h3>
+                {detail && <div style={{ fontSize: 11, color: P.sub, marginTop: 4 }}>{detail.period.from} ~ {detail.period.to} ({detail.period.days}일) · {detail.elapsed_ms}ms</div>}
+              </div>
+              <button onClick={() => setSelectedProduct(null)} style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, cursor: "pointer", fontSize: 14, color: P.sub, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            </div>
+
+            {detailLoading && <div style={{ textAlign: "center", padding: 40, color: P.accent, fontSize: 13 }}>📊 추세 데이터 로딩 중...</div>}
+
+            {detail && (
+              <div style={{ padding: "16px 24px 24px" }}>
+                {/* KPI row */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 18 }}>
+                  {[
+                    { label: "총 판매건수", value: fmt(detail.summary.total_cnt), color: P.accent },
+                    { label: "총 매출", value: fmtAmt(detail.summary.total_revenue), color: "#3b82f6" },
+                    { label: "평균 단가", value: "₩" + detail.summary.avg_price.toLocaleString(), color: "#f59e0b" },
+                    { label: "판매일수", value: detail.summary.days_active + "일", color: "#8b5cf6" },
+                  ].map((k, i) => (
+                    <div key={i} style={{ background: P.bg, borderRadius: 8, padding: "10px 12px", borderLeft: `3px solid ${k.color}` }}>
+                      <div style={{ fontSize: 9, color: P.sub, fontWeight: 600 }}>{k.label}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: k.color, marginTop: 2 }}>{k.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Daily Trend */}
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: P.text }}>📈 일별 판매 추이</div>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={(detail.daily as any[]).map((d: any) => ({ ...d, dt: String(d.dt).slice(5) }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                      <XAxis dataKey="dt" tick={{ fontSize: 9, fill: P.sub }} />
+                      <YAxis tick={{ fontSize: 9, fill: P.sub }} width={36} />
+                      <Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11 }}
+                        formatter={(v: any, name: string) => [name === "cnt" ? v + "건" : fmtAmt(Number(v)), name === "cnt" ? "건수" : "매출"]} />
+                      <Line type="monotone" dataKey="cnt" stroke={P.accent} strokeWidth={2.5} dot={{ r: 2.5 }} name="cnt" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Gender + Age + Platform */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+                  {/* Gender Pie */}
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>👤 성별</div>
+                    <ResponsiveContainer width="100%" height={140}>
+                      <PieChart>
+                        <Pie data={detail.by_gender} dataKey="cnt" nameKey="label" cx="50%" cy="50%" outerRadius={50} innerRadius={25}
+                          label={({ label, percent }: any) => `${label} ${(percent * 100).toFixed(0)}%`} labelLine={{ strokeWidth: 1 }} style={{ fontSize: 9 }}>
+                          {(detail.by_gender as any[]).map((_: any, i: number) => <Cell key={i} fill={["#3b82f6", "#f59e0b", "#94a3b8"][i]} />)}
+                        </Pie>
+                        <Tooltip contentStyle={{ fontSize: 10, borderRadius: 6 }} formatter={(v: any) => [v + "건"]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Age Bar */}
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>📊 연령대</div>
+                    <ResponsiveContainer width="100%" height={140}>
+                      <BarChart data={detail.by_age} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.05)" />
+                        <XAxis type="number" tick={{ fontSize: 8, fill: P.sub }} />
+                        <YAxis type="category" dataKey="label" tick={{ fontSize: 9, fill: P.sub }} width={30} />
+                        <Tooltip contentStyle={{ fontSize: 10, borderRadius: 6 }} formatter={(v: any) => [v + "건"]} />
+                        <Bar dataKey="cnt" radius={[0, 3, 3, 0]}>
+                          {(detail.by_age as any[]).map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Platform */}
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>💳 제휴처</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>
+                      {(detail.by_platform as any[]).map((p: any, i: number) => {
+                        const total = (detail.by_platform as any[]).reduce((s: number, x: any) => s + x.cnt, 0);
+                        const pct = total > 0 ? (p.cnt / total * 100) : 0;
+                        return (
+                          <div key={i}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 3 }}>
+                              <span style={{ fontWeight: 600 }}>{p.label}</span>
+                              <span style={{ color: P.sub }}>{fmt(p.cnt)}건 ({pct.toFixed(0)}%)</span>
+                            </div>
+                            <div style={{ height: 6, background: "rgba(0,0,0,.04)", borderRadius: 3, overflow: "hidden" }}>
+                              <div style={{ height: "100%", background: CHART_COLORS[i], borderRadius: 3, width: `${pct}%`, transition: "width .3s" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       {elapsedMs && (
