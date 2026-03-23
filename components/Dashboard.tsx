@@ -157,6 +157,15 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports" | "shopping">("audience");
   const isAdmin = user.role === "admin";
 
+  /* month range filter */
+  const [ymPreset, setYmPreset] = useState<number>(0);
+  const [ymCustomFrom, setYmCustomFrom] = useState("");
+  const [ymCustomTo, setYmCustomTo] = useState("");
+  const [useYmCustom, setUseYmCustom] = useState(false);
+
+  const ymFrom = useYmCustom && ymCustomFrom ? ymCustomFrom : ymPreset > 0 ? (() => { const d = new Date(); d.setMonth(d.getMonth() - ymPreset); return d.toISOString().slice(0, 7); })() : undefined;
+  const ymTo = useYmCustom && ymCustomTo ? ymCustomTo : ymPreset > 0 ? new Date().toISOString().slice(0, 7) : undefined;
+
   const [exportOpen, setExportOpen] = useState(false);
   const [exportName, setExportName] = useState("");
   const [exportMemo, setExportMemo] = useState("");
@@ -179,6 +188,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     if (sidos.length) p.set("sido", sidos.join(","));
     if (sexes.length) p.set("sex", sexes.join(","));
     if (ages.length) p.set("age", ages.join(","));
+    if (ymFrom) p.set("ym_from", ymFrom);
+    if (ymTo) p.set("ym_to", ymTo);
     const qs = p.toString();
     return `/api/dashboard${qs ? "?" + qs : ""}`;
   }
@@ -261,7 +272,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     saveHistory();
   }, [exportResult]);
 
-  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); };
+  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setYmPreset(0); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
 
   /* chart data */
   const ageChart = useMemo(() => {
@@ -376,6 +387,28 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <DropdownMulti options={availableMiddles.map(m => ({ value: m.middle, label: `${m.middle} (${m.codeCount})` }))} selected={middleCats} onChange={setMiddleCats} placeholder="중분류" />
           )}
         </div>
+
+        {/* 조회기간 */}
+        {(tab === "audience" || tab === "spending" || tab === "cards") && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>기간</span>
+            {[{ m: 0, label: "전체" }, { m: 1, label: "1개월" }, { m: 3, label: "3개월" }, { m: 6, label: "6개월" }].map(o => (
+              <ToggleChip key={o.m} label={o.label} active={!useYmCustom && ymPreset === o.m} onClick={() => { setYmPreset(o.m); setUseYmCustom(false); }} />
+            ))}
+            <ToggleChip label="직접선택" active={useYmCustom} onClick={() => setUseYmCustom(true)} />
+            {useYmCustom && (
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
+                <input type="month" value={ymCustomFrom} onChange={e => setYmCustomFrom(e.target.value)}
+                  min="2025-09" max="2026-03"
+                  style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none", cursor: "pointer" }} />
+                <span style={{ fontSize: 10, color: P.sub }}>~</span>
+                <input type="month" value={ymCustomTo} onChange={e => setYmCustomTo(e.target.value)}
+                  min={ymCustomFrom || "2025-09"} max="2026-03"
+                  style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none", cursor: "pointer" }} />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -501,8 +534,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
       </>)}
 
-      {tab === "spending" && <SpendingTab sido={sidos.length ? sidos[0] : "전체"} sex={sexes.length ? sexes[0] : "all"} age={ages.length ? ages[0] : "all"} />}
-      {tab === "cards" && <CardComparisonTab />}
+      {tab === "spending" && <SpendingTab sido={sidos.length ? sidos[0] : "전체"} sex={sexes.length ? sexes[0] : "all"} age={ages.length ? ages[0] : "all"} ymFrom={ymFrom} ymTo={ymTo} />}
+      {tab === "cards" && <CardComparisonTab ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
       {tab === "shopping" && <ShoppingProductsTab />}
 

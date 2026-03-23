@@ -6,12 +6,18 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const months = searchParams.get("months") || "6";
+  const ymFrom = searchParams.get("ym_from") || undefined;
+  const ymTo = searchParams.get("ym_to") || undefined;
 
   if (!SUPABASE_ANON_KEY) {
     return NextResponse.json({ success: false, error: "Missing SUPABASE_ANON_KEY" }, { status: 500 });
   }
 
   try {
+    const body: Record<string, any> = { p_months: parseInt(months) };
+    if (ymFrom) body.p_ym_from = ymFrom;
+    if (ymTo) body.p_ym_to = ymTo;
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_card_comparison`, {
       method: "POST",
       headers: {
@@ -19,7 +25,7 @@ export async function GET(req: NextRequest) {
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ p_months: parseInt(months) }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {

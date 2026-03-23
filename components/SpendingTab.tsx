@@ -30,13 +30,17 @@ interface Props {
   sido: string;
   sex: string;
   age: string;
+  ymFrom?: string;
+  ymTo?: string;
 }
 
-export default function SpendingTab({ sido, sex, age }: Props) {
+export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
   const p = new URLSearchParams();
   if (sido !== "전체") p.set("sido", sido);
   if (sex !== "all") p.set("sex", sex);
   if (age !== "all") p.set("age", age);
+  if (ymFrom) p.set("ym_from", ymFrom);
+  if (ymTo) p.set("ym_to", ymTo);
   const qs = p.toString();
   const url = `/api/spending${qs ? "?" + qs : ""}`;
 

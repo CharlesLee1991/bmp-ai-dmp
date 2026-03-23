@@ -39,10 +39,14 @@ function fmtAmt(n: number): string {
   return n.toLocaleString();
 }
 
-export default function CardComparisonTab() {
+export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; ymTo?: string }) {
   const [months, setMonths] = useState(6);
 
-  const url = `/api/cards?months=${months}`;
+  const p = new URLSearchParams();
+  p.set("months", String(months));
+  if (ymFrom) p.set("ym_from", ymFrom);
+  if (ymTo) p.set("ym_to", ymTo);
+  const url = `/api/cards?${p}`;
   const { data: apiData, isLoading, error } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,

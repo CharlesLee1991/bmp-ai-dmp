@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
   const sido = searchParams.get("sido") || undefined;
   const sex = searchParams.get("sex") || undefined;
   const age_group = searchParams.get("age") || undefined;
+  const ymFrom = searchParams.get("ym_from") || undefined;
+  const ymTo = searchParams.get("ym_to") || undefined;
 
   if (!SUPABASE_ANON_KEY) {
     return NextResponse.json({ success: false, error: "Missing SUPABASE_ANON_KEY" }, { status: 500 });
@@ -18,6 +20,8 @@ export async function GET(req: NextRequest) {
     if (sido) body.p_sido = sido;
     if (sex) body.p_sex = sex;
     if (age_group) body.p_age_group = age_group;
+    if (ymFrom) body.p_ym_from = ymFrom;
+    if (ymTo) body.p_ym_to = ymTo;
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_spending_trend`, {
       method: "POST",
