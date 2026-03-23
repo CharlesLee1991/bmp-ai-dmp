@@ -158,7 +158,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const isAdmin = user.role === "admin";
 
   /* month range filter */
-  const [ymPreset, setYmPreset] = useState<number>(0);
+  const [ymPreset, setYmPreset] = useState<number>(12);
   const [ymCustomFrom, setYmCustomFrom] = useState("");
   const [ymCustomTo, setYmCustomTo] = useState("");
   const [useYmCustom, setUseYmCustom] = useState(false);
@@ -272,7 +272,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     saveHistory();
   }, [exportResult]);
 
-  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setYmPreset(0); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
+  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
 
   /* chart data */
   const ageChart = useMemo(() => {
@@ -392,7 +392,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {(tab === "audience" || tab === "spending" || tab === "cards") && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>기간</span>
-            {[{ m: 0, label: "전체" }, { m: 1, label: "1개월" }, { m: 3, label: "3개월" }, { m: 6, label: "6개월" }].map(o => (
+            {[{ m: 12, label: "1년" }, { m: 1, label: "1개월" }, { m: 3, label: "3개월" }, { m: 6, label: "6개월" }].map(o => (
               <ToggleChip key={o.m} label={o.label} active={!useYmCustom && ymPreset === o.m} onClick={() => { setYmPreset(o.m); setUseYmCustom(false); }} />
             ))}
             <ToggleChip label="직접선택" active={useYmCustom} onClick={() => setUseYmCustom(true)} />
