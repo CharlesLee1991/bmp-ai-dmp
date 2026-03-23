@@ -9,6 +9,8 @@ export async function GET(req: NextRequest) {
   const gender = searchParams.get("gender") || null;
   const ageGroup = searchParams.get("age_group") || null;
   const limit = searchParams.get("limit") || "100";
+  const dateFrom = searchParams.get("from") || null;
+  const dateTo = searchParams.get("to") || null;
 
   if (!SUPABASE_ANON_KEY) {
     return NextResponse.json({ success: false, error: "Missing SUPABASE_ANON_KEY" }, { status: 500 });
@@ -21,6 +23,8 @@ export async function GET(req: NextRequest) {
     };
     if (gender) body.p_gender = gender;
     if (ageGroup) body.p_age_group = ageGroup;
+    if (dateFrom) body.p_date_from = dateFrom;
+    if (dateTo) body.p_date_to = dateTo;
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_shopping_products`, {
       method: "POST",

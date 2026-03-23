@@ -74,9 +74,9 @@ const AGE_OPTIONS = [
 ];
 
 const PERIOD_OPTIONS = [
-  { id: 7, label: "7일" },
-  { id: 14, label: "14일" },
-  { id: 30, label: "30일" },
+  { id: 7, label: "1주" },
+  { id: 14, label: "2주" },
+  { id: 28, label: "4주" },
 ];
 
 export default function ShoppingProductsTab() {
@@ -86,9 +86,17 @@ export default function ShoppingProductsTab() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"cnt" | "revenue" | "avg_price" | "change">("cnt");
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
 
   const params = new URLSearchParams();
-  params.set("days", String(days));
+  if (useCustom && customFrom && customTo) {
+    params.set("from", customFrom);
+    params.set("to", customTo);
+  } else {
+    params.set("days", String(days));
+  }
   if (gender) params.set("gender", gender);
   if (ageGroup) params.set("age_group", ageGroup);
 
@@ -157,9 +165,21 @@ export default function ShoppingProductsTab() {
           {AGE_OPTIONS.map(o => <Chip key={o.id} label={o.label} active={ageGroup === o.id} onClick={() => setAgeGroup(o.id)} />)}
         </div>
         <span style={{ width: 1, height: 24, background: P.border, alignSelf: "center" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, width: 32 }}>기간</span>
-          {PERIOD_OPTIONS.map(o => <Chip key={o.id} label={o.label} active={days === o.id} onClick={() => setDays(o.id)} />)}
+          {PERIOD_OPTIONS.map(o => <Chip key={o.id} label={o.label} active={!useCustom && days === o.id} onClick={() => { setDays(o.id); setUseCustom(false); }} />)}
+          <Chip label="직접선택" active={useCustom} onClick={() => setUseCustom(true)} />
+          {useCustom && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                min="2025-12-16" max="2026-03-17"
+                style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none", cursor: "pointer" }} />
+              <span style={{ fontSize: 10, color: P.sub }}>~</span>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                min={customFrom || "2025-12-16"} max="2026-03-17"
+                style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none", cursor: "pointer" }} />
+            </div>
+          )}
         </div>
         {isLoading && <span style={{ fontSize: 10, color: P.accent, fontWeight: 600, alignSelf: "center" }}>Loading...</span>}
       </div>
@@ -458,7 +478,7 @@ export default function ShoppingProductsTab() {
       {/* Footer */}
       {elapsedMs && (
         <div style={{ textAlign: "right", padding: "8px 0", fontSize: 10, color: "rgba(107,122,153,.5)" }}>
-          RPC {elapsedMs}ms · {gender ? (gender === "M" ? "남성" : "여성") : "전체"} · {ageGroup || "전연령"} · {days}일
+          RPC {elapsedMs}ms · {gender ? (gender === "M" ? "남성" : "여성") : "전체"} · {ageGroup || "전연령"} · {useCustom && customFrom ? `${customFrom}~${customTo}` : days + "일"}
         </div>
       )}
     </div>
