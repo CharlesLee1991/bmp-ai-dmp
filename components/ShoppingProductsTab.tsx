@@ -133,6 +133,18 @@ export default function ShoppingProductsTab() {
   const elapsedMs = data?.elapsed_ms;
   const period = data?.period;
 
+  const filteredSummary = useMemo(() => {
+    if (excludedCategories.size === 0 || !summary) return null;
+    const totalCnt = enriched.reduce((s, p) => s + p.cnt, 0);
+    const totalRev = enriched.reduce((s, p) => s + p.revenue, 0);
+    return {
+      total_purchases: totalCnt,
+      total_revenue: totalRev,
+      unique_products: enriched.length,
+      avg_price: totalCnt > 0 ? Math.round(totalRev / totalCnt) : 0,
+    };
+  }, [enriched, excludedCategories, summary]);
+
   /* Product detail modal data */
   const { data: detailData, isLoading: detailLoading } = useSWR(
     selectedProduct ? `/api/shopping/detail?title=${encodeURIComponent(selectedProduct)}&days=30` : null,
@@ -236,14 +248,14 @@ export default function ShoppingProductsTab() {
       {/* KPI CARDS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
         {[
-          { label: "전환 건수", value: summary ? fmt(summary.total_purchases) : "—", color: P.accent },
-          { label: "총 매출", value: summary ? fmtAmt(summary.total_revenue) : "—", color: "#3b82f6" },
-          { label: "상위 상품수", value: summary ? fmt(summary.unique_products) : "—", color: "#f59e0b" },
-          { label: "평균 단가", value: summary?.avg_price ? "₩" + summary.avg_price.toLocaleString() : "—", color: "#8b5cf6" },
+          { label: "전환 건수", value: (filteredSummary || summary) ? fmt((filteredSummary || summary).total_purchases) : "—", color: P.accent },
+          { label: "총 매출", value: (filteredSummary || summary) ? fmtAmt((filteredSummary || summary).total_revenue) : "—", color: "#3b82f6" },
+          { label: "상위 상품수", value: (filteredSummary || summary) ? fmt((filteredSummary || summary).unique_products) : "—", color: "#f59e0b" },
+          { label: "평균 단가", value: (filteredSummary || summary)?.avg_price ? "₩" + (filteredSummary || summary).avg_price.toLocaleString() : "—", color: "#8b5cf6" },
         ].map((kpi, i) => (
           <div key={i} style={{ background: P.card, borderRadius: 10, padding: "14px 16px", border: `1px solid ${P.border}`, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: kpi.color, borderRadius: "0 2px 2px 0" }} />
-            <div style={{ fontSize: 10, color: P.sub, marginBottom: 6, fontWeight: 500 }}>{kpi.label}</div>
+            <div style={{ fontSize: 10, color: P.sub, marginBottom: 6, fontWeight: 500 }}>{kpi.label}{filteredSummary && <span style={{ color: "#ef4444", marginLeft: 4 }}>필터</span>}</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: kpi.color, letterSpacing: "-0.03em" }}>{kpi.value}</div>
             {period && i === 0 && <div style={{ fontSize: 10, color: P.sub, marginTop: 4 }}>{period.from} ~ {period.to}</div>}
           </div>
