@@ -89,6 +89,7 @@ export default function ShoppingProductsTab() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [useCustom, setUseCustom] = useState(false);
+  const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
 
   const params = new URLSearchParams();
   if (useCustom && customFrom && customTo) {
@@ -118,6 +119,7 @@ export default function ShoppingProductsTab() {
         : (p.prev_cnt === 0 && p.cnt > 0 ? 999 : 0);
       return { ...p, change, category: categorize(p.title), isNew: p.prev_cnt === 0 };
     });
+    if (excludedCategories.size > 0) list = list.filter(p => !excludedCategories.has(p.category));
     if (search) list = list.filter(p => p.title.includes(search));
     return [...list].sort((a, b) => {
       if (sortBy === "cnt") return b.cnt - a.cnt;
@@ -125,7 +127,7 @@ export default function ShoppingProductsTab() {
       if (sortBy === "avg_price") return b.avg_price - a.avg_price;
       return b.change - a.change;
     });
-  }, [products, search, sortBy]);
+  }, [products, search, sortBy, excludedCategories]);
 
   const totalPlatformCnt = platforms.reduce((s, p) => s + p.cnt, 0);
   const elapsedMs = data?.elapsed_ms;
@@ -182,6 +184,53 @@ export default function ShoppingProductsTab() {
           )}
         </div>
         {isLoading && <span style={{ fontSize: 10, color: P.accent, fontWeight: 600, alignSelf: "center" }}>Loading...</span>}
+      </div>
+
+      {/* EXCLUDE CATEGORIES */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "10px 0", marginBottom: 4 }}>
+        <span style={{ fontSize: 10, color: P.sub, fontWeight: 700 }}>🚫 제외</span>
+        <button onClick={() => {
+          const foodCats = ["유제품", "과일", "채소", "라면/면류", "음료/생수", "커피", "가공식품"];
+          setExcludedCategories(prev => {
+            const allFood = foodCats.every(c => prev.has(c));
+            const next = new Set(prev);
+            if (allFood) { foodCats.forEach(c => next.delete(c)); } else { foodCats.forEach(c => next.add(c)); }
+            return next;
+          });
+        }} style={{
+          padding: "4px 12px", borderRadius: 16, fontSize: 11, fontWeight: 700, cursor: "pointer",
+          border: `1.5px solid ${["유제품","과일","채소","라면/면류","음료/생수","커피","가공식품"].every(c => excludedCategories.has(c)) ? "#ef4444" : P.border}`,
+          background: ["유제품","과일","채소","라면/면류","음료/생수","커피","가공식품"].every(c => excludedCategories.has(c)) ? "#fef2f2" : "transparent",
+          color: ["유제품","과일","채소","라면/면류","음료/생수","커피","가공식품"].every(c => excludedCategories.has(c)) ? "#dc2626" : P.sub,
+          transition: "all .15s"
+        }}>🍽️ 식음료 전체</button>
+        <span style={{ width: 1, height: 18, background: P.border }} />
+        {Object.keys(CAT_COLORS).map(cat => {
+          const active = excludedCategories.has(cat);
+          const cc = CAT_COLORS[cat];
+          return (
+            <button key={cat} onClick={() => {
+              setExcludedCategories(prev => {
+                const next = new Set(prev);
+                if (next.has(cat)) next.delete(cat); else next.add(cat);
+                return next;
+              });
+            }} style={{
+              padding: "3px 10px", borderRadius: 14, fontSize: 10, fontWeight: active ? 700 : 500, cursor: "pointer",
+              border: `1px solid ${active ? "#ef4444" : P.border}`,
+              background: active ? "#fef2f2" : "transparent",
+              color: active ? "#dc2626" : cc.fg,
+              textDecoration: active ? "line-through" : "none",
+              transition: "all .15s", userSelect: "none"
+            }}>{cat}</button>
+          );
+        })}
+        {excludedCategories.size > 0 && (
+          <button onClick={() => setExcludedCategories(new Set())} style={{
+            padding: "3px 10px", borderRadius: 14, fontSize: 10, fontWeight: 600, cursor: "pointer",
+            border: `1px solid ${P.border}`, background: "#f1f5f9", color: P.sub, transition: "all .15s"
+          }}>✕ 초기화</button>
+        )}
       </div>
 
       {/* KPI CARDS */}
