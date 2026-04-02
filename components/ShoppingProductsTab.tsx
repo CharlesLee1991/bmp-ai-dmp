@@ -30,18 +30,25 @@ function fmtAmt(n: number): string {
 
 function categorize(title: string): string {
   const t = title.toLowerCase();
-  if (/우유|요거트|요구르트|저지방/.test(t)) return "유제품";
-  if (/딸기|바나나|블루베리|사과|포도|귤|오렌지/.test(t)) return "과일";
-  if (/양파|애호박|오이|고추|당근|감자|배추|양상추|브로콜리|부추|시금치|청경채|봄동|알배기|팽이|콩나물|숙주|대파|마늘|양배추|무$/.test(t)) return "채소";
-  if (/라면|신라면|안성탕면|짜파게티|사발면|육개장/.test(t)) return "라면/면류";
-  if (/생수|샘물|삼다수|탐사수|스파클/.test(t)) return "음료/생수";
-  if (/커피|맥심/.test(t)) return "커피";
-  if (/햇반|두부|오리|식빵/.test(t)) return "가공식품";
-  if (/갤럭시|삼성|아이폰|보호필름|휴대폰/.test(t)) return "전자기기";
-  if (/실내화|의류|신발/.test(t)) return "패션/아동";
-  if (/수세미|세제|화장지|세탁/.test(t)) return "생활용품";
+  if (/우유|요거트|요구르트|저지방|치즈|버터|크림/.test(t)) return "유제품";
+  if (/딸기|바나나|블루베리|사과|포도|귤|오렌지|수박|참외|멜론|키위|망고|자두|복숭아|배$|레몬|라임|체리|감$/.test(t)) return "과일";
+  if (/양파|애호박|오이|고추|당근|감자|배추|양상추|브로콜리|부추|시금치|청경채|봄동|알배기|팽이|콩나물|숙주|대파|마늘|양배추|무$|토마토|상추|버섯|파프리카|피망|깻잎|고구마|쑥갓|미나리|셀러리|아스파라거스|비타민|새싹|옥수수/.test(t)) return "채소";
+  if (/라면|신라면|안성탕면|짜파게티|사발면|육개장|너구리|진라면|불닭|열라면|짬뽕|참깨라면|튀김우동|칼국수|쫄면|냉면|비빔면|국수/.test(t)) return "라면/면류";
+  if (/생수|샘물|삼다수|탐사수|스파클|주스|콜라|사이다|이온음료|탄산|음료|게토레이|파워에이드|비타500|에너지드링크|식혜|수정과|매실/.test(t)) return "음료/생수";
+  if (/커피|맥심|카누|네스카페|아메리카노|라떼|에스프레소|콜드브루|믹스커피/.test(t)) return "커피";
+  if (/과자|빼빼로|오예스|초코파이|칩$|새우깡|감자깡|포카칩|프링글스|꼬깔콘|다이제|쿠키|비스킷|젤리|사탕|껌|초콜릿|파슐랭|웨하스|크래커|스낵|캔디|마카롱|케이크|파이|타르트|도넛|빵$|모닝빵|식빵/.test(t)) return "간식/과자";
+  if (/햇반|두부|어묵|김$|김밥|소시지|햄$|베이컨|만두|떡볶이|떡$|오뎅|순대|핫도그|냉동|통조림|참치캔|스팸|맛살|피자|치킨|돈까스|탕수육|볶음밥/.test(t)) return "가공식품";
+  if (/계란|대란|중란|소란|달걀|왕란/.test(t)) return "달걀";
+  if (/맛술|간장|된장|고추장|소금|설탕|식초|참기름|들기름|올리브유|케첩|마요네즈|소스|드레싱|후추|카레|양념|조미료|미림|굴소스|쌈장/.test(t)) return "조미료/양념";
+  if (/쌀$|잡곡|현미|찹쌀|보리|귀리|오트밀|시리얼|그래놀라/.test(t)) return "곡물/시리얼";
+  if (/돼지|소고기|닭고기|삼겹살|목살|갈비|안심|등심|오리/.test(t)) return "정육";
+  if (/갤럭시|삼성|아이폰|보호필름|휴대폰|충전기|이어폰|케이블|배터리/.test(t)) return "전자기기";
+  if (/실내화|의류|신발|양말|속옷|티셔츠|바지|원피스/.test(t)) return "패션/아동";
+  if (/수세미|세제|화장지|세탁|샴푸|린스|바디워시|칫솔|치약|물티슈|휴지|키친타올/.test(t)) return "생활용품";
   return "기타";
 }
+
+const FOOD_CATEGORIES = ["유제품", "과일", "채소", "라면/면류", "음료/생수", "커피", "간식/과자", "가공식품", "달걀", "조미료/양념", "곡물/시리얼", "정육"];
 
 const CAT_COLORS: Record<string, { bg: string; fg: string }> = {
   "유제품": { bg: "#e0f2fe", fg: "#0284c7" },
@@ -50,7 +57,12 @@ const CAT_COLORS: Record<string, { bg: string; fg: string }> = {
   "라면/면류": { bg: "#fee2e2", fg: "#dc2626" },
   "음료/생수": { bg: "#e0e7ff", fg: "#4f46e5" },
   "커피": { bg: "#fde68a", fg: "#92400e" },
+  "간식/과자": { bg: "#fff7ed", fg: "#c2410c" },
   "가공식품": { bg: "#f3e8ff", fg: "#7c3aed" },
+  "달걀": { bg: "#fefce8", fg: "#a16207" },
+  "조미료/양념": { bg: "#fdf2f8", fg: "#a21caf" },
+  "곡물/시리얼": { bg: "#ecfdf5", fg: "#047857" },
+  "정육": { bg: "#fef2f2", fg: "#b91c1c" },
   "전자기기": { bg: "#ede9fe", fg: "#7c3aed" },
   "패션/아동": { bg: "#fce7f3", fg: "#db2777" },
   "생활용품": { bg: "#f0fdf4", fg: "#15803d" },
@@ -202,18 +214,17 @@ export default function ShoppingProductsTab() {
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "10px 0", marginBottom: 4 }}>
         <span style={{ fontSize: 10, color: P.sub, fontWeight: 700 }}>🚫 제외</span>
         <button onClick={() => {
-          const foodCats = ["유제품", "과일", "채소", "라면/면류", "음료/생수", "커피", "가공식품"];
           setExcludedCategories(prev => {
-            const allFood = foodCats.every(c => prev.has(c));
+            const allFood = FOOD_CATEGORIES.every(c => prev.has(c));
             const next = new Set(prev);
-            if (allFood) { foodCats.forEach(c => next.delete(c)); } else { foodCats.forEach(c => next.add(c)); }
+            if (allFood) { FOOD_CATEGORIES.forEach(c => next.delete(c)); } else { FOOD_CATEGORIES.forEach(c => next.add(c)); }
             return next;
           });
         }} style={{
           padding: "4px 12px", borderRadius: 16, fontSize: 11, fontWeight: 700, cursor: "pointer",
-          border: `1.5px solid ${["유제품","과일","채소","라면/면류","음료/생수","커피","가공식품"].every(c => excludedCategories.has(c)) ? "#ef4444" : P.border}`,
-          background: ["유제품","과일","채소","라면/면류","음료/생수","커피","가공식품"].every(c => excludedCategories.has(c)) ? "#fef2f2" : "transparent",
-          color: ["유제품","과일","채소","라면/면류","음료/생수","커피","가공식품"].every(c => excludedCategories.has(c)) ? "#dc2626" : P.sub,
+          border: `1.5px solid ${FOOD_CATEGORIES.every(c => excludedCategories.has(c)) ? "#ef4444" : P.border}`,
+          background: FOOD_CATEGORIES.every(c => excludedCategories.has(c)) ? "#fef2f2" : "transparent",
+          color: FOOD_CATEGORIES.every(c => excludedCategories.has(c)) ? "#dc2626" : P.sub,
           transition: "all .15s"
         }}>🍽️ 식음료 전체</button>
         <span style={{ width: 1, height: 18, background: P.border }} />
