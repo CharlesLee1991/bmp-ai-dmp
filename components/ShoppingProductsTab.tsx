@@ -245,6 +245,83 @@ export default function ShoppingProductsTab() {
         )}
       </div>
 
+      {/* TOP PRODUCTS TABLE */}
+      <div style={{ background: P.card, borderRadius: 12, border: `1px solid ${P.border}`, overflow: "hidden", marginBottom: 16 }}>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>🏆 인기 상품 TOP {enriched.length}</h3>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="text" placeholder="🔍 상품명 검색..." value={search} onChange={e => setSearch(e.target.value)}
+              style={{ padding: "5px 12px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, width: 180, outline: "none" }} />
+            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
+              style={{ padding: "5px 10px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, background: "#fff", cursor: "pointer" }}>
+              <option value="cnt">건수순</option>
+              <option value="revenue">매출순</option>
+              <option value="avg_price">고가순</option>
+              <option value="change">WoW순</option>
+            </select>
+          </div>
+        </div>
+
+        {enriched.length > 0 ? (
+          <div style={{ maxHeight: 500, overflowY: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+              <thead>
+                <tr style={{ background: "#f8fafc", position: "sticky", top: 0 }}>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", width: 36 }}>#</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569" }}>상품명</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#475569", width: 60 }}>카테고리</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#475569", width: 60 }}>건수</th>
+                  <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: 700, color: "#475569", width: 70 }}>WoW</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#475569", width: 70 }}>매출</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#475569", width: 70 }}>평균가</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enriched.map((p, i) => {
+                  const cc = CAT_COLORS[p.category] || CAT_COLORS["기타"];
+                  const isUp = !p.isNew && p.change > 0;
+                  const isDown = !p.isNew && p.change < 0;
+                  return (
+                    <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                      onClick={() => setSelectedProduct(p.title)}
+                      onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                      <td style={{ padding: "6px 12px", fontWeight: 800, color: i < 3 ? P.accent : P.sub, fontSize: i < 3 ? 13 : 11 }}>
+                        {i < 3 ? ["🥇","🥈","🥉"][i] : i + 1}
+                      </td>
+                      <td style={{ padding: "6px 12px", fontWeight: 500, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {p.title}
+                      </td>
+                      <td style={{ padding: "6px 12px" }}>
+                        <span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, background: cc.bg, color: cc.fg }}>{p.category}</span>
+                      </td>
+                      <td style={{ padding: "6px 12px", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmt(p.cnt)}</td>
+                      <td style={{ padding: "6px 12px", textAlign: "center" }}>
+                        <span style={{
+                          display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700,
+                          background: p.isNew ? "#ede9fe" : isUp ? "#dcfce7" : isDown ? "#fee2e2" : "#f1f5f9",
+                          color: p.isNew ? "#7c3aed" : isUp ? "#16a34a" : isDown ? "#dc2626" : "#94a3b8",
+                        }}>
+                          {p.isNew ? "NEW" : (isUp ? "↑" : isDown ? "↓" : "→")}{!p.isNew && p.change + "%"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtAmt(p.revenue)}</td>
+                      <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#64748b" }}>₩{p.avg_price.toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: 60, color: P.sub }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>🛒</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>데이터 적재 대기 중</div>
+            <div style={{ fontSize: 11, marginTop: 4 }}>BQ cube_shopping_daily → FDW → 캐시 파이프라인 가동 후 표시됩니다</div>
+          </div>
+        )}
+      </div>
+
       {/* KPI CARDS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
         {[
@@ -347,83 +424,6 @@ export default function ShoppingProductsTab() {
             </ResponsiveContainer>
           ) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
         </div>
-      </div>
-
-      {/* TOP PRODUCTS TABLE */}
-      <div style={{ background: P.card, borderRadius: 12, border: `1px solid ${P.border}`, overflow: "hidden" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>🏆 인기 상품 TOP {enriched.length}</h3>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="text" placeholder="🔍 상품명 검색..." value={search} onChange={e => setSearch(e.target.value)}
-              style={{ padding: "5px 12px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, width: 180, outline: "none" }} />
-            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
-              style={{ padding: "5px 10px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, background: "#fff", cursor: "pointer" }}>
-              <option value="cnt">건수순</option>
-              <option value="revenue">매출순</option>
-              <option value="avg_price">고가순</option>
-              <option value="change">WoW순</option>
-            </select>
-          </div>
-        </div>
-
-        {enriched.length > 0 ? (
-          <div style={{ maxHeight: 500, overflowY: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-              <thead>
-                <tr style={{ background: "#f8fafc", position: "sticky", top: 0 }}>
-                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", width: 36 }}>#</th>
-                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569" }}>상품명</th>
-                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#475569", width: 60 }}>카테고리</th>
-                  <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#475569", width: 60 }}>건수</th>
-                  <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: 700, color: "#475569", width: 70 }}>WoW</th>
-                  <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#475569", width: 70 }}>매출</th>
-                  <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#475569", width: 70 }}>평균가</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enriched.map((p, i) => {
-                  const cc = CAT_COLORS[p.category] || CAT_COLORS["기타"];
-                  const isUp = !p.isNew && p.change > 0;
-                  const isDown = !p.isNew && p.change < 0;
-                  return (
-                    <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
-                      onClick={() => setSelectedProduct(p.title)}
-                      onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                      <td style={{ padding: "6px 12px", fontWeight: 800, color: i < 3 ? P.accent : P.sub, fontSize: i < 3 ? 13 : 11 }}>
-                        {i < 3 ? ["🥇","🥈","🥉"][i] : i + 1}
-                      </td>
-                      <td style={{ padding: "6px 12px", fontWeight: 500, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {p.title}
-                      </td>
-                      <td style={{ padding: "6px 12px" }}>
-                        <span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, background: cc.bg, color: cc.fg }}>{p.category}</span>
-                      </td>
-                      <td style={{ padding: "6px 12px", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmt(p.cnt)}</td>
-                      <td style={{ padding: "6px 12px", textAlign: "center" }}>
-                        <span style={{
-                          display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700,
-                          background: p.isNew ? "#ede9fe" : isUp ? "#dcfce7" : isDown ? "#fee2e2" : "#f1f5f9",
-                          color: p.isNew ? "#7c3aed" : isUp ? "#16a34a" : isDown ? "#dc2626" : "#94a3b8",
-                        }}>
-                          {p.isNew ? "NEW" : (isUp ? "↑" : isDown ? "↓" : "→")}{!p.isNew && p.change + "%"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtAmt(p.revenue)}</td>
-                      <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#64748b" }}>₩{p.avg_price.toLocaleString()}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ textAlign: "center", padding: 60, color: P.sub }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>🛒</div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>데이터 적재 대기 중</div>
-            <div style={{ fontSize: 11, marginTop: 4 }}>BQ cube_shopping_daily → FDW → 캐시 파이프라인 가동 후 표시됩니다</div>
-          </div>
-        )}
       </div>
 
       {/* ── PRODUCT DETAIL MODAL ── */}
