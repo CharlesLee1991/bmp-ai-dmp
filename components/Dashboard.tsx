@@ -202,8 +202,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0;
-  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}`;
+  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0;
+  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}`;
   const { data: segData, isLoading: segLoading } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -326,7 +326,6 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (sidos.length) filterParts.push(sidos.length <= 3 ? sidos.map(s => s.replace(/특별시|광역시|특별자치시|특별자치도|도/g, "")).join(", ") : `${sidos.length}개 시도`);
   if (middleCats.length) filterParts.push(middleCats.join(", "));
   else if (majorCats.length) filterParts.push(majorCats.join(", "));
-  if (shopCats.length) filterParts.push("🛒" + shopCats.join(", "));
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
@@ -410,14 +409,6 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <DropdownMulti options={availableMiddles.map(m => ({ value: m.middle, label: `${m.middle} (${m.codeCount})` }))} selected={middleCats} onChange={setMiddleCats} placeholder="중분류" />
           )}
         </div>
-
-        {/* 쇼핑 카테고리 (선택 시만) */}
-        {shopCats.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>🛒</span>
-            {shopCats.map(c => <Tag key={`sc-${c}`} label={c} onRemove={() => setShopCats(shopCats.filter(x => x !== c))} />)}
-          </div>
-        )}
 
         {/* 조회기간 */}
         {(tab === "audience" || tab === "spending" || tab === "cards") && (
@@ -570,11 +561,11 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 TOP (최근 1주)</h3>
-                  {shopCats.length > 0 && <span style={{ padding: "3px 10px", borderRadius: 12, fontSize: 10, fontWeight: 700, background: P.glow, color: P.accent, border: `1px solid ${P.accent}44` }}>{shopCats.length}개 선택 · 타겟 전송 반영</span>}
-                  {shopCats.length > 0 && <button onClick={() => setShopCats([])} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid ${P.accent}33`, borderRadius: 12, padding: "2px 10px", cursor: "pointer", fontWeight: 600 }}>✕ 해제</button>}
+                  <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 (최근 1주)</h3>
+                  {shopCats.length > 0 && <span style={{ fontSize: 10, color: P.accent, fontWeight: 600 }}>{shopCats.length}개 선택됨</span>}
+                  {shopCats.length > 0 && <button onClick={() => setShopCats([])} style={{ fontSize: 10, color: P.sub, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>}
                 </div>
-                <span style={{ fontSize: 10, color: P.sub }}>클릭하여 선택 · 쿠팡 결제 기반 · {shopCategories.reduce((s, c) => s + c.cnt, 0).toLocaleString()}건</span>
+                <span style={{ fontSize: 10, color: P.sub }}>클릭 선택 → 🚀 타겟 전송 시 반영</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
                 {shopCategories.slice(0, 12).map((cat, i) => {
