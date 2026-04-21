@@ -7,7 +7,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell, LineChart, Line,
   ResponsiveContainer, Legend
 } from "recharts";
-import { fmt } from "@/lib/data";
+import { fmt, categorize, FOOD_CATEGORIES, SHOP_CAT_COLORS as CAT_COLORS } from "@/lib/data";
 
 const P = {
   bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
@@ -30,70 +30,6 @@ const CAT_EMOJI: Record<string, string> = {
   "채소": "🥬", "과일": "🍎", "유제품": "🥛", "라면/면류": "🍜", "음료/생수": "🥤",
   "커피": "☕", "간식/과자": "🍪", "가공식품": "🥫", "달걀": "🥚", "조미료/양념": "🧂",
   "곡물/시리얼": "🌾", "정육": "🥩", "생활용품": "🧴", "전자기기": "📱", "패션/아동": "👟", "기타": "📦"
-};
-
-function categorize(title: string): { major: string; minor: string } {
-  const t = title.toLowerCase();
-  if (/우유/.test(t)) return { major: "유제품", minor: "우유" };
-  if (/요거트|요구르트|요플레/.test(t)) return { major: "유제품", minor: "요거트" };
-  if (/치즈|버터|크림|저지방/.test(t)) return { major: "유제품", minor: "치즈/버터" };
-  if (/딸기/.test(t)) return { major: "과일", minor: "딸기" };
-  if (/바나나/.test(t)) return { major: "과일", minor: "바나나" };
-  if (/블루베리|체리/.test(t)) return { major: "과일", minor: "베리류" };
-  if (/사과|포도|귤|오렌지|수박|참외|멜론|키위|망고|자두|복숭아|배$|레몬|라임|감$/.test(t)) return { major: "과일", minor: "기타 과일" };
-  if (/양파|대파|마늘|쪽파|깐마늘/.test(t)) return { major: "채소", minor: "양념채소" };
-  if (/상추|시금치|배추|양배추|청경채|봄동|알배기|부추|깻잎|루꼴라/.test(t)) return { major: "채소", minor: "엽채류" };
-  if (/당근|감자|고구마|무$/.test(t)) return { major: "채소", minor: "근채류" };
-  if (/오이|고추|애호박|토마토|파프리카|피망|가지/.test(t)) return { major: "채소", minor: "과채류" };
-  if (/양상추|브로콜리|콩나물|숙주|팽이|버섯|옥수수|미나리|쑥갓|새싹|셀러리|아스파라거스|비타민/.test(t)) return { major: "채소", minor: "기타 채소" };
-  if (/사발면|컵라면|컵면/.test(t)) return { major: "라면/면류", minor: "컵라면" };
-  if (/라면|신라면|안성탕면|짜파게티|육개장|너구리|진라면|불닭|열라면|짬뽕|참깨라면/.test(t)) return { major: "라면/면류", minor: "봉지라면" };
-  if (/칼국수|쫄면|냉면|비빔면|국수|당면|스파게티면|우동/.test(t)) return { major: "라면/면류", minor: "생면/건면" };
-  if (/생수|샘물|삼다수|탐사수|스파클/.test(t)) return { major: "음료/생수", minor: "생수" };
-  if (/콜라|사이다|탄산/.test(t)) return { major: "음료/생수", minor: "탄산음료" };
-  if (/주스|이온음료|음료|게토레이|파워에이드|비타500|에너지드링크|식혜|수정과|매실|포카리/.test(t)) return { major: "음료/생수", minor: "기타 음료" };
-  if (/믹스커피|맥심|카누/.test(t)) return { major: "커피", minor: "믹스/스틱" };
-  if (/커피|네스카페|아메리카노|라떼|에스프레소|콜드브루/.test(t)) return { major: "커피", minor: "원두/RTD" };
-  if (/빵|식빵|모닝빵|모닝롤/.test(t)) return { major: "간식/과자", minor: "빵/베이커리" };
-  if (/초콜릿|초코/.test(t)) return { major: "간식/과자", minor: "초콜릿" };
-  if (/과자|빼빼로|오예스|초코파이|새우깡|감자깡|포카칩|프링글스|꼬깔콘|다이제|에이스|누룽지|파슐랭|파슬링|웨하스|크래커|스낵|칩$/.test(t)) return { major: "간식/과자", minor: "스낵/과자" };
-  if (/쿠키|비스킷|젤리|사탕|껌|캔디|마카롱|케이크|파이|타르트|도넛/.test(t)) return { major: "간식/과자", minor: "제과" };
-  if (/만두|교자/.test(t)) return { major: "가공식품", minor: "냉동식품" };
-  if (/참치캔|참치|스팸|통조림/.test(t)) return { major: "가공식품", minor: "통조림" };
-  if (/햇반|오뚜기밥|오뚜기 밥/.test(t)) return { major: "가공식품", minor: "즉석밥" };
-  if (/두부/.test(t)) return { major: "가공식품", minor: "두부" };
-  if (/어묵|오뎅|크래미|맛살/.test(t)) return { major: "가공식품", minor: "어묵/수산" };
-  if (/김$|김밥/.test(t)) return { major: "가공식품", minor: "김/김밥" };
-  if (/소시지|햄$|샌드위치햄|베이컨|핫도그/.test(t)) return { major: "가공식품", minor: "햄/소시지" };
-  if (/냉동|떡볶이|떡$|순대|피자|치킨|돈까스|탕수육|볶음밥|곰탕|사골|비비고/.test(t)) return { major: "가공식품", minor: "간편식" };
-  if (/계란|대란|중란|소란|달걀|왕란|특란|반숙란|메추리|훈제란|구운란/.test(t)) return { major: "달걀", minor: "달걀" };
-  if (/간장|된장|고추장|쌈장/.test(t)) return { major: "조미료/양념", minor: "장류" };
-  if (/참기름|들기름|올리브유|콩기름|식용유/.test(t)) return { major: "조미료/양념", minor: "식용유" };
-  if (/맛술|소금|설탕|식초|케첩|마요네즈|마요네스|소스|드레싱|후추|카레|양념|조미료|미림|굴소스|참치액/.test(t)) return { major: "조미료/양념", minor: "기타 양념" };
-  if (/쌀$|잡곡|현미|찹쌀|보리|귀리|오트밀|시리얼|그래놀라/.test(t)) return { major: "곡물/시리얼", minor: "곡물/시리얼" };
-  if (/한우|소고기|등심|안심|국거리/.test(t)) return { major: "정육", minor: "소" };
-  if (/삼겹살|목살|돼지/.test(t)) return { major: "정육", minor: "돼지" };
-  if (/닭|오리|하림/.test(t)) return { major: "정육", minor: "닭/오리" };
-  if (/갈비/.test(t)) return { major: "정육", minor: "갈비" };
-  if (/갤럭시|삼성|아이폰|보호필름|휴대폰|충전기|이어폰|케이블|배터리|마우스|키보드/.test(t)) return { major: "전자기기", minor: "전자기기" };
-  if (/실내화|의류|신발|양말|속옷|티셔츠|바지|원피스/.test(t)) return { major: "패션/아동", minor: "패션/아동" };
-  if (/화장지|롤화장지|휴지|키친타올/.test(t)) return { major: "생활용품", minor: "화장지/키친타올" };
-  if (/세제|세탁|섬유유연|세정제/.test(t)) return { major: "생활용품", minor: "세제/세탁" };
-  if (/샴푸|린스|바디워시|로션|립밤|세타필/.test(t)) return { major: "생활용품", minor: "바디/스킨케어" };
-  if (/수세미|칫솔|치약|물티슈|구강청결제|가그린|리스테린|핸드워시|손세정|배변패드|방향제|탈취/.test(t)) return { major: "생활용품", minor: "위생용품" };
-  return { major: "기타", minor: "기타" };
-}
-
-const FOOD_CATEGORIES = ["유제품", "과일", "채소", "라면/면류", "음료/생수", "커피", "간식/과자", "가공식품", "달걀", "조미료/양념", "곡물/시리얼", "정육"];
-const CAT_COLORS: Record<string, { bg: string; fg: string }> = {
-  "채소": { bg: "#dcfce7", fg: "#16a34a" }, "과일": { bg: "#fef3c7", fg: "#d97706" },
-  "유제품": { bg: "#e0f2fe", fg: "#0284c7" }, "라면/면류": { bg: "#fee2e2", fg: "#dc2626" },
-  "음료/생수": { bg: "#e0e7ff", fg: "#4f46e5" }, "커피": { bg: "#fde68a", fg: "#92400e" },
-  "간식/과자": { bg: "#fff7ed", fg: "#c2410c" }, "가공식품": { bg: "#f3e8ff", fg: "#7c3aed" },
-  "달걀": { bg: "#fefce8", fg: "#a16207" }, "조미료/양념": { bg: "#fdf2f8", fg: "#a21caf" },
-  "곡물/시리얼": { bg: "#ecfdf5", fg: "#047857" }, "정육": { bg: "#fef2f2", fg: "#b91c1c" },
-  "전자기기": { bg: "#ede9fe", fg: "#6d28d9" }, "패션/아동": { bg: "#fce7f3", fg: "#db2777" },
-  "생활용품": { bg: "#f0fdf4", fg: "#15803d" }, "기타": { bg: "#f1f5f9", fg: "#64748b" },
 };
 
 const GENDER_OPTIONS = [{ id: "", label: "전체" }, { id: "M", label: "남성" }, { id: "F", label: "여성" }];

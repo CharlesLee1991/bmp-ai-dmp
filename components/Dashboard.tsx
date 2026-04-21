@@ -9,6 +9,7 @@ import {
 import {
   PARTNER_MAP, AGE_LABEL, AGE_ORDER, SIDO_LIST,
   REGION_DATA, INDUSTRY_DATA, SEOUL_SGG, fmt,
+  categorize, SHOP_CAT_COLORS,
   type RegionRow, type IndustryRow, type SggRow
 } from "@/lib/data";
 import SpendingTab from "./SpendingTab";
@@ -217,6 +218,25 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     { revalidateOnFocus: false, dedupingInterval: 15000, keepPreviousData: true }
   );
   const segEstimate = segData?.success ? segData.data : null;
+
+  /* shopping categories for audience tab */
+  const { data: shopData } = useSWR(
+    tab === "audience" ? "/api/shopping?days=7" : null,
+    fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
+  );
+  const shopCategories = useMemo(() => {
+    if (!shopData?.success || !shopData.top_products) return [];
+    const catMap: Record<string, { cnt: number; revenue: number }> = {};
+    for (const p of shopData.top_products) {
+      const { major } = categorize(p.title);
+      if (!catMap[major]) catMap[major] = { cnt: 0, revenue: 0 };
+      catMap[major].cnt += p.cnt;
+      catMap[major].revenue += p.revenue;
+    }
+    return Object.entries(catMap)
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.cnt - a.cnt);
+  }, [shopData]);
 
   /* export */
   const handleExport = async (env: "dev" | "prod") => {
@@ -532,6 +552,37 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
           </div>
         </div>
+
+        {/* Shopping Categories */}
+        {shopCategories.length > 0 && (
+          <div style={{ padding: "0 28px 28px" }}>
+            <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 TOP (최근 1주)</h3>
+                <span style={{ fontSize: 10, color: P.sub }}>쿠팡 결제 기반 · {shopCategories.reduce((s, c) => s + c.cnt, 0).toLocaleString()}건</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+                {shopCategories.slice(0, 12).map((cat, i) => {
+                  const cc = SHOP_CAT_COLORS[cat.name] || SHOP_CAT_COLORS["기타"];
+                  const totalCnt = shopCategories.reduce((s, c) => s + c.cnt, 0);
+                  const pct = totalCnt > 0 ? (cat.cnt / totalCnt * 100).toFixed(1) : "0";
+                  return (
+                    <div key={i} style={{ background: cc.bg + "44", borderRadius: 10, padding: "10px 12px", border: `1px solid ${cc.fg}22`, transition: "all .15s" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: cc.fg, marginBottom: 4 }}>{cat.name}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: P.text }}>{fmt(cat.cnt)}<span style={{ fontSize: 10, fontWeight: 400, color: P.sub }}>건</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                        <div style={{ flex: 1, height: 4, background: "rgba(0,0,0,.06)", borderRadius: 2, overflow: "hidden", marginRight: 6 }}>
+                          <div style={{ height: "100%", background: cc.fg, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .7 }} />
+                        </div>
+                        <span style={{ fontSize: 9, color: P.sub, fontWeight: 600, flexShrink: 0 }}>{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </>)}
 
       {tab === "spending" && <SpendingTab sido={sidos.length ? sidos[0] : "전체"} sex={sexes.length ? sexes[0] : "all"} age={ages.length ? ages[0] : "all"} ymFrom={ymFrom} ymTo={ymTo} />}
