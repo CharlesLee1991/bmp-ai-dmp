@@ -279,6 +279,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               if (sidos.length) f.region = sidos.join(",");
               if (middleCats.length) f.middle_category = middleCats.join(",");
               else if (majorCats.length) f.major_category = majorCats.join(",");
+              if (shopCats.length) f.shop_category = shopCats.join(",");
               return f;
             })(),
             audience_count: exportResult.data?.ads_id_count || 0,
