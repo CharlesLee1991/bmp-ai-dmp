@@ -172,6 +172,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [exportMemo, setExportMemo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportResult, setExportResult] = useState<any>(null);
+  const [shopCats, setShopCats] = useState<string[]>([]);
 
   /* categories */
   const { data: catData } = useSWR("/api/categories", fetcher, { revalidateOnFocus: false, dedupingInterval: 300000 });
@@ -201,8 +202,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0;
-  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}`;
+  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0;
+  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}`;
   const { data: segData, isLoading: segLoading } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -250,6 +251,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (sidos.length) filters.region = sidos.join(",");
       if (middleCats.length) filters.middle_category = middleCats.join(",");
       else if (majorCats.length) filters.major_category = majorCats.join(",");
+      if (shopCats.length) filters.shop_category = shopCats.join(",");
       const resp = await fetch("https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenR0d2dxYWhoemxycW96bGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Nzc4ODYsImV4cCI6MjA2NTE1Mzg4Nn0.RCa4oahcW4grLkRdW33tph0LJfwwIL7RPe87smUZTmo" },
@@ -292,7 +294,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     saveHistory();
   }, [exportResult]);
 
-  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
+  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setShopCats([]); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
 
   /* chart data */
   const ageChart = useMemo(() => {
@@ -324,6 +326,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (sidos.length) filterParts.push(sidos.length <= 3 ? sidos.map(s => s.replace(/특별시|광역시|특별자치시|특별자치도|도/g, "")).join(", ") : `${sidos.length}개 시도`);
   if (middleCats.length) filterParts.push(middleCats.join(", "));
   else if (majorCats.length) filterParts.push(majorCats.join(", "));
+  if (shopCats.length) filterParts.push("🛒" + shopCats.join(", "));
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
@@ -407,6 +410,14 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <DropdownMulti options={availableMiddles.map(m => ({ value: m.middle, label: `${m.middle} (${m.codeCount})` }))} selected={middleCats} onChange={setMiddleCats} placeholder="중분류" />
           )}
         </div>
+
+        {/* 쇼핑 카테고리 (선택 시만) */}
+        {shopCats.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>🛒</span>
+            {shopCats.map(c => <Tag key={`sc-${c}`} label={c} onRemove={() => setShopCats(shopCats.filter(x => x !== c))} />)}
+          </div>
+        )}
 
         {/* 조회기간 */}
         {(tab === "audience" || tab === "spending" || tab === "cards") && (
@@ -558,21 +569,28 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <div style={{ padding: "0 28px 28px" }}>
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 TOP (최근 1주)</h3>
-                <span style={{ fontSize: 10, color: P.sub }}>쿠팡 결제 기반 · {shopCategories.reduce((s, c) => s + c.cnt, 0).toLocaleString()}건</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 TOP (최근 1주)</h3>
+                  {shopCats.length > 0 && <span style={{ padding: "3px 10px", borderRadius: 12, fontSize: 10, fontWeight: 700, background: P.glow, color: P.accent, border: `1px solid ${P.accent}44` }}>{shopCats.length}개 선택 · 타겟 전송 반영</span>}
+                  {shopCats.length > 0 && <button onClick={() => setShopCats([])} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid ${P.accent}33`, borderRadius: 12, padding: "2px 10px", cursor: "pointer", fontWeight: 600 }}>✕ 해제</button>}
+                </div>
+                <span style={{ fontSize: 10, color: P.sub }}>클릭하여 선택 · 쿠팡 결제 기반 · {shopCategories.reduce((s, c) => s + c.cnt, 0).toLocaleString()}건</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
                 {shopCategories.slice(0, 12).map((cat, i) => {
                   const cc = SHOP_CAT_COLORS[cat.name] || SHOP_CAT_COLORS["기타"];
                   const totalCnt = shopCategories.reduce((s, c) => s + c.cnt, 0);
                   const pct = totalCnt > 0 ? (cat.cnt / totalCnt * 100).toFixed(1) : "0";
+                  const isSelected = shopCats.includes(cat.name);
                   return (
-                    <div key={i} style={{ background: cc.bg + "44", borderRadius: 10, padding: "10px 12px", border: `1px solid ${cc.fg}22`, transition: "all .15s" }}>
+                    <div key={i} onClick={() => setShopCats(isSelected ? shopCats.filter(x => x !== cat.name) : [...shopCats, cat.name])}
+                      style={{ background: isSelected ? cc.bg : cc.bg + "44", borderRadius: 10, padding: "10px 12px", border: `2px solid ${isSelected ? cc.fg : cc.fg + "22"}`, transition: "all .15s", cursor: "pointer", boxShadow: isSelected ? `0 2px 8px ${cc.fg}22` : "none", position: "relative" }}>
+                      {isSelected && <span style={{ position: "absolute", top: 4, right: 6, fontSize: 12, color: cc.fg }}>✓</span>}
                       <div style={{ fontSize: 11, fontWeight: 700, color: cc.fg, marginBottom: 4 }}>{cat.name}</div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: P.text }}>{fmt(cat.cnt)}<span style={{ fontSize: 10, fontWeight: 400, color: P.sub }}>건</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                         <div style={{ flex: 1, height: 4, background: "rgba(0,0,0,.06)", borderRadius: 2, overflow: "hidden", marginRight: 6 }}>
-                          <div style={{ height: "100%", background: cc.fg, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .7 }} />
+                          <div style={{ height: "100%", background: cc.fg, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: isSelected ? 1 : .7 }} />
                         </div>
                         <span style={{ fontSize: 9, color: P.sub, fontWeight: 600, flexShrink: 0 }}>{pct}%</span>
                       </div>
@@ -601,6 +619,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>성별: {sexes.length ? sexes.map(s => s === "M" ? "남성" : s === "F" ? "여성" : "알수없음").join(", ") : "전체"}</span>
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>연령: {ages.length ? ages.map(a => AGE_LABEL[a]).join(", ") : "전체"}</span>
               {majorCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.accent}44`, color: P.accent, fontWeight: 600 }}>업종: {middleCats.length ? middleCats.join(", ") : majorCats.join(", ")}</span>}
+              {shopCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#fef3c7", fontSize: 11, border: "1px solid #d9770644", color: "#92400e", fontWeight: 600 }}>🛒 쇼핑: {shopCats.join(", ")}</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
