@@ -410,6 +410,15 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           )}
         </div>
 
+        {/* 쇼핑 카테고리 */}
+        {tab === "audience" && shopCategories.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>쇼핑</span>
+            {shopCats.map(c => <Tag key={`sc-${c}`} label={`🛒 ${c}`} onRemove={() => setShopCats(shopCats.filter(x => x !== c))} />)}
+            <DropdownMulti options={shopCategories.map(c => ({ value: c.name, label: `${c.name} (${fmt(c.cnt)})` }))} selected={shopCats} onChange={setShopCats} placeholder="+ 쇼핑 카테고리" />
+          </div>
+        )}
+
         {/* 조회기간 */}
         {(tab === "audience" || tab === "spending" || tab === "cards") && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -560,12 +569,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <div style={{ padding: "0 28px 28px" }}>
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 (최근 1주)</h3>
-                  {shopCats.length > 0 && <span style={{ fontSize: 10, color: P.accent, fontWeight: 600 }}>{shopCats.length}개 선택됨</span>}
-                  {shopCats.length > 0 && <button onClick={() => setShopCats([])} style={{ fontSize: 10, color: P.sub, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>}
-                </div>
-                <span style={{ fontSize: 10, color: P.sub }}>클릭 선택 → 🚀 타겟 전송 시 반영</span>
+                <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 (최근 1주)</h3>
+                <span style={{ fontSize: 10, color: P.sub }}>쿠팡 결제 기반 · {shopCategories.reduce((s, c) => s + c.cnt, 0).toLocaleString()}건</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
                 {shopCategories.slice(0, 12).map((cat, i) => {
@@ -574,14 +579,12 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                   const pct = totalCnt > 0 ? (cat.cnt / totalCnt * 100).toFixed(1) : "0";
                   const isSelected = shopCats.includes(cat.name);
                   return (
-                    <div key={i} onClick={() => setShopCats(isSelected ? shopCats.filter(x => x !== cat.name) : [...shopCats, cat.name])}
-                      style={{ background: isSelected ? cc.bg : cc.bg + "44", borderRadius: 10, padding: "10px 12px", border: `2px solid ${isSelected ? cc.fg : cc.fg + "22"}`, transition: "all .15s", cursor: "pointer", boxShadow: isSelected ? `0 2px 8px ${cc.fg}22` : "none", position: "relative" }}>
-                      {isSelected && <span style={{ position: "absolute", top: 4, right: 6, fontSize: 12, color: cc.fg }}>✓</span>}
-                      <div style={{ fontSize: 11, fontWeight: 700, color: cc.fg, marginBottom: 4 }}>{cat.name}</div>
+                    <div key={i} style={{ background: isSelected ? cc.bg : cc.bg + "44", borderRadius: 10, padding: "10px 12px", border: `1px solid ${isSelected ? cc.fg : cc.fg + "22"}`, transition: "all .15s" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: cc.fg, marginBottom: 4 }}>{cat.name}{isSelected && " ✓"}</div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: P.text }}>{fmt(cat.cnt)}<span style={{ fontSize: 10, fontWeight: 400, color: P.sub }}>건</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                         <div style={{ flex: 1, height: 4, background: "rgba(0,0,0,.06)", borderRadius: 2, overflow: "hidden", marginRight: 6 }}>
-                          <div style={{ height: "100%", background: cc.fg, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: isSelected ? 1 : .7 }} />
+                          <div style={{ height: "100%", background: cc.fg, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .7 }} />
                         </div>
                         <span style={{ fontSize: 9, color: P.sub, fontWeight: 600, flexShrink: 0 }}>{pct}%</span>
                       </div>
