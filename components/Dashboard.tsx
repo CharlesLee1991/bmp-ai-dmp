@@ -202,8 +202,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0;
-  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}`;
+  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0;
+  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}`;
   const { data: segData, isLoading: segLoading } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -213,7 +213,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (sidos.length) segs.push({ seg: "region", value: sidos.length === 1 ? sidos[0] : sidos });
       if (middleCats.length) segs.push({ seg: "middle_category", value: middleCats.length === 1 ? middleCats[0] : middleCats });
       else if (majorCats.length) segs.push({ seg: "major_category", value: majorCats.length === 1 ? majorCats[0] : majorCats });
-      const res = await fetch("/api/segment-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ segments: segs }) });
+      const reqBody: any = { segments: segs };
+      if (shopCats.length) reqBody.shop_category = shopCats.join(",");
+      const res = await fetch("/api/segment-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reqBody) });
       return res.json();
     },
     { revalidateOnFocus: false, dedupingInterval: 15000, keepPreviousData: true }
@@ -327,6 +329,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (sidos.length) filterParts.push(sidos.length <= 3 ? sidos.map(s => s.replace(/특별시|광역시|특별자치시|특별자치도|도/g, "")).join(", ") : `${sidos.length}개 시도`);
   if (middleCats.length) filterParts.push(middleCats.join(", "));
   else if (majorCats.length) filterParts.push(majorCats.join(", "));
+  if (shopCats.length) filterParts.push("🛒 " + shopCats.join(", "));
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
