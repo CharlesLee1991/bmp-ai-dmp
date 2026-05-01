@@ -224,6 +224,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
   /* shopping categories for audience tab */
   const { data: shopData } = useSWR(
+
     tab === "audience" ? "/api/shopping?days=7" : null,
     fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
   );
@@ -240,6 +241,12 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => b.cnt - a.cnt);
   }, [shopData]);
+
+  const { data: amountData } = useSWR(
+    tab === "audience" ? "/api/amount-bucket" : null,
+    fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
+  );
+  const amountBuckets: { label: string; ads_count: number; txn_count: number; total_amt: number }[] = Array.isArray(amountData) ? amountData : [];
 
   /* export */
   const handleExport = async (env: "dev" | "prod") => {
@@ -567,6 +574,55 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
           </div>
         </div>
+
+        {/* Amount Distribution */}
+        {amountBuckets.length > 0 && (
+          <div style={{ padding: "0 28px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* 금액 구간 분포 */}
+            <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>💰 결제 금액 구간 분포</h3>
+              {(() => {
+                const maxAds = Math.max(...amountBuckets.map(b => b.ads_count));
+                const totalAds = amountBuckets.reduce((s, b) => s + b.ads_count, 0);
+                return amountBuckets.map((b, i) => {
+                  const pct = totalAds > 0 ? (b.ads_count / totalAds * 100) : 0;
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, color: P.sub, width: 60, textAlign: "right", flexShrink: 0 }}>{b.label}</span>
+                      <div style={{ flex: 1, height: 18, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
+                        <div style={{ height: "100%", background: `hsl(${200 + i * 15}, 55%, ${55 + i * 3}%)`, borderRadius: 4, width: `${maxAds > 0 ? b.ads_count / maxAds * 100 : 0}%`, transition: "width .4s" }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: P.sub, width: 40, textAlign: "right", flexShrink: 0 }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  );
+                });
+              })()}
+              <div style={{ fontSize: 10, color: P.sub, marginTop: 8, textAlign: "right" }}>총 {fmt(amountBuckets.reduce((s, b) => s + b.ads_count, 0))}건 · 카드 결제 기반</div>
+            </div>
+            {/* 금액 구간별 거래액 */}
+            <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid #d97706`, paddingBottom: 8 }}>💳 구간별 거래액</h3>
+              {(() => {
+                const maxAmt = Math.max(...amountBuckets.map(b => b.total_amt));
+                const totalAmt = amountBuckets.reduce((s, b) => s + b.total_amt, 0);
+                return amountBuckets.map((b, i) => {
+                  const pct = totalAmt > 0 ? (b.total_amt / totalAmt * 100) : 0;
+                  const amtLabel = b.total_amt >= 1e12 ? `${(b.total_amt / 1e12).toFixed(1)}조` : b.total_amt >= 1e8 ? `${Math.round(b.total_amt / 1e8)}억` : fmt(b.total_amt);
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, color: P.sub, width: 60, textAlign: "right", flexShrink: 0 }}>{b.label}</span>
+                      <div style={{ flex: 1, height: 18, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", background: `hsl(${35 + i * 5}, 75%, ${50 + i * 3}%)`, borderRadius: 4, width: `${maxAmt > 0 ? b.total_amt / maxAmt * 100 : 0}%`, transition: "width .4s" }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: P.sub, width: 50, textAlign: "right", flexShrink: 0 }}>{amtLabel}</span>
+                    </div>
+                  );
+                });
+              })()}
+              <div style={{ fontSize: 10, color: P.sub, marginTop: 8, textAlign: "right" }}>총 {amountBuckets.reduce((s, b) => s + b.total_amt, 0) >= 1e12 ? `${(amountBuckets.reduce((s, b) => s + b.total_amt, 0) / 1e12).toFixed(1)}조` : ""} · 카드 결제 기반</div>
+            </div>
+          </div>
+        )}
 
         {/* Shopping Categories */}
         {shopCategories.length > 0 && (
