@@ -248,6 +248,13 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   );
   const amountBuckets: { label: string; ads_count: number; txn_count: number; total_amt: number }[] = Array.isArray(amountData) ? amountData : [];
 
+  const { data: adEngData } = useSWR(
+    tab === "audience" ? "/api/ad-engagement" : null,
+    fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
+  );
+  const adHourly: { hr: number; users: number; imps: number; clicks: number }[] = adEngData?.hourly || [];
+  const adOs: { os: string; users: number; imps: number; clicks: number }[] = adEngData?.os || [];
+
   /* export */
   const handleExport = async (env: "dev" | "prod") => {
     const datePart = new Date().toISOString().slice(2,10).replace(/-/g,"");
@@ -620,6 +627,64 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 });
               })()}
               <div style={{ fontSize: 10, color: P.sub, marginTop: 8, textAlign: "right" }}>총 {amountBuckets.reduce((s, b) => s + b.total_amt, 0) >= 1e12 ? `${(amountBuckets.reduce((s, b) => s + b.total_amt, 0) / 1e12).toFixed(1)}조` : ""} · 카드 결제 기반</div>
+            </div>
+          </div>
+        )}
+
+        {/* Ad Engagement */}
+        {adHourly.length > 0 && (
+          <div style={{ padding: "0 28px 20px", display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
+            {/* 시간대별 광고 참여 */}
+            <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid #6366f1", paddingBottom: 8 }}>📊 시간대별 광고 참여</h3>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 100 }}>
+                {adHourly.map((h, i) => {
+                  const maxU = Math.max(...adHourly.map(x => x.users));
+                  const ht = maxU > 0 ? (h.users / maxU * 100) : 0;
+                  const isPeak = h.users === maxU;
+                  return (
+                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ width: "100%", height: `${ht}%`, minHeight: 2, background: isPeak ? "#6366f1" : "#a5b4fc", borderRadius: "3px 3px 0 0", transition: "height .3s" }} />
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", gap: 2, marginTop: 4 }}>
+                {adHourly.map((h, i) => (
+                  <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 8, color: P.sub }}>{i % 3 === 0 ? `${h.hr}시` : ""}</div>
+                ))}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+                <span style={{ fontSize: 10, color: P.sub }}>피크: {adHourly.reduce((m, h) => h.users > m.users ? h : m, adHourly[0]).hr}시 ({fmt(adHourly.reduce((m, h) => h.users > m.users ? h : m, adHourly[0]).users)}명)</span>
+                <span style={{ fontSize: 10, color: P.sub }}>총 {fmt(adHourly.reduce((s, h) => s + h.clicks, 0))} 클릭</span>
+              </div>
+            </div>
+            {/* OS별 광고 참여 */}
+            <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid #10b981", paddingBottom: 8 }}>📱 OS별 광고 참여</h3>
+              {(() => {
+                const totalUsers = adOs.reduce((s, o) => s + o.users, 0);
+                const colors: Record<string, string> = { Android: "#3DDC84", iOS: "#007AFF", "기타": "#94a3b8" };
+                return adOs.map((o, i) => {
+                  const pct = totalUsers > 0 ? (o.users / totalUsers * 100) : 0;
+                  const ctr = o.imps > 0 ? (o.clicks / o.imps * 100).toFixed(2) : "0";
+                  return (
+                    <div key={i} style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600 }}>{o.os}</span>
+                        <span style={{ fontSize: 11, color: P.sub }}>{pct.toFixed(1)}%</span>
+                      </div>
+                      <div style={{ height: 20, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", background: colors[o.os] || "#94a3b8", borderRadius: 4, width: `${pct}%`, transition: "width .4s" }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+                        <span style={{ fontSize: 9, color: P.sub }}>{fmt(o.users)}명</span>
+                        <span style={{ fontSize: 9, color: P.sub }}>CTR {ctr}%</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         )}
