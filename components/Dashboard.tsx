@@ -155,6 +155,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [ages, setAges] = useState<string[]>([]);
   const [majorCats, setMajorCats] = useState<string[]>([]);
   const [middleCats, setMiddleCats] = useState<string[]>([]);
+  const [amountFilters, setAmountFilters] = useState<string[]>([]);
   const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports" | "shopping">("audience");
   const isAdmin = user.role === "admin";
 
@@ -202,8 +203,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0;
-  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}`;
+  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0;
+  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}|${amountFilters}`;
   const { data: segData, isLoading: segLoading } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -213,6 +214,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (sidos.length) segs.push({ seg: "region", value: sidos.length === 1 ? sidos[0] : sidos });
       if (middleCats.length) segs.push({ seg: "middle_category", value: middleCats.length === 1 ? middleCats[0] : middleCats });
       else if (majorCats.length) segs.push({ seg: "major_category", value: majorCats.length === 1 ? majorCats[0] : majorCats });
+      if (amountFilters.length) segs.push({ seg: "amount", value: amountFilters.length === 1 ? amountFilters[0] : amountFilters });
       const reqBody: any = { segments: segs };
       if (shopCats.length) reqBody.shop_category = shopCats.join(",");
       const res = await fetch("/api/segment-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reqBody) });
@@ -296,6 +298,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               if (middleCats.length) f.middle_category = middleCats.join(",");
               else if (majorCats.length) f.major_category = majorCats.join(",");
               if (shopCats.length) f.shop_category = shopCats.join(",");
+              if (amountFilters.length) f.amount_bucket = amountFilters.join(",");
               return f;
             })(),
             audience_count: exportResult.data?.ads_id_count || 0,
@@ -311,7 +314,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     saveHistory();
   }, [exportResult]);
 
-  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setShopCats([]); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
+  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setShopCats([]); setAmountFilters([]); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
 
   /* chart data */
   const ageChart = useMemo(() => {
@@ -344,6 +347,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (middleCats.length) filterParts.push(middleCats.join(", "));
   else if (majorCats.length) filterParts.push(majorCats.join(", "));
   if (shopCats.length) filterParts.push("🛒 " + shopCats.join(", "));
+  const AMOUNT_LABELS: Record<string,string> = { under_5k: "~5천", "5k_10k": "5천~1만", "10k_30k": "1~3만", "30k_50k": "3~5만", "50k_100k": "5~10만", "100k_300k": "10~30만", over_300k: "30만~" };
+  if (amountFilters.length) filterParts.push("💰 " + amountFilters.map(a => AMOUNT_LABELS[a] || a).join(", "));
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
@@ -434,6 +439,23 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>쇼핑</span>
             {shopCats.map(c => <Tag key={`sc-${c}`} label={`🛒 ${c}`} onRemove={() => setShopCats(shopCats.filter(x => x !== c))} />)}
             <DropdownMulti options={shopCategories.map(c => ({ value: c.name, label: `${c.name} (${fmt(c.cnt)})` }))} selected={shopCats} onChange={setShopCats} placeholder="+ 쇼핑 카테고리" />
+          </div>
+        )}
+
+        {/* 금액구간 */}
+        {tab === "audience" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>금액</span>
+            {amountFilters.map(a => <Tag key={`amt-${a}`} label={`💰 ${({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a}`} onRemove={() => setAmountFilters(amountFilters.filter(x => x !== a))} />)}
+            <DropdownMulti options={[
+              { value: "under_5k", label: "~5천원" },
+              { value: "5k_10k", label: "5천~1만원" },
+              { value: "10k_30k", label: "1~3만원" },
+              { value: "30k_50k", label: "3~5만원" },
+              { value: "50k_100k", label: "5~10만원" },
+              { value: "100k_300k", label: "10~30만원" },
+              { value: "over_300k", label: "30만원~" },
+            ]} selected={amountFilters} onChange={setAmountFilters} placeholder="+ 금액구간" />
           </div>
         )}
 
@@ -739,6 +761,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>연령: {ages.length ? ages.map(a => AGE_LABEL[a]).join(", ") : "전체"}</span>
               {majorCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.accent}44`, color: P.accent, fontWeight: 600 }}>업종: {middleCats.length ? middleCats.join(", ") : majorCats.join(", ")}</span>}
               {shopCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#fef3c7", fontSize: 11, border: "1px solid #d9770644", color: "#92400e", fontWeight: 600 }}>🛒 쇼핑: {shopCats.join(", ")}</span>}
+              {amountFilters.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#ede9fe", fontSize: 11, border: "1px solid #7c3aed44", color: "#5b21b6", fontWeight: 600 }}>💰 금액: {amountFilters.map(a => ({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a).join(", ")}</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
