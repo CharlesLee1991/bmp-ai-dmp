@@ -163,6 +163,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any>(null);
+  const [campaignOpen, setCampaignOpen] = useState(false);
+  const [campaignText, setCampaignText] = useState("");
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [campaignResult, setCampaignResult] = useState<any>(null);
   const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports" | "shopping">("audience");
   const isAdmin = user.role === "admin";
 
@@ -582,10 +586,58 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             {filterParts.length > 0 && <span style={{ fontSize: 10, color: P.sub }}>{filterParts.join(" · ")}</span>}
           </div>
           {tab === "audience" && (
-            <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 런컴 타겟 전송</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: campaignOpen ? "#7c3aed" : "linear-gradient(135deg, #7c3aed, #a855f7)", color: "#fff", border: "none" }}>🎯 캠페인 타겟 찾기</button>
+              <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 런컴 타겟 전송</button>
+            </div>
           )}
         </div>
       </div>
+
+      {/* ─── CAMPAIGN TARGET FINDER ─── */}
+      {campaignOpen && tab === "audience" && (
+        <div style={{ margin: "12px 28px 0", padding: 18, borderRadius: 12, background: "linear-gradient(135deg, #f5f3ff, #ede9fe)", border: "1px solid #7c3aed33" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>🎯 캠페인 타겟 찾기</div>
+            <button onClick={() => { setCampaignOpen(false); setCampaignResult(null); }} style={{ fontSize: 10, color: "#7c3aed", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: campaignResult ? 16 : 0 }}>
+            <input value={campaignText} onChange={e => setCampaignText(e.target.value)} placeholder="예: 수입차를 많이 살 것 같은 고소득 고객, 20대 여성 뷰티 관심 타겟, 건강식품 구매 가능성 높은 중장년..." style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #c4b5fd", fontSize: 13, outline: "none", background: "rgba(255,255,255,.8)" }} onKeyDown={e => { if (e.key === "Enter" && campaignText.trim() && !campaignLoading) { e.preventDefault(); document.getElementById("campaign-btn")?.click(); }}} />
+            <button id="campaign-btn" disabled={!campaignText.trim() || campaignLoading} onClick={async () => {
+              setCampaignLoading(true); setCampaignResult(null);
+              try {
+                const res = await fetch("/api/campaign-target", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ campaign: campaignText }) });
+                const data = await res.json();
+                if (data.success) setCampaignResult(data);
+                else alert("분석 실패: " + (data.error || ""));
+              } catch (e: any) { alert("에러: " + e.message); }
+              finally { setCampaignLoading(false); }
+            }} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: campaignLoading ? "wait" : "pointer", background: "#7c3aed", color: "#fff", border: "none", opacity: (!campaignText.trim() || campaignLoading) ? .5 : 1, whiteSpace: "nowrap" }}>
+              {campaignLoading ? "분석 중..." : "타겟 추천"}
+            </button>
+          </div>
+          {campaignResult && (
+            <div>
+              {campaignResult.analysis && <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(campaignResult.recommendations?.length || 1, 3)}, 1fr)`, gap: 10 }}>
+                {(campaignResult.recommendations || []).map((rec: any, i: number) => (
+                  <div key={i} style={{ background: "rgba(255,255,255,.9)", borderRadius: 10, padding: 14, border: "1px solid #c4b5fd" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#5b21b6", marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i]} {rec.label}</div>
+                    <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 8 }}>{rec.description}</div>
+                    <div style={{ fontSize: 11, color: "#374151", padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, marginBottom: 8 }}>
+                      <span style={{ fontWeight: 600 }}>조건:</span> {rec.filter_summary}
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? "#7c3aed" : "#9ca3af" }}>
+                      {rec.estimated_audience > 0 ? fmt(rec.estimated_audience) : "—"}<span style={{ fontSize: 11, fontWeight: 500, color: "#7c3aed88", marginLeft: 4 }}>명</span>
+                    </div>
+                    <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 2 }}>실시간 세그먼트 프리뷰 기반</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── SEGMENT PREVIEW BANNER ─── */}
       {anyFilter && (
