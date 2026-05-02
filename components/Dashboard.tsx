@@ -161,6 +161,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [uploadSession, setUploadSession] = useState<string | null>(null);
   const [uploadInfo, setUploadInfo] = useState<{ total: number; matched: number; rate: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
   const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports" | "shopping">("audience");
   const isAdmin = user.role === "admin";
 
@@ -595,10 +597,71 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <div style={{ fontSize: 11, color: P.sub, marginTop: 2 }}>{filterParts.join(" · ") || "필터 적용 중"}</div>
             </div>
           </div>
-          {segEstimate && (
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: P.accent, letterSpacing: "-0.03em" }}>{fmt(segEstimate.estimated_audience)}<span style={{ fontSize: 12, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span></div>
-              <div style={{ fontSize: 10, color: P.sub }}>전체 {fmt(segEstimate.total_audience)}명 중 {(segEstimate.selectivity * 100).toFixed(1)}%{segData?.meta?.response_time_ms && ` · ${segData.meta.response_time_ms}ms`}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button onClick={async () => {
+              setAiLoading(true); setAiResult(null);
+              try {
+                const res = await fetch("/api/ai-recommend", {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    filters: filterParts.join(" · "),
+                    segmentPreview: segEstimate ? { estimated: segEstimate.estimated_audience, selectivity: (segEstimate.selectivity * 100).toFixed(1) } : null,
+                    categories: industryData.slice(0, 12).map((it: any) => `${(PARTNER_MAP as any)[it.code] || it.code}: ${fmt(it.users)}명`).join("\n"),
+                    ageGender: ageChart.map(a => `${AGE_LABEL[a.a]}: 남${fmt(a.M)} 여${fmt(a.F)}`).join("\n"),
+                    regions: regionRank.slice(0, 10).map(r => `${r.name}: ${fmt(r.users)}명`).join("\n"),
+                    amountBuckets: amountBuckets.map(b => `${b.label}: ${fmt(b.ads_count)}건`).join("\n"),
+                  }),
+                });
+                const data = await res.json();
+                if (data.success) setAiResult(data.analysis);
+                else alert("AI 분석 실패: " + (data.error || ""));
+              } catch (e: any) { alert("AI 분석 에러: " + e.message); }
+              finally { setAiLoading(false); }
+            }} disabled={aiLoading} style={{ fontSize: 11, fontWeight: 600, color: "#7c3aed", background: "#ede9fe", border: "1px solid #7c3aed44", borderRadius: 20, padding: "6px 16px", cursor: aiLoading ? "wait" : "pointer", opacity: aiLoading ? .6 : 1 }}>
+              {aiLoading ? "🤖 분석 중..." : "🤖 AI 타겟 제안"}
+            </button>
+            {segEstimate && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: P.accent, letterSpacing: "-0.03em" }}>{fmt(segEstimate.estimated_audience)}<span style={{ fontSize: 12, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span></div>
+                <div style={{ fontSize: 10, color: P.sub }}>전체 {fmt(segEstimate.total_audience)}명 중 {(segEstimate.selectivity * 100).toFixed(1)}%{segData?.meta?.response_time_ms && ` · ${segData.meta.response_time_ms}ms`}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── AI RECOMMENDATION RESULT ─── */}
+      {aiResult && (
+        <div style={{ margin: "8px 28px 0", padding: 18, borderRadius: 12, background: "linear-gradient(135deg, #ede9fe, #faf5ff)", border: "1px solid #7c3aed33" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>🤖 AI 효율 타겟 분석</div>
+            <button onClick={() => setAiResult(null)} style={{ fontSize: 10, color: "#7c3aed", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
+          </div>
+          {aiResult.summary && <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, marginBottom: 14, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8 }}>{aiResult.summary}</div>}
+          {aiResult.insights?.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#7c3aed", marginBottom: 6 }}>💡 핵심 인사이트</div>
+              {aiResult.insights.map((ins: string, i: number) => (
+                <div key={i} style={{ fontSize: 12, color: "#4b5563", padding: "4px 0 4px 12px", borderLeft: "2px solid #a78bfa", marginBottom: 4 }}>{ins}</div>
+              ))}
+            </div>
+          )}
+          {aiResult.recommendations?.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#7c3aed", marginBottom: 8 }}>🎯 추천 타겟 조합</div>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(aiResult.recommendations.length, 3)}, 1fr)`, gap: 10 }}>
+                {aiResult.recommendations.map((rec: any, i: number) => (
+                  <div key={i} style={{ background: "rgba(255,255,255,.85)", borderRadius: 10, padding: 14, border: "1px solid #c4b5fd" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#5b21b6", marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
+                    {rec.description && <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>{rec.description}</div>}
+                    <div style={{ fontSize: 11, color: "#374151", padding: "6px 8px", background: "#f5f3ff", borderRadius: 6, marginBottom: 6 }}>
+                      <span style={{ fontWeight: 600 }}>조건:</span> {rec.filters}
+                    </div>
+                    {rec.estimated_audience && <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>추정 규모: {rec.estimated_audience}</div>}
+                    {rec.reason && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 4 }}>{rec.reason}</div>}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
