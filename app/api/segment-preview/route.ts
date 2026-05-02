@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const segments = body.segments || [];
     const shopCategory: string | undefined = body.shop_category;
+    const uploadSession: string | undefined = body.upload_session;
 
     const headers = {
       apikey: SUPABASE_ANON_KEY,
@@ -51,6 +52,26 @@ export async function POST(req: NextRequest) {
           ? Math.round((data.data.estimated_audience / data.data.total_audience) * 1000000) / 1000000
           : 0;
         data.data.shop_filter = { matched, total, ratio: Math.round(shopRatio * 10000) / 10000 };
+      }
+    }
+
+    // Apply uploaded ADID filter ratio
+    if (uploadSession && data?.success && data?.data) {
+      const upRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_upload_audience_count`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ p_session_id: uploadSession }),
+      });
+      if (upRes.ok) {
+        const upData = await upRes.json();
+        const matched = upData?.matched || 0;
+        const total = upData?.total || 1;
+        const upRatio = matched / total;
+        data.data.estimated_audience = Math.round(data.data.estimated_audience * upRatio);
+        data.data.selectivity = data.data.total_audience > 0
+          ? Math.round((data.data.estimated_audience / data.data.total_audience) * 1000000) / 1000000
+          : 0;
+        data.data.upload_filter = { matched, total, ratio: Math.round(upRatio * 10000) / 10000 };
       }
     }
 

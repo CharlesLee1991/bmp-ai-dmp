@@ -156,6 +156,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [majorCats, setMajorCats] = useState<string[]>([]);
   const [middleCats, setMiddleCats] = useState<string[]>([]);
   const [amountFilters, setAmountFilters] = useState<string[]>([]);
+  const [uploadSession, setUploadSession] = useState<string | null>(null);
+  const [uploadInfo, setUploadInfo] = useState<{ total: number; matched: number; rate: number } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports" | "shopping">("audience");
   const isAdmin = user.role === "admin";
 
@@ -203,8 +206,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0;
-  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}|${amountFilters}`;
+  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || !!uploadSession;
+  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}|${amountFilters}|${uploadSession || ""}`;
   const { data: segData, isLoading: segLoading } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -217,6 +220,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (amountFilters.length) segs.push({ seg: "amount", value: amountFilters.length === 1 ? amountFilters[0] : amountFilters });
       const reqBody: any = { segments: segs };
       if (shopCats.length) reqBody.shop_category = shopCats.join(",");
+      if (uploadSession) reqBody.upload_session = uploadSession;
       const res = await fetch("/api/segment-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reqBody) });
       return res.json();
     },
@@ -270,6 +274,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (middleCats.length) filters.middle_category = middleCats.join(",");
       else if (majorCats.length) filters.major_category = majorCats.join(",");
       if (shopCats.length) filters.shop_category = shopCats.join(",");
+      if (uploadSession) filters.upload_session = uploadSession;
       const resp = await fetch("https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenR0d2dxYWhoemxycW96bGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Nzc4ODYsImV4cCI6MjA2NTE1Mzg4Nn0.RCa4oahcW4grLkRdW33tph0LJfwwIL7RPe87smUZTmo" },
@@ -299,6 +304,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               else if (majorCats.length) f.major_category = majorCats.join(",");
               if (shopCats.length) f.shop_category = shopCats.join(",");
               if (amountFilters.length) f.amount_bucket = amountFilters.join(",");
+              if (uploadSession) f.upload_session = uploadSession;
               return f;
             })(),
             audience_count: exportResult.data?.ads_id_count || 0,
@@ -314,7 +320,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     saveHistory();
   }, [exportResult]);
 
-  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setShopCats([]); setAmountFilters([]); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
+  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setShopCats([]); setAmountFilters([]); setUploadSession(null); setUploadInfo(null); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
 
   /* chart data */
   const ageChart = useMemo(() => {
@@ -349,6 +355,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (shopCats.length) filterParts.push("🛒 " + shopCats.join(", "));
   const AMOUNT_LABELS: Record<string,string> = { under_5k: "~5천", "5k_10k": "5천~1만", "10k_30k": "1~3만", "30k_50k": "3~5만", "50k_100k": "5~10만", "100k_300k": "10~30만", over_300k: "30만~" };
   if (amountFilters.length) filterParts.push("💰 " + amountFilters.map(a => AMOUNT_LABELS[a] || a).join(", "));
+  if (uploadSession && uploadInfo) filterParts.push(`📤 ADID ${fmt(uploadInfo.matched)}건 매칭`);
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
@@ -456,6 +463,47 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               { value: "100k_300k", label: "10~30만원" },
               { value: "over_300k", label: "30만원~" },
             ]} selected={amountFilters} onChange={setAmountFilters} placeholder="+ 금액구간" />
+          </div>
+        )}
+
+        {/* ADID 업로드 */}
+        {tab === "audience" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>ADID</span>
+            {uploadSession && uploadInfo ? (
+              <>
+                <span style={{ padding: "4px 10px", borderRadius: 16, fontSize: 10, fontWeight: 600, background: "#dbeafe", color: "#1d4ed8", border: "1px solid #3b82f644" }}>
+                  📤 {fmt(uploadInfo.matched)}건 매칭 / {fmt(uploadInfo.total)}건 업로드 ({uploadInfo.rate}%)
+                </span>
+                <button onClick={() => { setUploadSession(null); setUploadInfo(null); }} style={{ fontSize: 10, color: P.sub, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>
+              </>
+            ) : (
+              <label style={{ fontSize: 11, color: P.accent, cursor: "pointer", padding: "4px 12px", borderRadius: 16, border: `1px dashed ${P.accent}66`, background: `${P.accent}08` }}>
+                {uploading ? "업로드 중..." : "+ ADID 파일 업로드"}
+                <input type="file" accept=".csv,.txt,.tsv" style={{ display: "none" }} disabled={uploading} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    const res = await fetch("/api/adid-upload", { method: "POST", body: fd });
+                    const data = await res.json();
+                    if (data.success) {
+                      setUploadSession(data.session_id);
+                      setUploadInfo({ total: data.total_uploaded, matched: data.matched, rate: data.match_rate });
+                    } else {
+                      alert("업로드 실패: " + (data.error || "Unknown error"));
+                    }
+                  } catch (err: any) {
+                    alert("업로드 에러: " + err.message);
+                  } finally {
+                    setUploading(false);
+                    e.target.value = "";
+                  }
+                }} />
+              </label>
+            )}
           </div>
         )}
 
@@ -762,6 +810,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {majorCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.accent}44`, color: P.accent, fontWeight: 600 }}>업종: {middleCats.length ? middleCats.join(", ") : majorCats.join(", ")}</span>}
               {shopCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#fef3c7", fontSize: 11, border: "1px solid #d9770644", color: "#92400e", fontWeight: 600 }}>🛒 쇼핑: {shopCats.join(", ")}</span>}
               {amountFilters.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#ede9fe", fontSize: 11, border: "1px solid #7c3aed44", color: "#5b21b6", fontWeight: 600 }}>💰 금액: {amountFilters.map(a => ({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a).join(", ")}</span>}
+              {uploadSession && uploadInfo && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#dbeafe", fontSize: 11, border: "1px solid #3b82f644", color: "#1d4ed8", fontWeight: 600 }}>📤 ADID {fmt(uploadInfo.matched)}건 매칭</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
