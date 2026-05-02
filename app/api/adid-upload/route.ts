@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const raw = text.replace(/,/g, "\n").split("\n")
       .map(l => l.trim())
       .filter(l => l.length >= 8 && /^[a-fA-F0-9\-]+$/.test(l));
-    const adids = [...new Set(raw)]; // deduplicate
+    const adids = Array.from(new Set(raw)); // deduplicate
 
     if (adids.length === 0) {
       return NextResponse.json({ success: false, error: "No valid ADIDs found" }, { status: 400 });
