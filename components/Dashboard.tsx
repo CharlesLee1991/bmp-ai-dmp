@@ -262,7 +262,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     tab === "audience" ? "/api/amount-bucket" : null,
     fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
   );
-  const amountBuckets: { label: string; ads_count: number; txn_count: number; total_amt: number }[] = Array.isArray(amountData) ? amountData : [];
+  const amountBuckets: { bucket: string; label: string; ads_count: number; txn_count: number; total_amt: number }[] = Array.isArray(amountData) ? amountData : [];
 
   const { data: adEngData } = useSWR(
     tab === "audience" ? "/api/ad-engagement" : null,
@@ -479,6 +479,24 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               { value: "100k_300k", label: "10~30만원" },
               { value: "over_300k", label: "30만원~" },
             ]} selected={amountFilters} onChange={setAmountFilters} placeholder="+ 금액구간" />
+            {amountBuckets.length > 0 && (() => {
+              const HIGH_ORDER = ["over_300k","100k_300k","50k_100k","30k_50k","10k_30k","5k_10k","under_5k"];
+              const LOW_ORDER = ["under_5k","5k_10k","10k_30k","30k_50k","50k_100k","100k_300k","over_300k"];
+              const bucketMap = Object.fromEntries(amountBuckets.map(b => [b.bucket, b.ads_count]));
+              const total = amountBuckets.reduce((s, b) => s + b.ads_count, 0);
+              const selectPct = (order: string[], pct: number) => {
+                const target = total * pct / 100;
+                let cum = 0; const selected: string[] = [];
+                for (const k of order) { cum += (bucketMap[k] || 0); selected.push(k); if (cum >= target) break; }
+                setAmountFilters(selected);
+              };
+              return (
+                <span style={{ display: "inline-flex", gap: 3, marginLeft: 4, borderLeft: "1px solid rgba(0,0,0,.1)", paddingLeft: 8 }}>
+                  {[10,20,30].map(p => <button key={`hi-${p}`} onClick={() => selectPct(HIGH_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #7c3aed33", background: "#f5f3ff", color: "#7c3aed", cursor: "pointer", fontWeight: 600 }}>상위{p}%</button>)}
+                  {[30,20,10].map(p => <button key={`lo-${p}`} onClick={() => selectPct(LOW_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #0d948833", background: "#f0fdfa", color: "#0d9488", cursor: "pointer", fontWeight: 600 }}>하위{p}%</button>)}
+                </span>
+              );
+            })()}
           </div>
         )}
 
@@ -734,9 +752,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🏪 업종 소분류 TOP 12</h3>
             {industryData.map((it, i) => {
               const w = industryData[0] ? it.users / industryData[0].users * 100 : 0;
+              const name = PARTNER_MAP[it.code] || it.code;
               return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7 }}>
-                  <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{PARTNER_MAP[it.code] || it.code}</span>
+                <div key={i} onClick={() => { if (!middleCats.includes(name) && !majorCats.includes(name)) { setMiddleCats(prev => [...prev, name]); }}} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer", borderRadius: 4, padding: "1px 0", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
                   <div style={{ flex: 1, height: 20, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, ${P.accent}88, ${P.accent}11)`, transition: "width .5s" }} />
                   </div>
@@ -798,7 +817,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {regionRank.slice(0, 25).map((r, i) => {
                 const pct = regionRank[0] ? (r.users / regionRank[0].users * 100) : 0;
                 return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,.05)" }}>
+                  <div key={i} onClick={() => { if (!sidos.includes(r.name)) setSidos(prev => [...prev, r.name]); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,.05)", cursor: "pointer", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <span style={{ width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, flexShrink: 0, background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "#fff" : P.sub }}>{i + 1}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span><span style={{ fontSize: 10, fontWeight: 700, color: P.accent, flexShrink: 0 }}>{fmt(r.users)}</span></div>
@@ -823,7 +842,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 return amountBuckets.map((b, i) => {
                   const pct = totalAds > 0 ? (b.ads_count / totalAds * 100) : 0;
                   return (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <div key={i} onClick={() => { if (b.bucket && !amountFilters.includes(b.bucket)) setAmountFilters(prev => [...prev, b.bucket]); }} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, cursor: "pointer", borderRadius: 4, transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                       <span style={{ fontSize: 11, color: P.sub, width: 60, textAlign: "right", flexShrink: 0 }}>{b.label}</span>
                       <div style={{ flex: 1, height: 18, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
                         <div style={{ height: "100%", background: `hsl(${200 + i * 15}, 55%, ${55 + i * 3}%)`, borderRadius: 4, width: `${maxAds > 0 ? b.ads_count / maxAds * 100 : 0}%`, transition: "width .4s" }} />
