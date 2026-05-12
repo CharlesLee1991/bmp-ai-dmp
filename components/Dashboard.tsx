@@ -155,6 +155,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [ages, setAges] = useState<string[]>([]);
   const [majorCats, setMajorCats] = useState<string[]>([]);
   const [middleCats, setMiddleCats] = useState<string[]>([]);
+  const [subCats, setSubCats] = useState<string[]>([]);
+  const [sigoongus, setSigoongus] = useState<string[]>([]);
+  const [eupmds, setEupmds] = useState<string[]>([]);
   const [amountFilters, setAmountFilters] = useState<string[]>([]);
   const [cardCompanies, setCardCompanies] = useState<string[]>([]);
   const [telecoms, setTelecoms] = useState<string[]>([]);
@@ -196,6 +199,38 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     return mids;
   }, [majorCats, categories]);
 
+  /* ── cascading options (안주현 5/11 요청 반영) ── */
+  // 시군구: 시도 선택 시
+  const sigoongQuery = sidos.length === 1 ? `?sido=${encodeURIComponent(sidos[0])}` : "";
+  const { data: sigoongData } = useSWR(
+    sidos.length === 1 ? `/api/segment-options/sigoongu${sigoongQuery}` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 600000 }
+  );
+  const sigoongOptions: { sigoongu_nm: string; user_count: number }[] = sigoongData?.success ? sigoongData.data : [];
+
+  // 읍면동: 시군구 선택 시
+  const eupmdQuery = sidos.length === 1 && sigoongus.length === 1
+    ? `?sido=${encodeURIComponent(sidos[0])}&sigoongu=${encodeURIComponent(sigoongus[0])}`
+    : "";
+  const { data: eupmdData } = useSWR(
+    sidos.length === 1 && sigoongus.length === 1 ? `/api/segment-options/eupmeuandong${eupmdQuery}` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 600000 }
+  );
+  const eupmdOptions: { eupmeuandong_nm: string; user_count: number }[] = eupmdData?.success ? eupmdData.data : [];
+
+  // 소분류: 중분류 선택 시
+  const subQuery = middleCats.length === 1
+    ? `?middle=${encodeURIComponent(middleCats[0])}${majorCats.length === 1 ? `&major=${encodeURIComponent(majorCats[0])}` : ""}`
+    : "";
+  const { data: subData } = useSWR(
+    middleCats.length === 1 ? `/api/segment-options/subcategory${subQuery}` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 600000 }
+  );
+  const subOptions: { subcategory: string; sub_code: number }[] = subData?.success ? subData.data : [];
+
   /* dashboard API */
   function buildUrl() {
     const p = new URLSearchParams();
@@ -214,8 +249,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || cardCompanies.length > 0 || telecoms.length > 0 || !!uploadSession;
-  const segKey = `${sidos}|${sexes}|${ages}|${majorCats}|${middleCats}|${shopCats}|${amountFilters}|${cardCompanies}|${telecoms}|${uploadSession || ""}`;
+  const anyFilter = sidos.length > 0 || sigoongus.length > 0 || eupmds.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || middleCats.length > 0 || subCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || cardCompanies.length > 0 || telecoms.length > 0 || !!uploadSession;
+  const segKey = `${sidos}|${sigoongus}|${eupmds}|${sexes}|${ages}|${majorCats}|${middleCats}|${subCats}|${shopCats}|${amountFilters}|${cardCompanies}|${telecoms}|${uploadSession || ""}`;
   const { data: segData, isLoading: segLoading } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -223,7 +258,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (sexes.length) segs.push({ seg: "gender", value: sexes.length === 1 ? sexes[0] : sexes });
       if (ages.length) segs.push({ seg: "age", value: ages.length === 1 ? ages[0] : ages });
       if (sidos.length) segs.push({ seg: "region", value: sidos.length === 1 ? sidos[0] : sidos });
-      if (middleCats.length) segs.push({ seg: "middle_category", value: middleCats.length === 1 ? middleCats[0] : middleCats });
+      if (sigoongus.length) segs.push({ seg: "city", value: sigoongus.length === 1 ? sigoongus[0] : sigoongus });
+      if (eupmds.length) segs.push({ seg: "district", value: eupmds.length === 1 ? eupmds[0] : eupmds });
+      if (subCats.length) segs.push({ seg: "subcategory", value: subCats.length === 1 ? subCats[0] : subCats });
+      else if (middleCats.length) segs.push({ seg: "middle_category", value: middleCats.length === 1 ? middleCats[0] : middleCats });
       else if (majorCats.length) segs.push({ seg: "major_category", value: majorCats.length === 1 ? majorCats[0] : majorCats });
       if (amountFilters.length) segs.push({ seg: "amount", value: amountFilters.length === 1 ? amountFilters[0] : amountFilters });
       if (cardCompanies.length) segs.push({ seg: "card_company", value: cardCompanies.length === 1 ? cardCompanies[0] : cardCompanies });
@@ -281,7 +319,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (sexes.length) filters.sex = sexes.join(",");
       if (ages.length) filters.age_group = ages.join(",");
       if (sidos.length) filters.region = sidos.join(",");
-      if (middleCats.length) filters.middle_category = middleCats.join(",");
+      if (sigoongus.length) filters.city = sigoongus.join(",");
+      if (eupmds.length) filters.district = eupmds.join(",");
+      if (subCats.length) filters.subcategory = subCats.join(",");
+      else if (middleCats.length) filters.middle_category = middleCats.join(",");
       else if (majorCats.length) filters.major_category = majorCats.join(",");
       if (shopCats.length) filters.shop_category = shopCats.join(",");
       if (uploadSession) filters.upload_session = uploadSession;
@@ -310,7 +351,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               if (sexes.length) f.sex = sexes.join(",");
               if (ages.length) f.age_group = ages.join(",");
               if (sidos.length) f.region = sidos.join(",");
-              if (middleCats.length) f.middle_category = middleCats.join(",");
+              if (sigoongus.length) f.city = sigoongus.join(",");
+              if (eupmds.length) f.district = eupmds.join(",");
+              if (subCats.length) f.subcategory = subCats.join(",");
+              else if (middleCats.length) f.middle_category = middleCats.join(",");
               else if (majorCats.length) f.major_category = majorCats.join(",");
               if (shopCats.length) f.shop_category = shopCats.join(",");
               if (amountFilters.length) f.amount_bucket = amountFilters.join(",");
@@ -332,7 +376,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     saveHistory();
   }, [exportResult]);
 
-  const reset = () => { setSidos([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setShopCats([]); setAmountFilters([]); setCardCompanies([]); setTelecoms([]); setUploadSession(null); setUploadInfo(null); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
+  const reset = () => { setSidos([]); setSigoongus([]); setEupmds([]); setSexes([]); setAges([]); setMajorCats([]); setMiddleCats([]); setSubCats([]); setShopCats([]); setAmountFilters([]); setCardCompanies([]); setTelecoms([]); setUploadSession(null); setUploadInfo(null); setYmPreset(12); setUseYmCustom(false); setYmCustomFrom(""); setYmCustomTo(""); };
 
   /* chart data */
   const ageChart = useMemo(() => {
@@ -362,7 +406,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (sexes.length) filterParts.push(sexes.map(s => s === "M" ? "남성" : s === "F" ? "여성" : "알수없음").join(", "));
   if (ages.length) filterParts.push(ages.map(a => AGE_LABEL[a] || a).join(", "));
   if (sidos.length) filterParts.push(sidos.length <= 3 ? sidos.map(s => s.replace(/특별시|광역시|특별자치시|특별자치도|도/g, "")).join(", ") : `${sidos.length}개 시도`);
-  if (middleCats.length) filterParts.push(middleCats.join(", "));
+  if (sigoongus.length) filterParts.push(sigoongus.length <= 3 ? sigoongus.join(", ") : `${sigoongus.length}개 시군구`);
+  if (eupmds.length) filterParts.push(eupmds.length <= 3 ? eupmds.join(", ") : `${eupmds.length}개 읍면동`);
+  if (subCats.length) filterParts.push(subCats.join(", "));
+  else if (middleCats.length) filterParts.push(middleCats.join(", "));
   else if (majorCats.length) filterParts.push(majorCats.join(", "));
   if (shopCats.length) filterParts.push("🛒 " + shopCats.join(", "));
   const AMOUNT_LABELS: Record<string,string> = { under_5k: "~5천", "5k_10k": "5천~1만", "10k_30k": "1~3만", "30k_50k": "3~5만", "50k_100k": "5~10만", "100k_300k": "10~30만", over_300k: "30만~" };
@@ -438,21 +485,60 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           </div>
         </div>
 
-        {/* 시도 */}
+        {/* 시도 · 시군구 · 읍면동 (안주현 요청 반영) */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>시도</span>
-          {sidos.map(s => <Tag key={s} label={sidoShort(s)} onRemove={() => setSidos(sidos.filter(x => x !== s))} />)}
-          <DropdownMulti options={SIDO_LIST.map(s => ({ value: s, label: s }))} selected={sidos} onChange={setSidos} placeholder="시도 추가" />
+          <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>지역</span>
+          {sidos.map(s => <Tag key={s} label={sidoShort(s)} onRemove={() => { setSidos(sidos.filter(x => x !== s)); setSigoongus([]); setEupmds([]); }} />)}
+          <DropdownMulti options={SIDO_LIST.map(s => ({ value: s, label: s }))} selected={sidos} onChange={v => { setSidos(v); if (v.length !== 1) { setSigoongus([]); setEupmds([]); } }} placeholder="시도 추가" />
+          {sidos.length === 1 && (
+            <>
+              <span style={{ color: P.sub, fontSize: 11, margin: "0 2px" }}>›</span>
+              {sigoongus.map(g => <Tag key={`gg-${g}`} label={`↳ ${g}`} onRemove={() => { setSigoongus(sigoongus.filter(x => x !== g)); setEupmds([]); }} />)}
+              <DropdownMulti
+                options={sigoongOptions.map(o => ({ value: o.sigoongu_nm, label: `${o.sigoongu_nm}` }))}
+                selected={sigoongus}
+                onChange={v => { setSigoongus(v); if (v.length !== 1) setEupmds([]); }}
+                placeholder={sigoongOptions.length ? "+ 시군구" : "시군구 로딩…"}
+              />
+            </>
+          )}
+          {sidos.length === 1 && sigoongus.length === 1 && (
+            <>
+              <span style={{ color: P.sub, fontSize: 11, margin: "0 2px" }}>›</span>
+              {eupmds.map(e => <Tag key={`em-${e}`} label={`↳ ${e}`} onRemove={() => setEupmds(eupmds.filter(x => x !== e))} />)}
+              <DropdownMulti
+                options={eupmdOptions.map(o => ({ value: o.eupmeuandong_nm, label: `${o.eupmeuandong_nm}` }))}
+                selected={eupmds}
+                onChange={setEupmds}
+                placeholder={eupmdOptions.length ? "+ 읍면동" : "읍면동 로딩…"}
+              />
+            </>
+          )}
+          {sidos.length > 1 && (
+            <span style={{ fontSize: 10, color: P.sub, fontStyle: "italic" }}>※ 시군구·읍면동은 시도 1개 선택 시 활성화</span>
+          )}
         </div>
 
         {/* 업종 */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>업종</span>
-          {majorCats.map(c => <Tag key={c} label={c} onRemove={() => { setMajorCats(majorCats.filter(x => x !== c)); const mids = categories.find(cat => cat.major === c)?.middles.map(m => m.middle) || []; setMiddleCats(middleCats.filter(x => !mids.includes(x))); }} />)}
-          {middleCats.map(c => <Tag key={`m-${c}`} label={`↳ ${c}`} onRemove={() => setMiddleCats(middleCats.filter(x => x !== c))} />)}
-          <DropdownMulti options={categories.map(c => ({ value: c.major, label: `${c.major} (${c.codeCount})` }))} selected={majorCats} onChange={v => { setMajorCats(v); setMiddleCats([]); }} placeholder="대분류" />
+          {majorCats.map(c => <Tag key={c} label={c} onRemove={() => { setMajorCats(majorCats.filter(x => x !== c)); const mids = categories.find(cat => cat.major === c)?.middles.map(m => m.middle) || []; setMiddleCats(middleCats.filter(x => !mids.includes(x))); setSubCats([]); }} />)}
+          {middleCats.map(c => <Tag key={`m-${c}`} label={`↳ ${c}`} onRemove={() => { setMiddleCats(middleCats.filter(x => x !== c)); setSubCats([]); }} />)}
+          {subCats.map(c => <Tag key={`s-${c}`} label={`↳ ${c}`} onRemove={() => setSubCats(subCats.filter(x => x !== c))} />)}
+          <DropdownMulti options={categories.map(c => ({ value: c.major, label: `${c.major} (${c.codeCount})` }))} selected={majorCats} onChange={v => { setMajorCats(v); setMiddleCats([]); setSubCats([]); }} placeholder="대분류" />
           {majorCats.length > 0 && availableMiddles.length > 0 && (
-            <DropdownMulti options={availableMiddles.map(m => ({ value: m.middle, label: `${m.middle} (${m.codeCount})` }))} selected={middleCats} onChange={setMiddleCats} placeholder="중분류" />
+            <DropdownMulti options={availableMiddles.map(m => ({ value: m.middle, label: `${m.middle} (${m.codeCount})` }))} selected={middleCats} onChange={v => { setMiddleCats(v); if (v.length !== 1) setSubCats([]); }} placeholder="중분류" />
+          )}
+          {middleCats.length === 1 && (
+            <DropdownMulti
+              options={subOptions.map(o => ({ value: o.subcategory, label: `${o.subcategory}` }))}
+              selected={subCats}
+              onChange={setSubCats}
+              placeholder={subOptions.length ? "+ 소분류" : "소분류 로딩…"}
+            />
+          )}
+          {middleCats.length > 1 && (
+            <span style={{ fontSize: 10, color: P.sub, fontStyle: "italic" }}>※ 소분류는 중분류 1개 선택 시 활성화</span>
           )}
         </div>
 
