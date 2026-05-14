@@ -7,12 +7,16 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 
 async function getAnthropicKey(): Promise<string> {
   if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/de_admin_credentials?service_name=eq.anthropic&is_active=eq.true&select=api_key_encrypted&limit=1`, {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+  if (!SUPABASE_ANON_KEY) return "";
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_get_service_credential`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_service_name: "anthropic" }),
   });
   if (!res.ok) return "";
   const data = await res.json();
-  return data?.[0]?.api_key_encrypted || "";
+  // RPC returns scalar text directly
+  return typeof data === "string" ? data : "";
 }
 
 async function getSegmentCount(segments: any[]): Promise<number> {
