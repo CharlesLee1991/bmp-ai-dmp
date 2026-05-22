@@ -86,25 +86,50 @@ function DropdownMulti({ options, selected, onChange, placeholder, searchable }:
     onChange(selected.includes(v) ? selected.filter(x => x !== v) : [...selected, v]);
   };
   const available = options.filter(o => !selected.includes(o.value));
-  // 검색 가능 여부: 명시 prop 우선, 미지정 시 옵션 8개 이상이면 자동 활성
-  const isSearchable = searchable ?? available.length >= 8;
+  // 검색 가능 여부: 명시 prop 우선, 미지정 시 전체 옵션 8개 이상이면 자동 활성
+  const isSearchable = searchable ?? options.length >= 8;
   const q = query.trim().toLowerCase();
-  const filtered = q
-    ? available.filter(o => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q))
-    : available;
+  // 한글 자모 검색 + 일반 contains 매칭
+  const matchFn = (o: { value: string; label: string }) => {
+    if (!q) return true;
+    const label = o.label.toLowerCase();
+    const value = o.value.toLowerCase();
+    // 단순 contains 우선
+    if (label.includes(q) || value.includes(q)) return true;
+    // 한글 초성 검색 (ㄱㄴㅁ → 강남구 매칭)
+    return matchChoseong(o.label, query.trim());
+  };
+  const filtered = available.filter(matchFn);
+  // 전체선택/해제 — 현재 검색 필터링된 결과 한정으로 동작
+  const selectAllFiltered = () => {
+    const toAdd = filtered.map(o => o.value);
+    if (toAdd.length === 0) return;
+    onChange(Array.from(new Set([...selected, ...toAdd])));
+  };
+  const clearAll = () => onChange([]);
+  // 8개 미만이면 카운터 노출 안 함 (UX 깔끔)
+  const showCounter = options.length >= 8 || selected.length > 0;
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
       <button onClick={() => setOpen(!open)} style={{
         padding: "5px 12px", borderRadius: 20, fontSize: 11, cursor: "pointer",
         border: `1px dashed ${P.border}`, background: "transparent", color: P.sub,
         display: "flex", alignItems: "center", gap: 4
-      }}>+ {placeholder} <span style={{ fontSize: 9 }}>▾</span></button>
+      }}>
+        + {placeholder}
+        {showCounter && (
+          <span style={{ fontSize: 9, fontWeight: 700, color: selected.length > 0 ? P.accent : P.sub }}>
+            ({selected.length}/{options.length})
+          </span>
+        )}
+        <span style={{ fontSize: 9 }}>▾</span>
+      </button>
       {open && (
         <div style={{
           position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 50,
           background: P.card, border: `1px solid ${P.border}`, borderRadius: 10,
           boxShadow: "0 8px 30px rgba(0,0,0,.12)",
-          minWidth: 220, padding: 4, display: "flex", flexDirection: "column"
+          minWidth: 240, padding: 4, display: "flex", flexDirection: "column"
         }}>
           {isSearchable && (
             <div style={{ padding: "6px 8px 4px 8px", borderBottom: `1px solid ${P.border}`, marginBottom: 4 }}>
@@ -112,7 +137,7 @@ function DropdownMulti({ options, selected, onChange, placeholder, searchable }:
                 ref={inputRef}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder={`🔍 검색 (총 ${available.length}개)`}
+                placeholder={`🔍 검색 (총 ${options.length}개${q ? `, ${filtered.length}건 일치` : ""})`}
                 style={{
                   width: "100%", padding: "6px 8px", fontSize: 11,
                   border: `1px solid ${P.border}`, borderRadius: 6,
@@ -123,6 +148,42 @@ function DropdownMulti({ options, selected, onChange, placeholder, searchable }:
               />
             </div>
           )}
+          {/* 전체선택/해제 액션 바 */}
+          {(available.length > 0 || selected.length > 0) && (
+            <div style={{
+              display: "flex", gap: 6, padding: "4px 8px 6px 8px",
+              borderBottom: `1px solid ${P.border}`, marginBottom: 4,
+              fontSize: 10, alignItems: "center"
+            }}>
+              {filtered.length > 0 && (
+                <button
+                  onClick={selectAllFiltered}
+                  style={{
+                    padding: "3px 8px", borderRadius: 4, border: `1px solid ${P.border}`,
+                    background: "transparent", color: P.accent, cursor: "pointer",
+                    fontSize: 10, fontWeight: 600
+                  }}
+                >
+                  {q ? `+ 검색결과 ${filtered.length}개 전체선택` : `+ 전체선택 (${filtered.length})`}
+                </button>
+              )}
+              {selected.length > 0 && (
+                <button
+                  onClick={clearAll}
+                  style={{
+                    padding: "3px 8px", borderRadius: 4, border: `1px solid ${P.border}`,
+                    background: "transparent", color: P.sub, cursor: "pointer",
+                    fontSize: 10
+                  }}
+                >
+                  ✕ 전체해제 ({selected.length})
+                </button>
+              )}
+              <span style={{ marginLeft: "auto", color: P.sub, fontSize: 9 }}>
+                선택 {selected.length} / 전체 {options.length}
+              </span>
+            </div>
+          )}
           <div style={{ maxHeight: 240, overflowY: "auto" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "10px 12px", fontSize: 11, color: P.sub, fontStyle: "italic", textAlign: "center" }}>
@@ -130,7 +191,7 @@ function DropdownMulti({ options, selected, onChange, placeholder, searchable }:
               </div>
             ) : (
               filtered.map(o => (
-                <div key={o.value} onClick={() => { toggle(o.value); setQuery(""); }} style={{
+                <div key={o.value} onClick={() => toggle(o.value)} style={{
                   padding: "7px 12px", fontSize: 12, cursor: "pointer", borderRadius: 6, color: P.text
                 }}
                   onMouseEnter={e => (e.currentTarget.style.background = P.glow)}
@@ -143,6 +204,28 @@ function DropdownMulti({ options, selected, onChange, placeholder, searchable }:
       )}
     </div>
   );
+}
+
+/* ── 한글 초성 검색 매칭 (외부 lib 없이 자체 구현) ── */
+const CHOSEONG_LIST = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+function getChoseong(ch: string): string {
+  const code = ch.charCodeAt(0);
+  // 한글 음절 영역 (가 ~ 힣)
+  if (code >= 0xAC00 && code <= 0xD7A3) {
+    const idx = Math.floor((code - 0xAC00) / 588);
+    return CHOSEONG_LIST[idx];
+  }
+  return ch;
+}
+function isChoseong(ch: string): boolean {
+  return CHOSEONG_LIST.includes(ch);
+}
+function matchChoseong(text: string, query: string): boolean {
+  if (!query) return true;
+  // query가 모두 초성으로만 이뤄진 경우에만 초성 매칭
+  if (!Array.from(query).every(isChoseong)) return false;
+  const textChoseong = Array.from(text).map(getChoseong).join("");
+  return textChoseong.includes(query);
 }
 
 /* ── Stat Card ── */
