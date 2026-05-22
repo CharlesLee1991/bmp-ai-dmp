@@ -61,23 +61,37 @@ function Tag({ label, onRemove }: { label: string; onRemove: () => void }) {
 }
 
 /* ── Dropdown Multi-Select ── */
-function DropdownMulti({ options, selected, onChange, placeholder }: {
+function DropdownMulti({ options, selected, onChange, placeholder, searchable }: {
   options: { value: string; label: string }[];
   selected: string[];
   onChange: (v: string[]) => void;
   placeholder: string;
+  searchable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery(""); } };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
+  useEffect(() => {
+    if (open && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [open]);
   const toggle = (v: string) => {
     onChange(selected.includes(v) ? selected.filter(x => x !== v) : [...selected, v]);
   };
   const available = options.filter(o => !selected.includes(o.value));
+  // 검색 가능 여부: 명시 prop 우선, 미지정 시 옵션 8개 이상이면 자동 활성
+  const isSearchable = searchable ?? available.length >= 8;
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? available.filter(o => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q))
+    : available;
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
       <button onClick={() => setOpen(!open)} style={{
@@ -85,21 +99,46 @@ function DropdownMulti({ options, selected, onChange, placeholder }: {
         border: `1px dashed ${P.border}`, background: "transparent", color: P.sub,
         display: "flex", alignItems: "center", gap: 4
       }}>+ {placeholder} <span style={{ fontSize: 9 }}>▾</span></button>
-      {open && available.length > 0 && (
+      {open && (
         <div style={{
           position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 50,
           background: P.card, border: `1px solid ${P.border}`, borderRadius: 10,
-          boxShadow: "0 8px 30px rgba(0,0,0,.12)", maxHeight: 260, overflowY: "auto",
-          minWidth: 180, padding: 4
+          boxShadow: "0 8px 30px rgba(0,0,0,.12)",
+          minWidth: 220, padding: 4, display: "flex", flexDirection: "column"
         }}>
-          {available.map(o => (
-            <div key={o.value} onClick={() => toggle(o.value)} style={{
-              padding: "7px 12px", fontSize: 12, cursor: "pointer", borderRadius: 6, color: P.text
-            }}
-              onMouseEnter={e => (e.currentTarget.style.background = P.glow)}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >{o.label}</div>
-          ))}
+          {isSearchable && (
+            <div style={{ padding: "6px 8px 4px 8px", borderBottom: `1px solid ${P.border}`, marginBottom: 4 }}>
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder={`🔍 검색 (총 ${available.length}개)`}
+                style={{
+                  width: "100%", padding: "6px 8px", fontSize: 11,
+                  border: `1px solid ${P.border}`, borderRadius: 6,
+                  background: "transparent", color: P.text, outline: "none",
+                  boxSizing: "border-box"
+                }}
+                onKeyDown={e => { if (e.key === "Escape") { setOpen(false); setQuery(""); } }}
+              />
+            </div>
+          )}
+          <div style={{ maxHeight: 240, overflowY: "auto" }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: "10px 12px", fontSize: 11, color: P.sub, fontStyle: "italic", textAlign: "center" }}>
+                {q ? `'${query}' 검색 결과 없음` : "선택 가능한 항목 없음"}
+              </div>
+            ) : (
+              filtered.map(o => (
+                <div key={o.value} onClick={() => { toggle(o.value); setQuery(""); }} style={{
+                  padding: "7px 12px", fontSize: 12, cursor: "pointer", borderRadius: 6, color: P.text
+                }}
+                  onMouseEnter={e => (e.currentTarget.style.background = P.glow)}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >{o.label}</div>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
