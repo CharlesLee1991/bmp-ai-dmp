@@ -16,6 +16,7 @@ import SpendingTab from "./SpendingTab";
 import CardComparisonTab from "./CardComparisonTab";
 import ExportHistoryTab from "./ExportHistoryTab";
 import ShoppingProductsTab from "./ShoppingProductsTab";
+import BehaviorPlaceholder from "./BehaviorPlaceholder";
 import type { DmpUser } from "@/lib/auth";
 
 const P = {
@@ -292,7 +293,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
-  const [tab, setTab] = useState<"audience" | "spending" | "cards" | "exports" | "shopping">("audience");
+  const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping">("card");
   const isAdmin = user.role === "admin";
 
   /* month range filter */
@@ -401,7 +402,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   /* shopping categories for audience tab */
   const { data: shopData } = useSWR(
 
-    tab === "audience" ? "/api/shopping?days=7" : null,
+    tab === "card" ? "/api/shopping?days=7" : null,
     fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
   );
   const shopCategories = useMemo(() => {
@@ -419,13 +420,13 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   }, [shopData]);
 
   const { data: amountData } = useSWR(
-    tab === "audience" ? "/api/amount-bucket" : null,
+    tab === "card" ? "/api/amount-bucket" : null,
     fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
   );
   const amountBuckets: { bucket: string; label: string; ads_count: number; txn_count: number; total_amt: number }[] = Array.isArray(amountData) ? amountData : [];
 
   const { data: adEngData } = useSWR(
-    tab === "audience" ? "/api/ad-engagement" : null,
+    tab === "card" ? "/api/ad-engagement" : null,
     fetcher, { revalidateOnFocus: false, dedupingInterval: 120000, keepPreviousData: true }
   );
   const adHourly: { hr: number; users: number; imps: number; clicks: number }[] = adEngData?.hourly || [];
@@ -582,7 +583,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {/* TAB */}
       <div style={{ padding: "0 28px", display: "flex", gap: 0, borderBottom: `1px solid ${P.border}` }}>
         {([
-          { id: "audience" as const, label: "👥 오디언스", roles: ["admin", "advertiser"] },
+          { id: "card" as const, label: "💳 카드", roles: ["admin", "advertiser"] },
+          { id: "subway" as const, label: "🚇 지하철", roles: ["admin", "advertiser"] },
+          { id: "bus" as const, label: "🚌 버스", roles: ["admin", "advertiser"] },
+          { id: "membership" as const, label: "🎟️ 멤버십", roles: ["admin", "advertiser"] },
           { id: "exports" as const, label: "📋 전송 이력", roles: ["admin", "advertiser"] },
           { id: "spending" as const, label: "💳 소비 트렌드", roles: ["admin"] },
           { id: "cards" as const, label: "🏦 카드사 비교", roles: ["admin"] },
@@ -665,7 +669,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
 
         {/* 쇼핑 카테고리 */}
-        {tab === "audience" && shopCategories.length > 0 && (
+        {tab === "card" && shopCategories.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>쇼핑</span>
             {shopCats.map(c => <Tag key={`sc-${c}`} label={`🛒 ${c}`} onRemove={() => setShopCats(shopCats.filter(x => x !== c))} />)}
@@ -674,7 +678,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         )}
 
         {/* 금액구간 */}
-        {tab === "audience" && (
+        {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>금액</span>
             {amountFilters.map(a => <Tag key={`amt-${a}`} label={`💰 ${({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a}`} onRemove={() => setAmountFilters(amountFilters.filter(x => x !== a))} />)}
@@ -709,7 +713,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         )}
 
         {/* 매체/카드사 */}
-        {tab === "audience" && (
+        {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>매체</span>
             {cardCompanies.map(c => <Tag key={`cc-${c}`} label={`🏦 ${({KB:"KB국민",NH:"NH농협",BC:"BC",SH:"신한",LOCA:"LOCA",NHPAY:"NH페이",OCB:"OCB",SKT:"SKT",SYRUP:"시럽",DLOCA:"D-LOCA"} as Record<string,string>)[c] || c}`} onRemove={() => setCardCompanies(cardCompanies.filter(x => x !== c))} />)}
@@ -729,7 +733,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         )}
 
         {/* 통신사 */}
-        {tab === "audience" && (
+        {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>통신</span>
             {telecoms.map(t => <Tag key={`tel-${t}`} label={`📡 ${({K:"KT",T:"SKT",U:"LG U+",Z:"알뜰폰"} as Record<string,string>)[t] || t}`} onRemove={() => setTelecoms(telecoms.filter(x => x !== t))} />)}
@@ -743,7 +747,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         )}
 
         {/* ADID 업로드 */}
-        {tab === "audience" && (
+        {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>ADID</span>
             {uploadSession && uploadInfo ? (
@@ -784,7 +788,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         )}
 
         {/* 조회기간 */}
-        {(tab === "audience" || tab === "spending" || tab === "cards") && (
+        {(tab === "card" || tab === "spending" || tab === "cards") && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>기간</span>
             {[{ m: 12, label: "1년" }, { m: 1, label: "1개월" }, { m: 3, label: "3개월" }, { m: 6, label: "6개월" }].map(o => (
@@ -811,7 +815,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             {anyFilter && <button onClick={reset} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid ${P.accent}44`, borderRadius: 16, padding: "4px 14px", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</button>}
             {filterParts.length > 0 && <span style={{ fontSize: 10, color: P.sub }}>{filterParts.join(" · ")}</span>}
           </div>
-          {tab === "audience" && (
+          {tab === "card" && (
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: campaignOpen ? "#7c3aed" : "linear-gradient(135deg, #7c3aed, #a855f7)", color: "#fff", border: "none" }}>🎯 캠페인 타겟 찾기</button>
               <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 런컴 타겟 전송</button>
@@ -821,7 +825,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       </div>
 
       {/* ─── CAMPAIGN TARGET FINDER ─── */}
-      {campaignOpen && tab === "audience" && (
+      {campaignOpen && tab === "card" && (
         <div style={{ margin: "12px 28px 0", padding: 18, borderRadius: 12, background: "linear-gradient(135deg, #f5f3ff, #ede9fe)", border: "1px solid #7c3aed33" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>🎯 캠페인 타겟 찾기</div>
@@ -946,7 +950,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       )}
 
       {/* ─── AUDIENCE TAB ─── */}
-      {tab === "audience" && (<>
+      {tab === "card" && (<>
         <div style={{ padding: "16px 28px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           <Stat label="총 이용자" value={fmt(total)} sub={anyFilter ? "필터 적용" : "전체"} />
           <Stat label="남녀 비율" value={total > 0 ? `${Math.round(mT / total * 100)}:${Math.round(fT / total * 100)}${uT > 0 ? `:${Math.round(uT / total * 100)}` : ""}` : "-"} sub={`M ${fmt(mT)} · F ${fmt(fT)}${uT > 0 ? ` · ? ${fmt(uT)}` : ""}`} color={P.m} />
@@ -1182,6 +1186,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {tab === "cards" && <CardComparisonTab ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
       {tab === "shopping" && <ShoppingProductsTab />}
+      {(tab === "subway" || tab === "bus" || tab === "membership") && <BehaviorPlaceholder behavior={tab} />}
 
       {/* EXPORT MODAL */}
       {exportOpen && (
