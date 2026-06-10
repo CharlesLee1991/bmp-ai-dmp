@@ -375,7 +375,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   /* segment preview */
   const anyFilter = sidos.length > 0 || sigoongus.length > 0 || eupmds.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || middleCats.length > 0 || subCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || cardCompanies.length > 0 || telecoms.length > 0 || mobileBrands.length > 0 || !!uploadSession;
   const segKey = `${sidos}|${sigoongus}|${eupmds}|${sexes}|${ages}|${majorCats}|${middleCats}|${subCats}|${shopCats}|${amountFilters}|${cardCompanies}|${telecoms}|${mobileBrands}|${uploadSession || ""}`;
-  const { data: segData, isLoading: segLoading } = useSWR(
+  const { data: segData, isLoading: segLoading, isValidating: segValidating } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
       const segs: { seg: string; value: string | string[] }[] = [];
@@ -890,11 +890,16 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {/* ─── SEGMENT PREVIEW BANNER ─── */}
       {anyFilter && (
-        <div style={{ margin: "12px 28px 0", padding: "12px 18px", borderRadius: 10, background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(13,148,136,0.06))", border: `1px solid ${P.accent}33`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "relative", overflow: "hidden", margin: "12px 28px 0", padding: "12px 18px", borderRadius: 10, background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(13,148,136,0.06))", border: `1px solid ${P.accent}33`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {(segLoading || segValidating) && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `${P.accent}22` }}>
+              <div className="dmp-seg-prog" style={{ height: "100%", width: "35%", background: P.accent, borderRadius: 2 }} />
+            </div>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 16 }}>🎯</span>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: P.accent }}>세그먼트 프리뷰{segLoading && <span style={{ fontWeight: 400, color: P.sub, marginLeft: 8 }}>계산 중...</span>}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: P.accent }}>세그먼트 프리뷰{(segLoading || segValidating) && <span style={{ fontWeight: 400, color: P.sub, marginLeft: 8 }}>갱신 중…</span>}</div>
               <div style={{ fontSize: 11, color: P.sub, marginTop: 2 }}>{filterParts.join(" · ") || "필터 적용 중"}</div>
             </div>
           </div>
@@ -923,7 +928,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </button>
             {segEstimate && (
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: P.accent, letterSpacing: "-0.03em" }}>{fmt(segEstimate.estimated_audience)}<span style={{ fontSize: 12, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span></div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: P.accent, letterSpacing: "-0.03em", opacity: segValidating ? 0.4 : 1, transition: "opacity 0.2s" }}>{fmt(segEstimate.estimated_audience)}<span style={{ fontSize: 12, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span></div>
                 <div style={{ fontSize: 10, color: P.sub }}>전체 {fmt(segEstimate.total_audience)}명 중 {(segEstimate.selectivity * 100).toFixed(1)}%{segData?.meta?.response_time_ms && ` · ${segData.meta.response_time_ms}ms`}</div>
               </div>
             )}
