@@ -284,6 +284,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [amountFilters, setAmountFilters] = useState<string[]>([]);
   const [cardCompanies, setCardCompanies] = useState<string[]>([]);
   const [telecoms, setTelecoms] = useState<string[]>([]);
+  const [mobileBrands, setMobileBrands] = useState<string[]>([]);
   const [uploadSession, setUploadSession] = useState<string | null>(null);
   const [uploadInfo, setUploadInfo] = useState<{ total: number; matched: number; rate: number } | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -372,8 +373,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sigoongus.length > 0 || eupmds.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || middleCats.length > 0 || subCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || cardCompanies.length > 0 || telecoms.length > 0 || !!uploadSession;
-  const segKey = `${sidos}|${sigoongus}|${eupmds}|${sexes}|${ages}|${majorCats}|${middleCats}|${subCats}|${shopCats}|${amountFilters}|${cardCompanies}|${telecoms}|${uploadSession || ""}`;
+  const anyFilter = sidos.length > 0 || sigoongus.length > 0 || eupmds.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || middleCats.length > 0 || subCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || cardCompanies.length > 0 || telecoms.length > 0 || mobileBrands.length > 0 || !!uploadSession;
+  const segKey = `${sidos}|${sigoongus}|${eupmds}|${sexes}|${ages}|${majorCats}|${middleCats}|${subCats}|${shopCats}|${amountFilters}|${cardCompanies}|${telecoms}|${mobileBrands}|${uploadSession || ""}`;
   const { data: segData, isLoading: segLoading } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -389,6 +390,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (amountFilters.length) segs.push({ seg: "amount", value: amountFilters.length === 1 ? amountFilters[0] : amountFilters });
       if (cardCompanies.length) segs.push({ seg: "card_company", value: cardCompanies.length === 1 ? cardCompanies[0] : cardCompanies });
       if (telecoms.length) segs.push({ seg: "telecom", value: telecoms.length === 1 ? telecoms[0] : telecoms });
+    if (mobileBrands.length) segs.push({ seg: "mobile_brand", value: mobileBrands.length === 1 ? mobileBrands[0] : mobileBrands });
       const reqBody: any = { segments: segs };
       if (shopCats.length) reqBody.shop_category = shopCats.join(",");
       if (uploadSession) reqBody.upload_session = uploadSession;
@@ -484,6 +486,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               if (uploadSession) f.upload_session = uploadSession;
               if (cardCompanies.length) f.card_company = cardCompanies.join(",");
               if (telecoms.length) f.telecom = telecoms.join(",");
+              if (mobileBrands.length) f.mobile_brand = mobileBrands.join(",");
               return f;
             })(),
             audience_count: exportResult.data?.ads_id_count || 0,
@@ -541,6 +544,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (cardCompanies.length) filterParts.push("🏦 " + cardCompanies.map(c => CARD_LABELS[c] || c).join(", "));
   const TELE_LABELS: Record<string,string> = { K: "KT", T: "SKT", U: "LG U+", Z: "알뜰폰" };
   if (telecoms.length) filterParts.push("📡 " + telecoms.map(t => TELE_LABELS[t] || t).join(", "));
+  if (mobileBrands.length) filterParts.push("📱 " + mobileBrands.map(b => ({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b).join(", "));
   if (uploadSession && uploadInfo) filterParts.push(`📤 ADID ${fmt(uploadInfo.matched)}건 매칭`);
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
@@ -743,6 +747,21 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               { value: "U", label: "LG U+" },
               { value: "Z", label: "알뜰폰" },
             ]} selected={telecoms} onChange={setTelecoms} placeholder="+ 통신사" />
+          </div>
+        )}
+
+        {/* 모바일 브랜드 */}
+        {tab === "card" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>단말</span>
+            {mobileBrands.map(b => <Tag key={`mb-${b}`} label={`📱 ${({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b}`} onRemove={() => setMobileBrands(mobileBrands.filter(x => x !== b))} />)}
+            <DropdownMulti options={[
+              { value: "Apple", label: "애플" },
+              { value: "SAMSUNG", label: "삼성" },
+              { value: "LG", label: "LG" },
+              { value: "ZTE", label: "ZTE" },
+              { value: "XIAOMI", label: "샤오미" },
+            ]} selected={mobileBrands} onChange={setMobileBrands} placeholder="+ 단말" />
           </div>
         )}
 
@@ -1204,6 +1223,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {uploadSession && uploadInfo && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#dbeafe", fontSize: 11, border: "1px solid #3b82f644", color: "#1d4ed8", fontWeight: 600 }}>📤 ADID {fmt(uploadInfo.matched)}건 매칭</span>}
               {cardCompanies.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#e0f2fe", fontSize: 11, border: "1px solid #0284c744", color: "#0c4a6e", fontWeight: 600 }}>🏦 매체: {cardCompanies.join(", ")}</span>}
               {telecoms.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", fontSize: 11, border: "1px solid #16a34a44", color: "#14532d", fontWeight: 600 }}>📡 통신: {telecoms.map(t => ({K:"KT",T:"SKT",U:"LG U+",Z:"알뜰폰"} as Record<string,string>)[t] || t).join(", ")}</span>}
+              {mobileBrands.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>📱 단말: {mobileBrands.map(b => ({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b).join(", ")}</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
