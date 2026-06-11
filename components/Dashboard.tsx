@@ -563,7 +563,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #3b82f6, #0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff" }}>D</div>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>DMP Audience Explorer</h1>
-            <p style={{ fontSize: 11, color: P.sub, margin: 0 }}>BizSpring · 13큐브 · 15세그먼트 키 · 멀티셀렉트</p>
+            <p style={{ fontSize: 11, color: P.sub, margin: 0 }}>BizSpring · 13큐브 · 16세그먼트 키 · 멀티셀렉트</p>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
