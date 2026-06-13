@@ -286,6 +286,11 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [telecoms, setTelecoms] = useState<string[]>([]);
   const [mobileBrands, setMobileBrands] = useState<string[]>([]);
   const [audCats, setAudCats] = useState<string[]>([]);
+  const [apprlMetric, setApprlMetric] = useState<"cnt"|"amt">("cnt");
+  const [apprlPeriod, setApprlPeriod] = useState<"30"|"90"|"180"|"365">("90");
+  const [apprlOper, setApprlOper] = useState<">="|"<="|"between">(">=");
+  const [apprlValue, setApprlValue] = useState<string>("");
+  const [apprlValue2, setApprlValue2] = useState<string>("");
   const [uploadSession, setUploadSession] = useState<string | null>(null);
   const [uploadInfo, setUploadInfo] = useState<{ total: number; matched: number; rate: number } | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -374,8 +379,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const meta = apiData?.meta;
 
   /* segment preview */
-  const anyFilter = sidos.length > 0 || sigoongus.length > 0 || eupmds.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || middleCats.length > 0 || subCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || cardCompanies.length > 0 || telecoms.length > 0 || mobileBrands.length > 0 || audCats.length > 0 || !!uploadSession;
-  const segKey = `${sidos}|${sigoongus}|${eupmds}|${sexes}|${ages}|${majorCats}|${middleCats}|${subCats}|${shopCats}|${amountFilters}|${cardCompanies}|${telecoms}|${mobileBrands}|${audCats}|${uploadSession || ""}`;
+  const anyFilter = sidos.length > 0 || sigoongus.length > 0 || eupmds.length > 0 || sexes.length > 0 || ages.length > 0 || majorCats.length > 0 || middleCats.length > 0 || subCats.length > 0 || shopCats.length > 0 || amountFilters.length > 0 || cardCompanies.length > 0 || telecoms.length > 0 || mobileBrands.length > 0 || audCats.length > 0 || (!!apprlValue && tab === "card") || !!uploadSession;
+  const segKey = `${sidos}|${sigoongus}|${eupmds}|${sexes}|${ages}|${majorCats}|${middleCats}|${subCats}|${shopCats}|${amountFilters}|${cardCompanies}|${telecoms}|${mobileBrands}|${audCats}|${apprlMetric}${apprlPeriod}${apprlOper}${apprlValue}-${apprlValue2}|${uploadSession || ""}`;
   const { data: segData, isLoading: segLoading, isValidating: segValidating } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
@@ -393,6 +398,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (telecoms.length) segs.push({ seg: "telecom", value: telecoms.length === 1 ? telecoms[0] : telecoms });
     if (mobileBrands.length) segs.push({ seg: "mobile_brand", value: mobileBrands.length === 1 ? mobileBrands[0] : mobileBrands });
       if (audCats.length) segs.push({ seg: "cat1", value: audCats.length === 1 ? audCats[0] : audCats });
+      if (apprlValue && tab === "card") segs.push({ seg: apprlMetric === "cnt" ? "apprl_cnt" : "apprl_amt", period: apprlPeriod, oper: apprlOper, value: Number(apprlValue), ...(apprlOper === "between" ? { value2: Number(apprlValue2 || apprlValue) } : {}) });
       const reqBody: any = { segments: segs };
       if (shopCats.length) reqBody.shop_category = shopCats.join(",");
       if (uploadSession) reqBody.upload_session = uploadSession;
@@ -454,6 +460,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (shopCats.length) filters.shop_category = shopCats.join(",");
       if (uploadSession) filters.upload_session = uploadSession;
       if (audCats.length) filters.cat1 = audCats.join(",");
+      if (apprlValue && tab === "card") filters.apprl = { metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValue), ...(apprlOper === "between" ? { value2: Number(apprlValue2 || apprlValue) } : {}) };
       const resp = await fetch("https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenR0d2dxYWhoemxycW96bGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Nzc4ODYsImV4cCI6MjA2NTE1Mzg4Nn0.RCa4oahcW4grLkRdW33tph0LJfwwIL7RPe87smUZTmo" },
@@ -491,6 +498,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               if (telecoms.length) f.telecom = telecoms.join(",");
               if (mobileBrands.length) f.mobile_brand = mobileBrands.join(",");
               if (audCats.length) f.cat1 = audCats.join(",");
+              if (apprlValue && tab === "card") f.apprl = JSON.stringify({ metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValue), ...(apprlOper === "between" ? { value2: Number(apprlValue2 || apprlValue) } : {}) });
               return f;
             })(),
             audience_count: exportResult.data?.ads_id_count || 0,
@@ -550,6 +558,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   if (telecoms.length) filterParts.push("📡 " + telecoms.map(t => TELE_LABELS[t] || t).join(", "));
   if (mobileBrands.length) filterParts.push("📱 " + mobileBrands.map(b => ({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b).join(", "));
   if (audCats.length) filterParts.push("🏷️ " + audCats.join(", "));
+  if (apprlValue && tab === "card") { const mLab = apprlMetric === "cnt" ? "승인횟수" : "승인금액"; const pLab = apprlPeriod + "일"; const oLab = apprlOper === "between" ? `${apprlValue}~${apprlValue2 || apprlValue}` : `${apprlOper} ${apprlValue}`; filterParts.push(`💳 ${mLab}(${pLab}) ${oLab}`); }
   if (uploadSession && uploadInfo) filterParts.push(`📤 ADID ${fmt(uploadInfo.matched)}건 매칭`);
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
@@ -790,6 +799,39 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               { value: "유흥", label: "유흥" },
               { value: "기타", label: "기타" },
             ]} selected={audCats} onChange={setAudCats} placeholder="+ 대카테고리" />
+          </div>
+        )}
+
+        {/* 결제 (카드 승인 횟수/금액) */}
+        {tab === "card" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>결제</span>
+            <div style={{ display: "inline-flex", borderRadius: 6, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+              {([["cnt","승인횟수"],["amt","승인금액"]] as const).map(([v, lab]) => (
+                <button key={v} onClick={() => setApprlMetric(v)} style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer", background: apprlMetric === v ? P.accent : "#fff", color: apprlMetric === v ? "#fff" : P.sub }}>{lab}</button>
+              ))}
+            </div>
+            <select value={apprlPeriod} onChange={e => setApprlPeriod(e.target.value as any)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text, cursor: "pointer" }}>
+              <option value="30">최근 30일</option>
+              <option value="90">최근 90일</option>
+              <option value="180">최근 180일</option>
+              <option value="365">최근 365일</option>
+            </select>
+            <select value={apprlOper} onChange={e => setApprlOper(e.target.value as any)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text, cursor: "pointer" }}>
+              <option value=">=">이상</option>
+              <option value="<=">이하</option>
+              <option value="between">범위</option>
+            </select>
+            <input type="number" value={apprlValue} onChange={e => setApprlValue(e.target.value)} placeholder={apprlMetric === "cnt" ? "횟수" : "금액(원)"} style={{ width: 90, padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text }} />
+            {apprlOper === "between" && (
+              <>
+                <span style={{ fontSize: 11, color: P.sub }}>~</span>
+                <input type="number" value={apprlValue2} onChange={e => setApprlValue2(e.target.value)} placeholder={apprlMetric === "cnt" ? "횟수" : "금액(원)"} style={{ width: 90, padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text }} />
+              </>
+            )}
+            {apprlValue && (
+              <button onClick={() => { setApprlValue(""); setApprlValue2(""); }} style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.sub, cursor: "pointer" }}>초기화</button>
+            )}
           </div>
         )}
 
@@ -1258,6 +1300,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {telecoms.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", fontSize: 11, border: "1px solid #16a34a44", color: "#14532d", fontWeight: 600 }}>📡 통신: {telecoms.map(t => ({K:"KT",T:"SKT",U:"LG U+",Z:"알뜰폰"} as Record<string,string>)[t] || t).join(", ")}</span>}
               {mobileBrands.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>📱 단말: {mobileBrands.map(b => ({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b).join(", ")}</span>}
               {audCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>🏷️ 소비: {audCats.join(", ")}</span>}
+              {apprlValue && tab === "card" && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>💳 {apprlMetric === "cnt" ? "승인횟수" : "승인금액"}({apprlPeriod}일) {apprlOper === "between" ? `${apprlValue}~${apprlValue2 || apprlValue}` : `${apprlOper} ${apprlValue}`}</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
