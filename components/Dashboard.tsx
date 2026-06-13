@@ -384,7 +384,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const { data: segData, isLoading: segLoading, isValidating: segValidating } = useSWR(
     anyFilter ? `/api/segment-preview#${segKey}` : null,
     async () => {
-      const segs: { seg: string; value: string | string[] }[] = [];
+      const segs: { seg: string; value: string | string[] | number; period?: string; oper?: string; value2?: number }[] = [];
       if (sexes.length) segs.push({ seg: "gender", value: sexes.length === 1 ? sexes[0] : sexes });
       if (ages.length) segs.push({ seg: "age", value: ages.length === 1 ? ages[0] : ages });
       if (sidos.length) segs.push({ seg: "region", value: sidos.length === 1 ? sidos[0] : sidos });
@@ -460,7 +460,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (shopCats.length) filters.shop_category = shopCats.join(",");
       if (uploadSession) filters.upload_session = uploadSession;
       if (audCats.length) filters.cat1 = audCats.join(",");
-      if (apprlValue && tab === "card") filters.apprl = { metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValue), ...(apprlOper === "between" ? { value2: Number(apprlValue2 || apprlValue) } : {}) };
+      if (apprlValue && tab === "card") filters.apprl = JSON.stringify({ metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValue), ...(apprlOper === "between" ? { value2: Number(apprlValue2 || apprlValue) } : {}) });
       const resp = await fetch("https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenR0d2dxYWhoemxycW96bGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Nzc4ODYsImV4cCI6MjA2NTE1Mzg4Nn0.RCa4oahcW4grLkRdW33tph0LJfwwIL7RPe87smUZTmo" },
