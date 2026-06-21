@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     apikey: SUPABASE_ANON_KEY,
     Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     "Content-Type": "application/json",
-    Prefer: "return=minimal",
+    Prefer: "return=minimal,resolution=ignore-duplicates",  // T-ADID-UPLOAD-BUG: ON CONFLICT DO NOTHING
   };
 
   try {
@@ -26,10 +26,12 @@ export async function POST(req: NextRequest) {
 
     const text = await file.text();
     // Parse: one ADID per line, or comma-separated
-    const raw = text.replace(/,/g, "\n").split("\n")
+    const raw = text.replace(/,/g, "
+").split("
+")
       .map(l => l.trim())
       .filter(l => l.length >= 8 && /^[a-fA-F0-9\-]+$/.test(l));
-    const adids = Array.from(new Set(raw)); // deduplicate
+    const adids = Array.from(new Set(raw)); // client-side deduplicate
 
     if (adids.length === 0) {
       return NextResponse.json({ success: false, error: "No valid ADIDs found" }, { status: 400 });
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
     // Generate session ID
     const sessionId = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // Batch insert (max 1000 per request)
+    // Batch upsert — ON CONFLICT (session_id, ads_id) DO NOTHING (server-side deduplicate)
     const batchSize = 1000;
     for (let i = 0; i < adids.length; i += batchSize) {
       const batch = adids.slice(i, i + batchSize).map(ads_id => ({
@@ -46,18 +48,21 @@ export async function POST(req: NextRequest) {
         ads_id,
       }));
 
-      const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/de_dmp_uploaded_audience`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(batch),
-      });
+      const insertRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/de_dmp_uploaded_audience?on_conflict=session_id,ads_id`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(batch),
+        }
+      );
       if (!insertRes.ok) {
         const err = await insertRes.text();
         return NextResponse.json({ success: false, error: `Insert failed: ${err}` }, { status: 500 });
       }
     }
 
-    // Match
+    // Match (DISTINCT 기반 집계로 수정된 RPC)
     const matchRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_match_uploaded_ads`, {
       method: "POST",
       headers: { ...headers, Prefer: "" },
