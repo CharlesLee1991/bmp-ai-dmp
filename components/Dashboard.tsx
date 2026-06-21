@@ -17,6 +17,7 @@ import CardComparisonTab from "./CardComparisonTab";
 import ExportHistoryTab from "./ExportHistoryTab";
 import ShoppingProductsTab from "./ShoppingProductsTab";
 import BehaviorPlaceholder from "./BehaviorPlaceholder";
+import TransitSegment from "./TransitSegment";
 import type { DmpUser } from "@/lib/auth";
 
 const P = {
@@ -1283,7 +1284,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {tab === "cards" && <CardComparisonTab ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
       {tab === "shopping" && <ShoppingProductsTab />}
-      {(tab === "subway" || tab === "bus" || tab === "membership") && <BehaviorPlaceholder behavior={tab} />}
+      {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} />}
+      {tab === "membership" && <BehaviorPlaceholder behavior="membership" />}
 
       {/* EXPORT MODAL */}
       {exportOpen && (
@@ -1338,3 +1340,4 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     </div>
   );
 }
+
