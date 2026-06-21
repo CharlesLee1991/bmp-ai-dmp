@@ -1284,7 +1284,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {tab === "cards" && <CardComparisonTab ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
       {tab === "shopping" && <ShoppingProductsTab />}
-      {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} />}
+      {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} sidos={sidos} sexes={sexes} ages={ages} ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "membership" && <BehaviorPlaceholder behavior="membership" />}
 
       {/* EXPORT MODAL */}
