@@ -38,19 +38,36 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
 const fmt = (n: number) =>
   n >= 10000 ? `${(n / 10000).toFixed(1)}만` : n.toLocaleString();
 
-export default function TransitSegment({ tab }: { tab: "subway" | "bus" }) {
+interface Props {
+  tab: "subway" | "bus";
+  sidos?: string[];
+  sexes?: string[];
+  ages?: string[];
+  ymFrom?: string;
+  ymTo?: string;
+}
+
+export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [], ymFrom, ymTo }: Props) {
   const [cat, setCat] = useState("");
   const [onOff, setOnOff] = useState("");
 
-  const segKey = `transit|${cat}|${onOff}`;
+  const segKey = `transit|${tab}|${cat}|${onOff}|${sidos.join(",")}|${sexes.join(",")}|${ages.join(",")}|${ymFrom}|${ymTo}`;
 
   const { data, isLoading } = useSWR(
     `/api/segment-preview#${segKey}`,
     async () => {
-      const segs: { seg: string; value: string | string[] }[] = [];
+      const segs: { seg: string; value: string | string[]; }[] = [];
+
+      // 기본 필터 (성별·연령·지역) — AND 결합
+      if (sexes.length) segs.push({ seg: "gender", value: sexes.length === 1 ? sexes[0] : sexes });
+      if (ages.length) segs.push({ seg: "age", value: ages.length === 1 ? ages[0] : ages });
+      if (sidos.length) segs.push({ seg: "region", value: sidos.length === 1 ? sidos[0] : sidos });
+
+      // 교통 필터
       if (cat) segs.push({ seg: "transit_cat", value: cat });
       else segs.push({ seg: "transit_cat", value: ["BSUB", "GSUB"] });
       if (onOff) segs.push({ seg: "transit_on_off", value: onOff });
+
       const res = await fetch("/api/segment-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,6 +81,13 @@ export default function TransitSegment({ tab }: { tab: "subway" | "bus" }) {
   const audience: number | null = data?.success ? (data.data?.estimated_audience ?? 0) : null;
   const noData = audience === null || audience === 0;
 
+  // 적용 중인 기본 필터 표시용
+  const activeBaseFilters = [
+    ...sexes.map(s => s === "M" ? "남성" : s === "F" ? "여성" : "알수없음"),
+    ...ages.map(a => `${a}대`),
+    ...sidos,
+  ];
+
   return (
     <div style={{ padding: "28px 28px 40px" }}>
       {/* 헤더 */}
@@ -74,9 +98,17 @@ export default function TransitSegment({ tab }: { tab: "subway" | "bus" }) {
         <div style={{ fontSize: 12, color: P.sub }}>
           교통카드 이용 데이터 기반 · 오늘 19:00 KST 이후 집계 반영
         </div>
+        {activeBaseFilters.length > 0 && (
+          <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub }}>기본 필터 적용 중:</span>
+            {activeBaseFilters.map((f, i) => (
+              <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: P.glow, color: P.accent, border: `1px solid ${P.accent}33` }}>{f}</span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* 필터 카드 */}
+      {/* 교통 필터 카드 */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "14px 16px", minWidth: 240 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: P.sub, marginBottom: 10, letterSpacing: ".05em" }}>교통유형</div>
@@ -100,7 +132,9 @@ export default function TransitSegment({ tab }: { tab: "subway" | "bus" }) {
       {/* 오디언스 카운트 */}
       <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: P.sub, marginBottom: 6, letterSpacing: ".05em" }}>예상 오디언스</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: P.sub, marginBottom: 6, letterSpacing: ".05em" }}>
+            예상 오디언스{activeBaseFilters.length > 0 ? ` (${activeBaseFilters.join(" · ")} 기준)` : ""}
+          </div>
           {isLoading ? (
             <div style={{ fontSize: 13, color: P.sub }}>계산 중…</div>
           ) : noData ? (
