@@ -131,7 +131,11 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: P.sub, marginBottom: 8 }}>교통유형</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {CAT_OPTIONS.map(o => <Chip key={o.value} label={o.label} active={cat === o.value} onClick={() => setCat(o.value)} />)}
+            {CAT_OPTIONS.map(o => (
+              <Chip key={o.value} label={o.label}
+                active={o.value === "" ? (cat === defaultCat || cat === "") : cat === o.value}
+                onClick={() => setCat(o.value === "" ? defaultCat : o.value)} />
+            ))}
           </div>
         </div>
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px" }}>
