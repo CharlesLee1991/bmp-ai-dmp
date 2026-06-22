@@ -8,14 +8,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Missing SUPABASE_ANON_KEY" }, { status: 500 });
 
   const body = await req.json();
-  const { cat, on_off, sido, sex, age } = body;
+  const { cat, on_off, sido, sex, age, station_id } = body;
 
   const rpcBody: Record<string, string> = {};
-  if (cat)    rpcBody.p_cat    = cat;
-  if (on_off) rpcBody.p_on_off = on_off;
-  if (sido)   rpcBody.p_sido   = sido;
-  if (sex)    rpcBody.p_sex    = sex;
-  if (age)    rpcBody.p_age    = age;
+  if (cat)        rpcBody.p_cat        = cat;
+  if (on_off)     rpcBody.p_on_off     = on_off;
+  if (sido)       rpcBody.p_sido       = sido;
+  if (sex)        rpcBody.p_sex        = sex;
+  if (age)        rpcBody.p_age        = age;
+  if (station_id) rpcBody.p_station_id = station_id;
 
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_transit_dashboard`, {
