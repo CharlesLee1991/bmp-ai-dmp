@@ -19,7 +19,7 @@ const AGE_LABEL: Record<string, string> = {
 };
 
 const CAT_OPTIONS = [
-  { value: "", label: "전체 교통" },
+  { value: "", label: "전체 (탭 기본)" },
   { value: "BSUB", label: "대중교통(버스+지하철)" },
   { value: "GSUB", label: "광역교통" },
 ];
@@ -55,15 +55,17 @@ interface Props {
 }
 
 export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] }: Props) {
-  const [cat, setCat] = useState("");
+  // tab별 기본 cat: subway=지하철계열(SUB,GSUB), bus=버스계열(BSUB,BUS)
+  const defaultCat = tab === "subway" ? "SUB,GSUB" : "BSUB,BUS";
+  const [cat, setCat] = useState(defaultCat);
   const [onOff, setOnOff] = useState("");
   const [selectedStation, setSelectedStation] = useState<string>("");
 
-  const fetchKey = `/api/transit#${tab}|${cat}|${onOff}|${selectedStation}|${sidos.join(",")}|${sexes.join(",")}|${ages.join(",")}`;
+  const fetchKey = `/api/transit#${tab}|${defaultCat}|${cat}|${onOff}|${selectedStation}|${sidos.join(",")}|${sexes.join(",")}|${ages.join(",")}`;
 
   const { data: raw, isLoading } = useSWR(fetchKey, async () => {
     const body: Record<string, string> = {};
-    if (cat)             body.cat        = cat;
+    body.cat = cat || defaultCat;  // tab 기본 cat 항상 전달
     if (onOff)           body.on_off     = onOff;
     if (selectedStation) body.station_id = selectedStation;
     if (sidos.length)    body.sido       = sidos.join(",");
