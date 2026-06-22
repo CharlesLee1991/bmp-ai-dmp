@@ -26,9 +26,7 @@ export async function POST(req: NextRequest) {
 
     const text = await file.text();
     // Parse: one ADID per line, or comma-separated
-    const raw = text.replace(/,/g, "
-").split("
-")
+    const raw = text.replace(/,/g, "\n").split("\n")
       .map(l => l.trim())
       .filter(l => l.length >= 8 && /^[a-fA-F0-9\-]+$/.test(l));
     const adids = Array.from(new Set(raw)); // client-side deduplicate
