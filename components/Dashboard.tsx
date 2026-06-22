@@ -394,9 +394,11 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (sidos.length) segs.push({ seg: "region", value: sidos.length === 1 ? sidos[0] : sidos });
       if (sigoongus.length) segs.push({ seg: "city", value: sigoongus.length === 1 ? sigoongus[0] : sigoongus });
       if (eupmds.length) segs.push({ seg: "district", value: eupmds.length === 1 ? eupmds[0] : eupmds });
-      if (subCats.length) segs.push({ seg: "subcategory", value: subCats.length === 1 ? subCats[0] : subCats });
-      else if (middleCats.length) segs.push({ seg: "middle_category", value: middleCats.length === 1 ? middleCats[0] : middleCats });
-      else if (majorCats.length) segs.push({ seg: "major_category", value: majorCats.length === 1 ? majorCats[0] : majorCats });
+      if (tab === "card") {
+        if (subCats.length) segs.push({ seg: "subcategory", value: subCats.length === 1 ? subCats[0] : subCats });
+        else if (middleCats.length) segs.push({ seg: "middle_category", value: middleCats.length === 1 ? middleCats[0] : middleCats });
+        else if (majorCats.length) segs.push({ seg: "major_category", value: majorCats.length === 1 ? majorCats[0] : majorCats });
+      }
       if (amountFilters.length) segs.push({ seg: "amount", value: amountFilters.length === 1 ? amountFilters[0] : amountFilters });
       if (cardCompanies.length) segs.push({ seg: "card_company", value: cardCompanies.length === 1 ? cardCompanies[0] : cardCompanies });
       if (telecoms.length) segs.push({ seg: "telecom", value: telecoms.length === 1 ? telecoms[0] : telecoms });
@@ -614,7 +616,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           { id: "cards" as const, label: "🏦 카드사 비교", roles: ["admin"] },
           { id: "shopping" as const, label: "🛒 쇼핑상품", roles: ["admin"] },
         ]).filter(t => t.roles.includes(user.role)).map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "12px 24px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", border: "none", borderBottom: `2px solid ${tab === t.id ? P.accent : "transparent"}`, background: "transparent", color: tab === t.id ? P.accent : P.sub, transition: "all .2s" }}>{t.label}</button>
+          <button key={t.id} onClick={() => { if (t.id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(t.id); }} style={{ padding: "12px 24px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", border: "none", borderBottom: `2px solid ${tab === t.id ? P.accent : "transparent"}`, background: "transparent", color: tab === t.id ? P.accent : P.sub, transition: "all .2s" }}>{t.label}</button>
         ))}
       </div>
 
@@ -667,8 +669,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           )}
         </div>
 
-        {/* 업종 */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        {/* 업종 — 카드 탭 전용 */}
+        {tab === "card" && <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>업종</span>
           {majorCats.map(c => <Tag key={c} label={c} onRemove={() => { setMajorCats(majorCats.filter(x => x !== c)); const mids = categories.find(cat => cat.major === c)?.middles.map(m => m.middle) || []; setMiddleCats(middleCats.filter(x => !mids.includes(x))); setSubCats([]); }} />)}
           {middleCats.map(c => <Tag key={`m-${c}`} label={`↳ ${c}`} onRemove={() => { setMiddleCats(middleCats.filter(x => x !== c)); setSubCats([]); }} />)}
@@ -688,7 +690,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           {middleCats.length > 1 && (
             <span style={{ fontSize: 10, color: P.sub, fontStyle: "italic" }}>※ 소분류는 중분류 1개 선택 시 활성화</span>
           )}
-        </div>
+        </div>}
 
         {/* 쇼핑 카테고리 */}
         {tab === "card" && shopCategories.length > 0 && (
