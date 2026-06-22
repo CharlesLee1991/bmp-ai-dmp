@@ -18,6 +18,7 @@ import ExportHistoryTab from "./ExportHistoryTab";
 import ShoppingProductsTab from "./ShoppingProductsTab";
 import BehaviorPlaceholder from "./BehaviorPlaceholder";
 import TransitSegment from "./TransitSegment";
+import MembershipSegment from "./MembershipSegment";
 import type { DmpUser } from "@/lib/auth";
 
 const P = {
@@ -1287,7 +1288,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
       {tab === "shopping" && <ShoppingProductsTab />}
       {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} sidos={sidos} sexes={sexes} ages={ages} ymFrom={ymFrom} ymTo={ymTo} />}
-      {tab === "membership" && <BehaviorPlaceholder behavior="membership" />}
+      {tab === "membership" && <MembershipSegment sidos={sidos} sexes={sexes} ages={ages} />}
 
       {/* EXPORT MODAL */}
       {exportOpen && (
