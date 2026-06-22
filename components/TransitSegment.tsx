@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import useSWR from "swr";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -60,6 +60,13 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
   const [cat, setCat] = useState(defaultCat);
   const [onOff, setOnOff] = useState("");
   const [selectedStation, setSelectedStation] = useState<string>("");
+
+  // tab 변경 시 필터 리셋 (지하철↔버스 전환)
+  useEffect(() => {
+    setCat(defaultCat);
+    setOnOff("");
+    setSelectedStation("");
+  }, [tab]);
 
   const fetchKey = `/api/transit#${tab}|${defaultCat}|${cat}|${onOff}|${selectedStation}|${sidos.join(",")}|${sexes.join(",")}|${ages.join(",")}`;
 
