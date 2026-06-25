@@ -11,13 +11,14 @@ const P = {
   text: "#1a202c", sub: "#718096",
   accent: "#ec4899", glow: "rgba(236,72,153,0.08)",
   m: "#3b82f6", f: "#f59e0b",
+  app: "#8b5cf6", appGlow: "rgba(139,92,246,0.08)",
 };
 
 const DOW_LABEL: Record<string, string> = {
   "1":"일","2":"월","3":"화","4":"수","5":"목","6":"금","7":"토"
 };
 const AGE_LABEL: Record<string, string> = {
-  "10s":"10대","20s":"20대","30s":"30대","40s":"40대","50s":"50대","60s":"60대+","70s":"70대+"
+  "10s":"10대","20s":"20대","30s":"30대","40s":"40대","50s":"50대","60s+":"60대+","70s":"70대+"
 };
 const AMT_OPTIONS = [
   { value: "", label: "전체" },
@@ -29,14 +30,15 @@ const AMT_OPTIONS = [
 ];
 const DOW_OPTIONS = ["1","2","3","4","5","6","7"];
 
-function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function Chip({ label, active, onClick, color }: { label: string; active: boolean; onClick: () => void; color?: string }) {
+  const c = color || P.accent;
   return (
     <button onClick={onClick} style={{
       padding: "6px 14px", borderRadius: 20, fontSize: 12,
       fontWeight: active ? 700 : 400, cursor: "pointer",
-      border: `1px solid ${active ? P.accent : P.border}`,
-      background: active ? P.glow : P.card,
-      color: active ? P.accent : P.sub, transition: "all .15s",
+      border: `1px solid ${active ? c : P.border}`,
+      background: active ? `${c}14` : P.card,
+      color: active ? c : P.sub, transition: "all .15s",
     }}>{label}</button>
   );
 }
@@ -50,9 +52,25 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
   const [amt, setAmt] = useState("");
   const [dow, setDow] = useState("");
   const [selPartner, setSelPartner] = useState<string>("");
+  const [selApp, setSelApp] = useState<string>("");
 
+  // ── 적립앱 데이터 ──
+  const platformKey = `/api/membership#platform|${selApp}`;
+  const { data: pRaw, isLoading: pLoading } = useSWR(platformKey, async () => {
+    const res = await fetch("/api/membership", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ app_group: selApp }),
+    });
+    return res.json();
+  }, { revalidateOnFocus: false, dedupingInterval: 60000 });
+
+  const pd = pRaw?.success ? pRaw.data : null;
+  const appList: { name: string; cnt: number }[] = pd?.app_list ?? [];
+  const maxApp = appList[0]?.cnt ?? 1;
+  const pAgeGender: { age: string; M: number; F: number }[] = pd?.age_gender ?? [];
+
+  // ── 멤버십 데이터 ──
   const fetchKey = `/api/membership#${amt}|${dow}|${selPartner}|${sidos.join(",")}|${sexes.join(",")}|${ages.join(",")}`;
-
   const { data: raw, isLoading } = useSWR(fetchKey, async () => {
     const body: Record<string, string> = {};
     if (amt)        body.amt_bucket = amt;
@@ -94,7 +112,6 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
   const fPct = 100 - mPct;
   const peakHour = d?.peak_hour;
   const topAge = AGE_LABEL[d?.top_age] ?? d?.top_age ?? "–";
-  const topPartner = d?.top_partner ?? "–";
   const partnerTop: { partner_cd: string; partner_name: string; cnt: number }[] = d?.partner_top ?? [];
   const maxPartner = partnerTop[0]?.cnt ?? 1;
   const noData = !d || total === 0;
@@ -109,7 +126,59 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
         <div style={{ fontSize: 12, color: P.sub }}>NH멤버십 적립·사용 데이터 기반 오디언스 분석 · 오늘 17:00 이후 집계 반영</div>
       </div>
 
-      {/* 필터 */}
+      {/* ── 적립앱 섹션 ── */}
+      <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.app}`, paddingBottom: 8 }}>
+          📱 적립앱별 오디언스
+          <span style={{ fontSize: 11, fontWeight: 400, color: P.sub, marginLeft: 8 }}>앱 선택 시 연령·성별 분포 표시</span>
+        </div>
+
+        {pLoading && <div style={{ fontSize: 12, color: P.sub, padding: "12px 0" }}>로딩 중…</div>}
+
+        {!pLoading && appList.length > 0 && (
+          <>
+            {/* 앱 선택 칩 */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+              <Chip label="전체" active={selApp === ""} onClick={() => setSelApp("")} color={P.app} />
+              {appList.map(a => (
+                <Chip key={a.name} label={`${a.name} ${fmt(a.cnt)}명`}
+                  active={selApp === a.name} onClick={() => setSelApp(selApp === a.name ? "" : a.name)} color={P.app} />
+              ))}
+            </div>
+
+            {selApp === "" ? (
+              /* 전체: 앱별 바 차트 */
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={appList} layout="vertical" barSize={14} margin={{ left: 60, right: 40 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={P.border} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: P.sub }} tickFormatter={fmt} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: P.text }} width={60} />
+                  <Tooltip formatter={(v: any) => [fmt(Number(v)) + "명", "사용자"]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                  <Bar dataKey="cnt" fill={P.app} radius={[0,4,4,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              /* 선택 앱: 연령×성별 */
+              <div>
+                <div style={{ fontSize: 11, color: P.sub, marginBottom: 8 }}>
+                  <b style={{ color: P.app }}>{selApp}</b> 사용자 총 {fmt(pd?.total_audience ?? 0)}명 · 연령×성별 분포
+                </div>
+                <ResponsiveContainer width="100%" height={120}>
+                  <BarChart data={pAgeGender.map(a => ({ name: AGE_LABEL[a.age] || a.age, 남성: a.M, 여성: a.F }))} barSize={14} barGap={2}>
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: P.sub }} />
+                    <YAxis tick={{ fontSize: 10, fill: P.sub }} tickFormatter={fmt} width={38} />
+                    <Tooltip formatter={(v: any) => [fmt(Number(v)), ""]} contentStyle={{ fontSize: 10, borderRadius: 8 }} />
+                    <Bar dataKey="남성" fill={P.m} radius={[3,3,0,0]} />
+                    <Bar dataKey="여성" fill={P.f} radius={[3,3,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── 기존 멤버십 필터 ── */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: P.sub, marginBottom: 8 }}>사용금액구간</div>
