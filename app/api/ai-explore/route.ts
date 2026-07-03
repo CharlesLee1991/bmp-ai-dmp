@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (action === "create") {
       if (!query) return NextResponse.json({ error: "query required" }, { status: 400 });
       init.body = JSON.stringify({ query });
-    } else if (action === "approve" || action === "reject") {
+    } else if (action === "approve" || action === "reject" || action === "preview") {
       if (!request_id) return NextResponse.json({ error: "request_id required" }, { status: 400 });
       url += `/${encodeURIComponent(request_id)}/${action}`;
     } else if (action === "status") {
