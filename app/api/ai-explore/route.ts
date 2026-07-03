@@ -19,6 +19,8 @@ export async function POST(req: NextRequest) {
     } else if (action === "approve" || action === "reject" || action === "preview") {
       if (!request_id) return NextResponse.json({ error: "request_id required" }, { status: 400 });
       url += `/${encodeURIComponent(request_id)}/${action}`;
+    } else if (action === "list") {
+      init = { method: "GET" };
     } else if (action === "status") {
       if (!request_id) return NextResponse.json({ error: "request_id required" }, { status: 400 });
       url += `/${encodeURIComponent(request_id)}`;

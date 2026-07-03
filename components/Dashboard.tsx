@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import AiExplore from "./AiExplore";
+import AiExploreTab from "./AiExploreTab";
 import useSWR from "swr";
 import {
   PieChart, Pie, Cell, ResponsiveContainer,
@@ -306,7 +307,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
-  const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping">("card");
+  const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping" | "aiexplore">("card");
   const isAdmin = user.role === "admin";
 
   /* month range filter */
@@ -614,6 +615,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           { id: "subway" as const, label: "🚇 지하철", roles: ["admin", "advertiser"] },
           { id: "bus" as const, label: "🚌 버스", roles: ["admin", "advertiser"] },
           { id: "membership" as const, label: "🎟️ 멤버십", roles: ["admin", "advertiser"] },
+          { id: "aiexplore" as const, label: "🧪 AI 탐색", roles: ["admin", "advertiser"] },
           { id: "exports" as const, label: "📋 전송 이력", roles: ["admin", "advertiser"] },
           { id: "spending" as const, label: "💳 소비 트렌드", roles: ["admin"] },
           { id: "cards" as const, label: "🏦 카드사 비교", roles: ["admin"] },
@@ -1290,6 +1292,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {tab === "spending" && <SpendingTab sido={sidos.length ? sidos[0] : "전체"} sex={sexes.length ? sexes[0] : "all"} age={ages.length ? ages[0] : "all"} ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "cards" && <CardComparisonTab ymFrom={ymFrom} ymTo={ymTo} />}
+      {tab === "aiexplore" && <AiExploreTab />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
       {tab === "shopping" && <ShoppingProductsTab />}
       {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} sidos={sidos} sexes={sexes} ages={ages} ymFrom={ymFrom} ymTo={ymTo} />}
