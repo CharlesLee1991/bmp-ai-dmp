@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import AiExplore from "./AiExplore";
 import useSWR from "swr";
 import {
   PieChart, Pie, Cell, ResponsiveContainer,
@@ -301,6 +302,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any>(null);
   const [campaignOpen, setCampaignOpen] = useState(false);
+  const [aiExploreOpen, setAiExploreOpen] = useState(false);
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
@@ -914,11 +916,14 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           {tab === "card" && (
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: campaignOpen ? "#7c3aed" : "linear-gradient(135deg, #7c3aed, #a855f7)", color: "#fff", border: "none" }}>🎯 캠페인 타겟 찾기</button>
+              <button onClick={() => setAiExploreOpen(!aiExploreOpen)} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: aiExploreOpen ? "#0284c7" : "linear-gradient(135deg, #0284c7, #06b6d4)", color: "#fff", border: "none" }}>🧪 AI 오디언스 탐색</button>
               <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 런컴 타겟 전송</button>
             </div>
           )}
         </div>
       </div>
+
+      {aiExploreOpen && tab === "card" && <AiExplore />}
 
       {/* ─── CAMPAIGN TARGET FINDER ─── */}
       {campaignOpen && tab === "card" && (
