@@ -276,6 +276,10 @@ function getStaticRegion(sidos: string[], sexes: string[], ages: string[]) {
 // ═══════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════
+// TODO(보안 백로그): anon key 하드코딩 — env 이관 대상 (기존 Dashboard.tsx:475 이슈와 동일 건)
+const DMP_EXPORT_FN_URL = "https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export";
+const SUPA_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenR0d2dxYWhoemxycW96bGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Nzc4ODYsImV4cCI6MjA2NTE1Mzg4Nn0.RCa4oahcW4grLkRdW33tph0LJfwwIL7RPe87smUZTmo";
+
 export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout: () => void }) {
   const [sidos, setSidos] = useState<string[]>([]);
   const [sexes, setSexes] = useState<string[]>([]);
@@ -324,6 +328,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [exportMemo, setExportMemo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportResult, setExportResult] = useState<any>(null);
+  const [exportSource, setExportSource] = useState<"filter" | "audience">("filter");
+  const [audienceTable, setAudienceTable] = useState("response_cat_a_audience");
   const [shopCats, setShopCats] = useState<string[]>([]);
 
   /* categories */
@@ -455,8 +461,22 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   /* export */
   const handleExport = async (env: "dev" | "prod") => {
     const datePart = new Date().toISOString().slice(2,10).replace(/-/g,"");
-    const name = exportName.trim() || `DMP_${datePart}${filterParts.length ? "_" + filterParts.join("_") : ""}`;
+    const name = exportName.trim() || (exportSource === "audience"
+      ? `DMP_${datePart}_AI_${audienceTable.replace(/_audience$/, "")}`
+      : `DMP_${datePart}${filterParts.length ? "_" + filterParts.join("_") : ""}`);
     setExporting(true); setExportResult(null);
+    if (exportSource === "audience") {
+      try {
+        const resp = await fetch(DMP_EXPORT_FN_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPA_ANON_KEY}` },
+          body: JSON.stringify({ segment_name: name, bq_audience_table: audienceTable, env }),
+        });
+        setExportResult(await resp.json());
+      } catch (e: any) { setExportResult({ success: false, error: e.message }); }
+      finally { setExporting(false); }
+      return;
+    }
     try {
       const filters: Record<string, string> = {};
       if (sexes.length) filters.sex = sexes.join(",");
@@ -471,9 +491,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       if (uploadSession) filters.upload_session = uploadSession;
       if (audCats.length) filters.cat1 = audCats.join(",");
       if (apprlValueC && tab === "card") filters.apprl = JSON.stringify({ metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValueC), ...(apprlOper === "between" ? { value2: Number(apprlValue2C || apprlValueC) } : {}) });
-      const resp = await fetch("https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export", {
+      const resp = await fetch(DMP_EXPORT_FN_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenR0d2dxYWhoemxycW96bGVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Nzc4ODYsImV4cCI6MjA2NTE1Mzg4Nn0.RCa4oahcW4grLkRdW33tph0LJfwwIL7RPe87smUZTmo" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPA_ANON_KEY}` },
         body: JSON.stringify({ segment_name: name, filters, env }),
       });
       setExportResult(await resp.json());
@@ -490,9 +510,12 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            segment_name: exportName.trim() || `DMP_${new Date().toISOString().slice(2,10).replace(/-/g,"")}${filterParts.length ? "_" + filterParts.join("_") : ""}`,
+            segment_name: exportName.trim() || (exportSource === "audience"
+              ? `DMP_${new Date().toISOString().slice(2,10).replace(/-/g,"")}_AI_${audienceTable.replace(/_audience$/, "")}`
+              : `DMP_${new Date().toISOString().slice(2,10).replace(/-/g,"")}${filterParts.length ? "_" + filterParts.join("_") : ""}`),
             filters: (() => {
               const f: Record<string, string> = {};
+              if (exportSource === "audience") { f.bq_audience_table = audienceTable; return f; }
               if (sexes.length) f.sex = sexes.join(",");
               if (ages.length) f.age_group = ages.join(",");
               if (sidos.length) f.region = sidos.join(",");
@@ -1303,6 +1326,23 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => !exporting && setExportOpen(false)}>
           <div style={{ background: P.card, borderRadius: 16, padding: 28, border: `1px solid ${P.border}`, width: 460, maxWidth: "90vw" }} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 16px", color: P.accent }}>🚀 런컴 타겟 전송</h3>
+            <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>타겟 소스</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+              <button disabled={exporting} onClick={() => setExportSource("filter")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "filter" ? P.glow : P.bg, color: exportSource === "filter" ? P.accent : P.sub, border: `1px solid ${exportSource === "filter" ? P.accent : P.border}` }}>🎛️ 필터 조건</button>
+              <button disabled={exporting} onClick={() => setExportSource("audience")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "audience" ? P.glow : P.bg, color: exportSource === "audience" ? P.accent : P.sub, border: `1px solid ${exportSource === "audience" ? P.accent : P.border}` }}>🤖 AI 오디언스</button>
+            </div>
+            {exportSource === "audience" && (
+              <>
+                <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>AI 오디언스 선택</div>
+                <select value={audienceTable} onChange={e => setAudienceTable(e.target.value)} disabled={exporting}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16, opacity: exporting ? 0.5 : 1, cursor: exporting ? "not-allowed" : "pointer" }}>
+                  <option value="response_cat_a_audience">반응예측 cat_A (30만 · lift 6.55×)</option>
+                  <option value="lookalike_shop_v2_audience">룩어라이크 쇼핑 v2 (50만 · lift 4.08×)</option>
+                  <option value="lookalike_shop_v1_audience">룩어라이크 쇼핑 v1 (50만 · 구버전)</option>
+                </select>
+              </>
+            )}
+            {exportSource === "filter" && (<>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 12 }}>현재 필터 조건</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>시도: {sidos.length ? sidos.join(", ") : "전국"}</span>
@@ -1319,6 +1359,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {apprlValueC && tab === "card" && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>💳 {apprlMetric === "cnt" ? "승인횟수" : "승인금액"}({apprlPeriod}일) {apprlOper === "between" ? `${apprlValueC}~${apprlValue2C || apprlValueC}` : `${apprlOper} ${apprlValueC}`}</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
+            </>)}
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
             <input value={exportName} onChange={e => setExportName(e.target.value)}
               placeholder={`DMP_${new Date().toISOString().slice(2,10).replace(/-/g,"")}${filterParts.length ? "_" + filterParts.join("_") : ""}`}
@@ -1330,7 +1371,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             {!exportResult && !exporting && (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => handleExport("dev")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: P.bg, color: P.f, border: `1px solid ${P.f}44` }}>🧪 개발 전송</button>
-                <button onClick={() => handleExport("prod")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 상용 전송</button>
+                <button onClick={() => handleExport("prod")} disabled={exportSource === "audience"} title={exportSource === "audience" ? "AI 오디언스 상용 전송은 7/12 승자 확정 + PO 승인 후 활성화됩니다" : undefined} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exportSource === "audience" ? "not-allowed" : "pointer", opacity: exportSource === "audience" ? 0.45 : 1, background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 상용 전송</button>
               </div>
             )}
             {exporting && <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: P.accent }}>⏳ ADID 추출 → S3 업로드 → 런컴 API 전송 중...</div>}
