@@ -25,6 +25,10 @@ export default function AiExplore() {
       const d = await call({ action: "create", query: text });
       if (d.error && !d.request_id) setErr(String(d.error));
       setR(d);
+      // est_rows 자동채움: create 성공 시 preview(COUNT) 자동 체이닝 — 실패해도 무해(수동 버튼 유지)
+      if (d.request_id && d.est_rows == null) {
+        try { const p = await call({ action: "preview", request_id: d.request_id }); setR((prev: any) => ({ ...prev, est_rows: p.est_rows })); } catch { /* noop */ }
+      }
     } catch (e: any) { setErr(e.message); }
     finally { setLoading(false); }
   };
