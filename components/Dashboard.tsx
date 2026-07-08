@@ -1328,14 +1328,14 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <h3 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 16px", color: P.accent }}>🚀 런컴 타겟 전송</h3>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>타겟 소스</div>
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              <button onClick={() => setExportSource("filter")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: exportSource === "filter" ? P.glow : P.bg, color: exportSource === "filter" ? P.accent : P.sub, border: `1px solid ${exportSource === "filter" ? P.accent : P.border}` }}>🎛️ 필터 조건</button>
-              <button onClick={() => setExportSource("audience")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: exportSource === "audience" ? P.glow : P.bg, color: exportSource === "audience" ? P.accent : P.sub, border: `1px solid ${exportSource === "audience" ? P.accent : P.border}` }}>🤖 AI 오디언스</button>
+              <button disabled={exporting} onClick={() => setExportSource("filter")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "filter" ? P.glow : P.bg, color: exportSource === "filter" ? P.accent : P.sub, border: `1px solid ${exportSource === "filter" ? P.accent : P.border}` }}>🎛️ 필터 조건</button>
+              <button disabled={exporting} onClick={() => setExportSource("audience")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "audience" ? P.glow : P.bg, color: exportSource === "audience" ? P.accent : P.sub, border: `1px solid ${exportSource === "audience" ? P.accent : P.border}` }}>🤖 AI 오디언스</button>
             </div>
             {exportSource === "audience" && (
               <>
                 <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>AI 오디언스 선택</div>
-                <select value={audienceTable} onChange={e => setAudienceTable(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16 }}>
+                <select value={audienceTable} onChange={e => setAudienceTable(e.target.value)} disabled={exporting}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16, opacity: exporting ? 0.5 : 1, cursor: exporting ? "not-allowed" : "pointer" }}>
                   <option value="response_cat_a_audience">반응예측 cat_A (30만 · lift 6.55×)</option>
                   <option value="lookalike_shop_v2_audience">룩어라이크 쇼핑 v2 (50만 · lift 4.08×)</option>
                   <option value="lookalike_shop_v1_audience">룩어라이크 쇼핑 v1 (50만 · 구버전)</option>
@@ -1371,7 +1371,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             {!exportResult && !exporting && (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => handleExport("dev")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: P.bg, color: P.f, border: `1px solid ${P.f}44` }}>🧪 개발 전송</button>
-                <button onClick={() => handleExport("prod")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 상용 전송</button>
+                <button onClick={() => handleExport("prod")} disabled={exportSource === "audience"} title={exportSource === "audience" ? "AI 오디언스 상용 전송은 7/12 승자 확정 + PO 승인 후 활성화됩니다" : undefined} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exportSource === "audience" ? "not-allowed" : "pointer", opacity: exportSource === "audience" ? 0.45 : 1, background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 상용 전송</button>
               </div>
             )}
             {exporting && <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: P.accent }}>⏳ ADID 추출 → S3 업로드 → 런컴 API 전송 중...</div>}
