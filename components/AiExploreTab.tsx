@@ -105,6 +105,14 @@ export default function AiExploreTab() {
 
   const fmtRows = (n: any) => n == null ? "—" : Number(n).toLocaleString() + "명";
 
+  // ② 복제: 이력 문장을 상단 입력창에 채우고 스크롤 업(실행 X, HITL 유지)
+  const cloneToInput = (q: string) => {
+    setText(q);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  // ② 재실행: 같은 문장으로 즉시 새 탐색 생성(NL→SQL 재생성, 결과 상이 가능)
+  const rerun = (q: string) => { if (!loading) create(q); };
+
   return (
     <div style={{ padding: "20px 28px" }}>
       {/* 헤드라인 */}
@@ -204,9 +212,13 @@ export default function AiExploreTab() {
                     {h.status === "pending" && (
                       <>
                         <button disabled={acting} onClick={() => act("approve", h.id)} style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "none", background: "#059669", color: "#fff", cursor: "pointer", fontWeight: 700 }}>승인</button>
-                        <button disabled={acting} onClick={() => act("reject", h.id)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#b91c1c", cursor: "pointer", fontWeight: 700 }}>거절</button>
+                        <button disabled={acting} onClick={() => act("reject", h.id)} style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#b91c1c", cursor: "pointer", fontWeight: 700 }}>거절</button>
                       </>
                     )}
+                    {h.status !== "pending" && (
+                      <button disabled={loading} onClick={() => rerun(h.query_text)} title="같은 문장으로 다시 탐색(SQL 재생성)" style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "1px solid #93c5fd", background: "#fff", color: "#1d4ed8", cursor: "pointer", fontWeight: 700 }}>↻ 재실행</button>
+                    )}
+                    <button onClick={() => cloneToInput(h.query_text)} title="이 문장을 입력창에 복제(편집 후 탐색)" style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", cursor: "pointer", fontWeight: 700 }}>⎘ 복제</button>
                   </td>
                 </tr>
               ))}
