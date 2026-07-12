@@ -17,6 +17,7 @@ import {
 import SpendingTab from "./SpendingTab";
 import CardComparisonTab from "./CardComparisonTab";
 import ExportHistoryTab from "./ExportHistoryTab";
+import MediaPerformanceTab from "./MediaPerformanceTab";
 import ShoppingProductsTab from "./ShoppingProductsTab";
 import BehaviorPlaceholder from "./BehaviorPlaceholder";
 import TransitSegment from "./TransitSegment";
@@ -311,7 +312,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
-  const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping" | "aiexplore">("card");
+  const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping" | "aiexplore" | "media">("card");
   const isAdmin = user.role === "admin";
 
   /* month range filter */
@@ -640,6 +641,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           { id: "membership" as const, label: "🎟️ 멤버십", roles: ["admin", "advertiser"] },
           { id: "aiexplore" as const, label: "🧪 AI 탐색", roles: ["admin", "advertiser"] },
           { id: "exports" as const, label: "📋 전송 이력", roles: ["admin", "advertiser"] },
+          { id: "media" as const, label: "📊 매체 성과", roles: ["admin"] },
           { id: "spending" as const, label: "💳 소비 트렌드", roles: ["admin"] },
           { id: "cards" as const, label: "🏦 카드사 비교", roles: ["admin"] },
           { id: "shopping" as const, label: "🛒 쇼핑상품", roles: ["admin"] },
@@ -1317,6 +1319,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {tab === "cards" && <CardComparisonTab ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "aiexplore" && <AiExploreTab />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
+      {tab === "media" && <MediaPerformanceTab />}
       {tab === "shopping" && <ShoppingProductsTab />}
       {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} sidos={sidos} sexes={sexes} ages={ages} ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "membership" && <MembershipSegment sidos={sidos} sexes={sexes} ages={ages} />}
