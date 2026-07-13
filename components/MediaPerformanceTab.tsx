@@ -12,6 +12,11 @@ type MediaRow = {
 };
 type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
 
+type AudienceAdRow = {
+  title: string; platform_name: string; company_idx: number;
+  aud_converters: number; conv_events: number; points: number;
+};
+
 const P = { bg: "#fff", border: "#e5e9f0", sub: "#7b8794", text: "#1f2933", accent: "#0967d2", good: "#0ca678" };
 
 const fmt = (n: number) => n >= 100000000 ? `${(n / 100000000).toFixed(1)}억` : n >= 10000 ? `${(n / 10000).toFixed(1)}만` : n.toLocaleString();
@@ -24,6 +29,29 @@ export default function MediaPerformanceTab() {
   const [sel, setSel] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+
+  // 폐루프: 오디언스 × 광고소재 성과
+  const [audiences, setAudiences] = useState<{ table: string; rows: number }[]>([]);
+  const [audSel, setAudSel] = useState("");
+  const [adRows, setAdRows] = useState<AudienceAdRow[]>([]);
+  const [adLoading, setAdLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/media?view=audiences").then(r => r.json())
+      .then(d => setAudiences(d.audiences || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!audSel) { setAdRows([]); return; }
+    let alive = true;
+    setAdLoading(true);
+    fetch(`/api/media?view=audience-ads&audience_table=${encodeURIComponent(audSel)}&days=${days}`)
+      .then(r => r.json())
+      .then(d => { if (alive) setAdRows(d.rows || []); })
+      .catch(() => {})
+      .finally(() => alive && setAdLoading(false));
+    return () => { alive = false; };
+  }, [audSel, days]);
 
   useEffect(() => {
     let alive = true;
@@ -123,6 +151,47 @@ export default function MediaPerformanceTab() {
         </table>
       </div>
       <div style={{ fontSize: 11, color: P.sub }}>행 클릭 시 해당 매체의 일별 추이로 전환됩니다.</div>
+
+      {/* ─── 폐루프: 오디언스 × 광고소재 성과 ─── */}
+      <div style={{ border: `1px solid ${P.border}`, borderRadius: 10, padding: 16, marginTop: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: P.text }}>🔁 오디언스 반응 소재 (폐루프)</div>
+          <select value={audSel} onChange={e => setAudSel(e.target.value)}
+            style={{ padding: "6px 10px", fontSize: 12.5, borderRadius: 8, border: `1px solid ${P.border}`, color: P.text, background: "#fff" }}>
+            <option value="">오디언스 선택…</option>
+            {audiences.map(a => (
+              <option key={a.table} value={a.table}>{a.table} ({a.rows.toLocaleString()}명)</option>
+            ))}
+          </select>
+          {adLoading && <div style={{ fontSize: 12, color: P.accent }}>조회 중… (수 초 소요)</div>}
+          <div style={{ fontSize: 11, color: P.sub }}>선택한 오디언스가 최근 {days}일 실제 전환한 광고소재 TOP</div>
+        </div>
+        {audSel && !adLoading && adRows.length === 0 && (
+          <div style={{ fontSize: 12.5, color: P.sub, padding: "8px 0" }}>해당 기간 전환 데이터가 없습니다.</div>
+        )}
+        {adRows.length > 0 && (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+            <thead>
+              <tr style={{ background: "#f7f9fc", color: P.sub, textAlign: "right" }}>
+                <th style={{ padding: "8px 12px", textAlign: "left" }}>광고 소재</th>
+                <th style={{ padding: "8px 12px", textAlign: "left" }}>매체</th>
+                <th style={{ padding: "8px 12px" }}>오디언스 전환자</th>
+                <th style={{ padding: "8px 12px" }}>전환 수</th>
+              </tr>
+            </thead>
+            <tbody>
+              {adRows.map((r, i) => (
+                <tr key={i} style={{ borderTop: `1px solid ${P.border}` }}>
+                  <td style={{ padding: "7px 12px", fontWeight: 600, color: P.text, maxWidth: 380, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</td>
+                  <td style={{ padding: "7px 12px", color: P.sub }}>{r.platform_name}</td>
+                  <td style={{ padding: "7px 12px", textAlign: "right", color: P.good, fontWeight: 700 }}>{r.aud_converters.toLocaleString()}</td>
+                  <td style={{ padding: "7px 12px", textAlign: "right" }}>{r.conv_events.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

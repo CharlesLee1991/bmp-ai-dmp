@@ -10,13 +10,19 @@ const API_KEY = process.env.DMP_MCP_API_KEY || "";
 export async function GET(req: NextRequest) {
   try {
     const sp = req.nextUrl.searchParams;
-    const view = sp.get("view") || "performance"; // performance | daily
+    const view = sp.get("view") || "performance"; // performance | daily | audiences | audience-ads
     const days = sp.get("days") || "30";
     let url = `${WORKER}/dmp/media/performance?days=${encodeURIComponent(days)}`;
     if (view === "daily") {
       url = `${WORKER}/dmp/media/daily?days=${encodeURIComponent(days)}`;
       const p = sp.get("platform_idx");
       if (p) url += `&platform_idx=${encodeURIComponent(p)}`;
+    } else if (view === "audiences") {
+      url = `${WORKER}/dmp/audiences`;
+    } else if (view === "audience-ads") {
+      const t = sp.get("audience_table");
+      if (!t) return NextResponse.json({ error: "audience_table required" }, { status: 400 });
+      url = `${WORKER}/dmp/audience/${encodeURIComponent(t)}/ad-performance?days=${encodeURIComponent(days)}`;
     }
     const res = await fetch(url, { headers: { "X-API-Key": API_KEY } });
     const data = await res.json();
