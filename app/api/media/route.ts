@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
       url = `${WORKER}/dmp/media/daily?days=${encodeURIComponent(days)}`;
       const p = sp.get("platform_idx");
       if (p) url += `&platform_idx=${encodeURIComponent(p)}`;
+    } else if (view === "creative-platforms") {
+      url = `${WORKER}/dmp/media/creative-platforms?days=${encodeURIComponent(days)}`;
     } else if (view === "audiences") {
       url = `${WORKER}/dmp/audiences`;
     } else if (view === "audience-ads") {
