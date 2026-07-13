@@ -118,6 +118,9 @@ export default function MediaPerformanceTab() {
         </div>
       </div>
 
+      {/* 좌: 매체 순위 / 우: 폐루프 (좌우 분할) */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)", gap: 16, alignItems: "start" }}>
+        <div style={{ minWidth: 0 }}>
       {/* 매체 순위 테이블 */}
       <div style={{ border: `1px solid ${P.border}`, borderRadius: 10, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
@@ -151,10 +154,11 @@ export default function MediaPerformanceTab() {
         </table>
       </div>
       <div style={{ fontSize: 11, color: P.sub }}>행 클릭 시 해당 매체의 일별 추이로 전환됩니다.</div>
-
+        </div>
+        <div style={{ minWidth: 0, position: "sticky", top: 12 }}>
       {/* ─── 폐루프: 오디언스 × 광고소재 성과 ─── */}
       <div style={{ border: `1px solid ${P.border}`, borderRadius: 10, padding: 16, marginTop: 4 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: P.text }}>🔁 오디언스 반응 소재 (폐루프)</div>
           <select value={audSel} onChange={e => setAudSel(e.target.value)}
             style={{ padding: "6px 10px", fontSize: 12.5, borderRadius: 8, border: `1px solid ${P.border}`, color: P.text, background: "#fff" }}>
@@ -173,25 +177,27 @@ export default function MediaPerformanceTab() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr style={{ background: "#f7f9fc", color: P.sub, textAlign: "right" }}>
-                <th style={{ padding: "8px 12px", textAlign: "left" }}>광고 소재</th>
-                <th style={{ padding: "8px 12px", textAlign: "left" }}>매체</th>
-                <th style={{ padding: "8px 12px" }}>오디언스 전환자</th>
-                <th style={{ padding: "8px 12px" }}>전환 수</th>
+                <th style={{ padding: "8px 12px", textAlign: "left" }}>광고 소재 · 매체</th>
+                <th style={{ padding: "8px 12px" }}>전환자</th>
               </tr>
             </thead>
             <tbody>
               {adRows.map((r, i) => (
                 <tr key={i} style={{ borderTop: `1px solid ${P.border}` }}>
-                  <td style={{ padding: "7px 12px", fontWeight: 600, color: P.text, maxWidth: 380, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</td>
-                  <td style={{ padding: "7px 12px", color: P.sub }}>{r.platform_name}</td>
-                  <td style={{ padding: "7px 12px", textAlign: "right", color: P.good, fontWeight: 700 }}>{r.aud_converters.toLocaleString()}</td>
-                  <td style={{ padding: "7px 12px", textAlign: "right" }}>{r.conv_events.toLocaleString()}</td>
+                  <td style={{ padding: "7px 12px", minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: P.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</div>
+                    <div style={{ fontSize: 11, color: P.sub, marginTop: 1 }}>{r.platform_name} · 전환 {r.conv_events.toLocaleString()}</div>
+                  </td>
+                  <td style={{ padding: "7px 12px", textAlign: "right", color: P.good, fontWeight: 700, whiteSpace: "nowrap" }}>{r.aud_converters.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+        </div>
+      </div>
+
     </div>
   );
 }
