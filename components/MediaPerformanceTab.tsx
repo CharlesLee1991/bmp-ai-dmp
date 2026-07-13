@@ -41,14 +41,21 @@ export default function MediaPerformanceTab() {
       .then(d => setAudiences(d.audiences || [])).catch(() => {});
   }, []);
 
+  const [adErr, setAdErr] = useState("");
+
   useEffect(() => {
-    if (!audSel) { setAdRows([]); return; }
+    setAdRows([]); setAdErr("");  // 선택 변경 즉시 이전 결과 제거
+    if (!audSel) return;
     let alive = true;
     setAdLoading(true);
     fetch(`/api/media?view=audience-ads&audience_table=${encodeURIComponent(audSel)}&days=${days}`)
       .then(r => r.json())
-      .then(d => { if (alive) setAdRows(d.rows || []); })
-      .catch(() => {})
+      .then(d => {
+        if (!alive) return;
+        if (d.error || d.detail) setAdErr(String(d.error || d.detail));
+        else setAdRows(d.rows || []);
+      })
+      .catch(e => alive && setAdErr(String(e)))
       .finally(() => alive && setAdLoading(false));
     return () => { alive = false; };
   }, [audSel, days]);
@@ -167,7 +174,8 @@ export default function MediaPerformanceTab() {
               <option key={a.table} value={a.table}>{a.table} ({a.rows.toLocaleString()}명)</option>
             ))}
           </select>
-          {adLoading && <div style={{ fontSize: 12, color: P.accent }}>조회 중… (수 초 소요)</div>}
+          {adLoading && <div style={{ fontSize: 12, color: P.accent }}>조회 중… (첫 조회는 최대 1~2분)</div>}
+          {adErr && <div style={{ fontSize: 12, color: "#d64545" }}>오류: {adErr}</div>}
           <div style={{ fontSize: 11, color: P.sub }}>선택한 오디언스가 최근 {days}일 실제 전환한 광고소재 TOP</div>
         </div>
         {audSel && !adLoading && adRows.length === 0 && (
