@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
       const t = sp.get("audience_table");
       if (!t) return NextResponse.json({ error: "audience_table required" }, { status: 400 });
       url = `${WORKER}/dmp/audience/${encodeURIComponent(t)}/ad-performance?days=${encodeURIComponent(days)}`;
+      const pf = sp.get("platform_idx");
+      if (pf) url += `&platform_idx=${encodeURIComponent(pf)}`;
     }
     const res = await fetch(url, { headers: { "X-API-Key": API_KEY } });
     const data = await res.json();
