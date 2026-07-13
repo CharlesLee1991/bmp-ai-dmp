@@ -32,6 +32,7 @@ export default function MediaPerformanceTab() {
 
   // 폐루프: 오디언스 × 광고소재 성과
   const [audiences, setAudiences] = useState<{ table: string; rows: number }[]>([]);
+  const [creativeIdx, setCreativeIdx] = useState<Set<number>>(new Set());
   const [audSel, setAudSel] = useState("");
   const [adRows, setAdRows] = useState<AudienceAdRow[]>([]);
   const [adLoading, setAdLoading] = useState(false);
@@ -40,6 +41,11 @@ export default function MediaPerformanceTab() {
     fetch("/api/media?view=audiences").then(r => r.json())
       .then(d => setAudiences(d.audiences || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/media?view=creative-platforms&days=${days}`).then(r => r.json())
+      .then(d => setCreativeIdx(new Set<number>(d.platform_idx || []))).catch(() => {});
+  }, [days]);
 
   const [adErr, setAdErr] = useState("");
 
@@ -145,7 +151,10 @@ export default function MediaPerformanceTab() {
             {rows.filter(r => r.impressions > 0).map(r => (
               <tr key={r.platform_idx} onClick={() => setSel(r.platform_idx)}
                 style={{ borderTop: `1px solid ${P.border}`, cursor: "pointer", background: sel === r.platform_idx ? "#eef5fd" : "#fff" }}>
-                <td style={{ padding: "8px 14px", fontWeight: 600, color: P.text }}>{r.platform_name}</td>
+                <td style={{ padding: "8px 14px", fontWeight: 600, color: P.text }}>
+                  {r.platform_name}
+                  {creativeIdx.has(r.platform_idx) && <span title="소재 반응 데이터 있음 — 클릭 시 우측 폐루프에 이 매체의 반응 소재 표시" style={{ marginLeft: 6, fontSize: 11 }}>🔁</span>}
+                </td>
                 <td style={{ padding: "8px 14px" }}>
                   <div style={{ height: 8, background: "#eef1f5", borderRadius: 4 }}>
                     <div style={{ height: 8, width: `${(r.impressions / maxImp) * 100}%`, background: P.good, borderRadius: 4 }} />
