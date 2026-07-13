@@ -48,7 +48,7 @@ export default function MediaPerformanceTab() {
     if (!audSel) return;
     let alive = true;
     setAdLoading(true);
-    fetch(`/api/media?view=audience-ads&audience_table=${encodeURIComponent(audSel)}&days=${days}`)
+    fetch(`/api/media?view=audience-ads&audience_table=${encodeURIComponent(audSel)}&days=${days}${sel != null ? `&platform_idx=${sel}` : ""}`)
       .then(r => r.json())
       .then(d => {
         if (!alive) return;
@@ -58,7 +58,7 @@ export default function MediaPerformanceTab() {
       .catch(e => alive && setAdErr(String(e)))
       .finally(() => alive && setAdLoading(false));
     return () => { alive = false; };
-  }, [audSel, days]);
+  }, [audSel, days, sel]);
 
   useEffect(() => {
     let alive = true;
@@ -176,10 +176,15 @@ export default function MediaPerformanceTab() {
           </select>
           {adLoading && <div style={{ fontSize: 12, color: P.accent }}>조회 중… (첫 조회는 최대 1~2분)</div>}
           {adErr && <div style={{ fontSize: 12, color: "#d64545" }}>오류: {adErr}</div>}
-          <div style={{ fontSize: 11, color: P.sub }}>선택한 오디언스가 최근 {days}일 실제 전환한 광고소재 TOP</div>
+          <div style={{ fontSize: 11, color: P.sub }}>
+            선택한 오디언스가 최근 {days}일 실제 전환한 광고소재 TOP
+            {sel != null && selName && <span style={{ marginLeft: 6, color: P.accent, fontWeight: 700 }}>· 매체 필터: {selName}</span>}
+          </div>
         </div>
         {audSel && !adLoading && adRows.length === 0 && (
-          <div style={{ fontSize: 12.5, color: P.sub, padding: "8px 0" }}>해당 기간 전환 데이터가 없습니다.</div>
+          <div style={{ fontSize: 12.5, color: P.sub, padding: "8px 0" }}>
+            {sel != null ? "이 매체에서는 해당 오디언스의 소재 전환 데이터가 없습니다. (좌측 다른 매체를 선택하거나 '전체 보기'로 해제)" : "해당 기간 전환 데이터가 없습니다."}
+          </div>
         )}
         {adRows.length > 0 && (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
