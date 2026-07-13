@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180; // 폐루프 콜드 쿼리(10.5억 스캔) 대비
 
 // 매체별 광고 성과 프록시 — data-worker /dmp/media/* (T-DMP-ACTIVATION Track B)
 // 원천: touchAd 일별통계(1.75억)×platform 마스터(105매체). 서버측 X-API-Key 부착.
