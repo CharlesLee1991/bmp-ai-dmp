@@ -1,5 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+
+// BizViz 코스믹 시각화 (신규 버전) — 코드분할: three.js는 선택 시에만 로드
+const BizVizMediaCharts = dynamic(() => import("./BizVizMediaCharts"), { ssr: false });
 
 // 📊 매체 성과 탭 (T-DMP-ACTIVATION Track B)
 // 매체(platform 105종)별 노출/클릭/전환/광고비 + 전체 일별 추이.
@@ -23,6 +27,7 @@ const fmt = (n: number) => n >= 100000000 ? `${(n / 100000000).toFixed(1)}억` :
 const won = (n: number) => n >= 100000000 ? `${(n / 100000000).toFixed(2)}억원` : `${(n / 10000).toFixed(0)}만원`;
 
 export default function MediaPerformanceTab() {
+  const [viz, setViz] = useState<"current" | "bizviz">("current");  // 시각화 버전 토글
   const [days, setDays] = useState(30);
   const [rows, setRows] = useState<MediaRow[]>([]);
   const [daily, setDaily] = useState<DailyRow[]>([]);
@@ -100,6 +105,15 @@ export default function MediaPerformanceTab() {
         </div>
         <div style={{ fontSize: 11, color: P.sub }}>원천: touchAd 광고 일별통계 × 매체 마스터 (실시간 누적)</div>
         {loading && <div style={{ fontSize: 12, color: P.accent }}>로딩…</div>}
+        {/* 시각화 버전 토글 */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 11, color: P.sub }}>시각화</span>
+          <div style={{ display: "flex", border: `1px solid ${P.border}`, borderRadius: 16, overflow: "hidden" }}>
+            {([["current", "현재"], ["bizviz", "✦ BizViz"]] as const).map(([v, lab]) => (
+              <button key={v} onClick={() => setViz(v)} style={{ padding: "4px 14px", fontSize: 12, cursor: "pointer", border: "none", background: viz === v ? (v === "bizviz" ? "#101318" : P.accent) : "#fff", color: viz === v ? "#fff" : P.sub, fontWeight: viz === v ? 700 : 400 }}>{lab}</button>
+            ))}
+          </div>
+        </div>
       </div>
       {err && <div style={{ color: "#d64545", fontSize: 13 }}>오류: {err}</div>}
 
@@ -118,18 +132,22 @@ export default function MediaPerformanceTab() {
         ))}
       </div>
 
-      {/* 일별 추이 (미니 바차트) */}
-      <div style={{ border: `1px solid ${P.border}`, borderRadius: 10, padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 10 }}>
-          일별 노출 추이 {selName ? `— ${selName}` : "— 전체"} {sel != null && <button onClick={() => setSel(null)} style={{ marginLeft: 8, fontSize: 11, color: P.accent, border: "none", background: "transparent", cursor: "pointer" }}>전체 보기 ✕</button>}
+      {/* 시각화: 현재 = 미니 바차트 / BizViz = 코스믹 3D */}
+      {viz === "bizviz" ? (
+        <BizVizMediaCharts rows={rows} daily={daily} />
+      ) : (
+        <div style={{ border: `1px solid ${P.border}`, borderRadius: 10, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 10 }}>
+            일별 노출 추이 {selName ? `— ${selName}` : "— 전체"} {sel != null && <button onClick={() => setSel(null)} style={{ marginLeft: 8, fontSize: 11, color: P.accent, border: "none", background: "transparent", cursor: "pointer" }}>전체 보기 ✕</button>}
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 90 }}>
+            {daily.map(d => (
+              <div key={d.date} title={`${d.date}: 노출 ${d.impressions.toLocaleString()} / 전환 ${d.conversions.toLocaleString()}`}
+                style={{ flex: 1, height: `${Math.max(2, (d.impressions / maxDaily) * 100)}%`, background: P.accent, opacity: 0.75, borderRadius: "2px 2px 0 0" }} />
+            ))}
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 90 }}>
-          {daily.map(d => (
-            <div key={d.date} title={`${d.date}: 노출 ${d.impressions.toLocaleString()} / 전환 ${d.conversions.toLocaleString()}`}
-              style={{ flex: 1, height: `${Math.max(2, (d.impressions / maxDaily) * 100)}%`, background: P.accent, opacity: 0.75, borderRadius: "2px 2px 0 0" }} />
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* 좌: 매체 순위 / 우: 폐루프 (좌우 분할) */}
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)", gap: 16, alignItems: "start" }}>
