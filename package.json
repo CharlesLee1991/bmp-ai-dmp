@@ -10,6 +10,8 @@
   "dependencies": {
     "@supabase/ssr": "^0.5",
     "@supabase/supabase-js": "^2",
+    "echarts": "^6.1.0",
+    "echarts-gl": "^2.1.0",
     "jose": "^6.2.1",
     "next": "^14",
     "react": "^18",
