@@ -1,100 +1,91 @@
 # DMP Audience Explorer
 
-> BizSpring DMP 오디언스 분석 대시보드  
-> Supabase Cube Engine · BQ 80억행 → 141만행 · 9큐브
+> BizSpring AI DMP 오디언스 분석·활용 플랫폼 (런컴 납품)
+> 운영: **https://dmp.bmp.ai** · Next.js 14 · Vercel 자동배포
 
-## 🚀 배포 (Vercel)
-
-### 방법 1: CLI (권장)
-```bash
-npm i -g vercel
-cd dmp-dashboard
-vercel
-```
-
-### 방법 2: GitHub → Vercel
-1. GitHub repo 생성 후 push
-2. [vercel.com](https://vercel.com) → Import Project → 해당 repo 선택
-3. Framework: Next.js 자동 감지 → Deploy
-
-### 방법 3: Vercel Dashboard
-1. vercel.com → New Project → Upload
-2. 이 폴더를 드래그앤드롭
-
-## 📊 현재 기능 (Phase A — 정적)
-
-| 기능 | 상태 |
-|------|------|
-| 시도 필터 (17개 시도) | ✅ |
-| 성별 필터 (남/여/전체) | ✅ |
-| 연령 필터 (10대~60대+) | ✅ |
-| 성별 비율 도넛 차트 | ✅ |
-| 연령별 바 차트 | ✅ |
-| 인구 피라미드 | ✅ |
-| 업종 TOP 12 | ✅ |
-| 지역별 랭킹 (서울=구별) | ✅ |
-| 반응형 레이아웃 | ✅ |
-
-## 🗺️ 로드맵 (Phase B → API 연동)
-
-### Phase B-1: Supabase API 연동
-```
-정적 데이터 → segment-preview Edge Function 실시간 쿼리
-- 환경변수: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_ANON_KEY
-- API Route: /api/cube/[cubeName] → Supabase RPC 호출
-- 업종 × 지역 크로스 필터 활성화
-```
-
-### Phase B-2: 인증 + 멀티테넌트
-```
-- Supabase Auth 연동 (OAuth / Magic Link)
-- tenant_code 기반 데이터 격리
-- 대시보드 접근 권한 관리
-```
-
-### Phase B-3: 실시간 갱신
-```
-- ISR (Incremental Static Regeneration) → revalidate: 3600
-- 또는 SWR/React Query로 클라이언트 사이드 갱신
-- DMP-SYNC 야간배치 완료 시 Webhook → revalidate 트리거
-```
-
-## 🛠 기술 스택
-
-- **Framework**: Next.js 14 (App Router)
-- **Charts**: Recharts
-- **Font**: Pretendard
-- **Data**: Supabase 큐브 (de_dmp_cube_*)
-- **Deploy**: Vercel
-
-## 📁 프로젝트 구조
-
-```
-dmp-dashboard/
-├── app/
-│   ├── globals.css      # 글로벌 스타일
-│   ├── layout.tsx       # 루트 레이아웃 (메타데이터)
-│   └── page.tsx         # 홈페이지
-├── components/
-│   └── Dashboard.tsx    # 메인 대시보드 (클라이언트 컴포넌트)
-├── lib/
-│   └── data.ts          # 큐브 데이터 (Phase B에서 API 전환)
-├── vercel.json          # Vercel 설정
-├── next.config.js
-├── tsconfig.json
-└── package.json
-```
-
-## 데이터 소스
-
-| 큐브 | 행 수 | 용도 |
-|------|-------|------|
-| region_detail | 330,000 | 시도×시군구×성별×연령 |
-| card_category | 280,000 | 업종×지역×성별×연령 |
-| transit | 669,000 | 대중교통×역×성별×연령 |
-| audience | 358,000 | 통합 오디언스 |
-| + 5 추가 큐브 | ~100,000 | 금액, OS, 시간대 등 |
+행동 데이터(카드·교통·멤버십·쇼핑)로 오디언스를 탐색/생성하고, AI 반응예측 오디언스를 런컴 광고 지면으로 전송하며, 그 성과를 폐루프로 회수합니다.
 
 ---
 
-*BizSpring Data Engineering · 2026.02*
+## 📖 문서
+
+| 문서 | 대상 | 내용 |
+|---|---|---|
+| **[CLAUDE.md](CLAUDE.md)** 🔱 | 개발자·AI 에이전트 | **정본 SSOT** — 정본 규칙·보안·워크플로 (개발 시작 전 필독) |
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** 📖 | 공동개발자 | 구조·DB 스키마·RPC·핵심 로직·함정 |
+| **[docs/USER-GUIDE.md](docs/USER-GUIDE.md)** 📘 | 사용자 | 화면 사용법·전송 절차·FAQ |
+| [AGENTS.md](AGENTS.md) | Cursor/Codex | CLAUDE.md 미러 |
+
+---
+
+## 🚀 개발 시작
+
+```bash
+npm install
+cp .env.example .env.local     # 값은 PO 문의 (평문 공유 금지)
+npm run dev                     # → localhost:3000
+
+npx tsc --noEmit                # 타입체크
+npx next build                  # 배포 전 필수
+```
+
+---
+
+## 🏗 구조
+
+```
+BigQuery(dmp_data) ─→ data-worker(Railway/FastAPI) ─┐
+                                                    ├→ app/api(프록시) → components(화면)
+Supabase(RPC 큐브) ────────────────────────────────┘
+                                                    └→ 런컴 API(at.runcomm)  ※유일 반출처
+```
+
+- **큐브 계열**(카드/교통/멤버십/쇼핑) = Supabase RPC 직접
+- **매체·폐루프·AI 계열** = data-worker 경유 (BQ 원천)
+- **모든 외부 키는 `app/api/*` 서버 라우트에서만 부착** (클라 노출 0)
+
+---
+
+## 🛠 기술 스택
+
+- **Framework**: Next.js 14 (App Router) · React 18 · TypeScript 5
+- **Data**: Supabase (`@supabase/ssr`) · SWR
+- **Auth**: 자체 테이블(`de_dmp_users`, bcrypt) + jose JWT ※ Supabase Auth 아님
+- **Charts**: Recharts (2D) · ECharts + ECharts-GL (3D) · three.js (CDN, BizViz)
+- **Deploy**: Vercel (main push → 자동배포)
+
+---
+
+## 📑 주요 화면
+
+| 탭 | 내용 |
+|---|---|
+| 💳 카드 | 카드 소비 기반 오디언스 (기본) |
+| 🚇 지하철 · 🚌 버스 | 대중교통 이용 패턴 |
+| 🎟️ 멤버십 | 제휴사·시간대·금액대 |
+| 🧪 AI 탐색 | AI 오디언스 자동 발굴 (탐색→미리보기→승인) |
+| 📋 전송 이력 | 전송 목록·상태 |
+| 📊 매체 성과 | 매체별 성과 + 🔁 폐루프(오디언스×소재) + 시각화 토글 4단 |
+| 💳 소비 트렌드 · 🏦 카드사 비교 · 🛒 쇼핑상품 | 부가 분석 |
+
+> 탭은 계정 role(`admin` / `advertiser`)에 따라 노출이 달라집니다.
+
+---
+
+## ⚠️ 개발 전 필독
+
+- **오디언스 외부 반출은 런컴(`at.runcomm`) 단일 경로만** — 제3자 반출 금지 (2026-07-12 PO 결정)
+- `DMP_MCP_API_KEY`에 `NEXT_PUBLIC_` 접두사 금지 (번들 유출)
+- 행수는 exact `count(*)` 만 — 통계(`n_live_tup`) 부정확
+- 기타 함정 → [docs/ARCHITECTURE.md §7](docs/ARCHITECTURE.md)
+
+---
+
+## 🤝 기여
+
+브랜치 → `tsc --noEmit` + `next build` 통과 → 시크릿 스캔 → PR → PO(찰스) 머지.
+상세 규약 → [docs/ARCHITECTURE.md §9](docs/ARCHITECTURE.md)
+
+---
+
+*BizSpring Data Engineering*
