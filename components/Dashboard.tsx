@@ -22,6 +22,9 @@ import ShoppingProductsTab from "./ShoppingProductsTab";
 import BehaviorPlaceholder from "./BehaviorPlaceholder";
 import TransitSegment from "./TransitSegment";
 import MembershipSegment from "./MembershipSegment";
+import SystemMappingTab from "./SystemMappingTab";
+import { Tip, ForcedLabelTipBody } from "./Tip";
+import { useOverrides } from "@/lib/labelOverrides";
 import type { DmpUser } from "@/lib/auth";
 import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
@@ -326,7 +329,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
-  const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping" | "aiexplore" | "media">("card");
+  const [tab, setTab] = useState<TabId>("card");
   const isAdmin = user.role === "admin";
   const demoActive = DEMO_TABS.includes(tab);   // 공통 데모그래픽 필터 활성 화면 여부
 
@@ -397,6 +400,23 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     { revalidateOnFocus: false, dedupingInterval: 600000 }
   );
   const subOptions: { subcategory: string; sub_code: number }[] = subData?.success ? subData.data : [];
+
+  // 업종코드 → DB 정본 라벨(de_dmp_category_code) 전체 맵. 하드코딩(PARTNER_MAP=강제지정분류) 라벨의
+  // 툴팁에서 "DB상 라벨"을 함께 노출해 비교하기 위한 용도. 전체 소분류 1회 조회 후 캐시.
+  const { data: allSubData } = useSWR(
+    "/api/segment-options/subcategory",
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 600000 }
+  );
+  const dbLabelMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    if (allSubData?.success) {
+      for (const r of allSubData.data as { subcategory: string; sub_code: number }[]) m[String(r.sub_code)] = r.subcategory;
+    }
+    return m;
+  }, [allSubData]);
+  // 시스템관리에서 지정한 강제 라벨 오버라이드(로컬) — 업종 라벨 표기에 우선 적용.
+  const industryOverrides = useOverrides("industry");
 
   /* dashboard API */
   function buildUrl() {
@@ -1191,10 +1211,17 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><Package size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />업종 소분류 TOP 12</h3>
             {industryData.map((it, i) => {
               const w = industryData[0] ? it.users / industryData[0].users * 100 : 0;
-              const name = PARTNER_MAP[it.code] || it.code;
+              const forced = industryOverrides[it.code] ?? PARTNER_MAP[it.code]; // 강제지정분류(오버라이드>하드코딩) 라벨
+              const dbLabel = dbLabelMap[it.code];         // DB 정본(de_dmp_category_code) 라벨
+              const isForced = forced != null;             // 강제지정분류 라벨인가
+              const name = forced || dbLabel || it.code;   // 필터 클릭 기준값(* 미포함)
               return (
                 <div key={i} onClick={() => { if (!middleCats.includes(name) && !majorCats.includes(name)) { setMiddleCats(prev => [...prev, name]); }}} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer", borderRadius: 4, padding: "1px 0", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                  <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                  <Tip content={isForced
+                    ? <ForcedLabelTipBody code={it.code} dbLabel={dbLabel} forcedLabel={forced} />
+                    : `코드번호: ${it.code}\nDB상 라벨: ${dbLabel || "—"}`}>
+                    <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "default" }}>{isForced ? <>{name}<span style={{ color: P.accent }}> *</span></> : name}</span>
+                  </Tip>
                   <div style={{ flex: 1, height: 20, background: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, color-mix(in srgb, var(--accent) 53%, transparent), color-mix(in srgb, var(--accent) 7%, transparent))`, transition: "width .5s" }} />
                   </div>
@@ -1417,6 +1444,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {tab === "shopping" && <ShoppingProductsTab />}
       {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} sidos={sidos} sexes={sexes} ages={ages} ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "membership" && <MembershipSegment sidos={sidos} sexes={sexes} ages={ages} />}
+      {tab === "sysmap" && <SystemMappingTab />}
 
       {/* EXPORT MODAL */}
       {exportOpen && (

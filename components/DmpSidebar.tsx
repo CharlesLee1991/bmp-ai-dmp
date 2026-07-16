@@ -7,22 +7,22 @@
    - 접힘(아이콘 전용) 토글 · localStorage "dmp-sidebar-collapsed".
    ══════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect } from "react";
 import { P, SB } from "@/lib/theme";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
-  BarChart3, TrendingUp, Landmark, ShoppingCart,
-  ChevronLeft, ChevronRight, LogOut, type LucideIcon,
+  BarChart3, TrendingUp, Landmark, ShoppingCart, Settings2,
+  LogOut, type LucideIcon,
 } from "lucide-react";
 import type { DmpUser } from "@/lib/auth";
 
 export type TabId =
   | "card" | "subway" | "bus" | "membership" | "aiexplore"
-  | "exports" | "media" | "spending" | "cards" | "shopping";
+  | "exports" | "media" | "spending" | "cards" | "shopping"
+  | "sysmap";
 
 export type MenuGroup = "audience" | "report" | "manage";
 
-// 메뉴 그룹: ① 오디언스·추출(런컴 전송) ② 분석 리포트·조회 ③ 관리
+// 메뉴 그룹: ① 오디언스·추출(런컴 전송) ② 분석 리포트·조회 ③ 관리(운영·시스템)
 export const GROUP_ORDER: MenuGroup[] = ["audience", "report", "manage"];
 export const GROUP_LABEL: Record<MenuGroup, string> = {
   audience: "오디언스 · 추출",
@@ -41,6 +41,7 @@ export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]
   { id: "cards", label: "카드사 비교", icon: Landmark, roles: ["admin"], group: "report" },
   { id: "shopping", label: "쇼핑상품", icon: ShoppingCart, roles: ["admin"], group: "report" },
   { id: "exports", label: "전송 이력", icon: ClipboardList, roles: ["admin", "advertiser"], group: "manage" },
+  { id: "sysmap", label: "분류 맵핑 관리", icon: Settings2, roles: ["admin"], group: "manage" },
 ];
 
 export const TAB_LABEL: Record<TabId, string> = TABS.reduce(
