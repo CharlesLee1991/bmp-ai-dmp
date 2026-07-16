@@ -31,6 +31,7 @@ import {
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
   RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
   SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
+  Filter, ChevronDown,
 } from "lucide-react";
 
 const SEX_OPTIONS = [
@@ -311,6 +312,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [aiResult, setAiResult] = useState<any>(null);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [aiExploreOpen, setAiExploreOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(true);   // 필터 접기/펼치기 (기본 펼침)
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
@@ -626,10 +628,37 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
       </header>
 
-      {/* ─── FILTER PANEL ─── */}
-      <div style={{ padding: "14px 28px", borderBottom: `1px solid ${P.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* ─── FILTER PANEL (접기/펼치기 · 2컬럼) ─── */}
+      <div style={{ borderBottom: `1px solid ${P.border}` }}>
+        {/* 좌상단 접기/펼치기 토글 — 기본 펼침 */}
+        <button
+          onClick={() => setFilterOpen(o => !o)}
+          title={filterOpen ? "필터 접기" : "필터 펼치기"}
+          style={{
+            display: "flex", alignItems: "center", gap: 8, width: "100%",
+            padding: "11px 28px", background: filterOpen ? P.bgElevated : "transparent",
+            border: "none", borderBottom: filterOpen ? `1px solid ${P.border}` : "none",
+            cursor: "pointer", textAlign: "left", color: P.text,
+          }}
+        >
+          <ChevronDown size={16} strokeWidth={2.4} style={{ color: P.accent, transform: filterOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .16s" }} />
+          <Filter size={14} strokeWidth={2} style={{ color: P.accent }} />
+          <span style={{ fontSize: 12.5, fontWeight: 700 }}>필터</span>
+          <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 500 }}>{filterOpen ? "펼침" : "접힘"}</span>
+          {filterParts.length > 0 && (
+            <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "var(--badge-teal-bg)", color: "var(--badge-teal-fg)" }}>
+              {filterParts.length}개 적용
+            </span>
+          )}
+          {!filterOpen && filterParts.length > 0 && (
+            <span style={{ marginLeft: 4, fontSize: 10, color: P.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 520 }}>· {filterParts.join(" · ")}</span>
+          )}
+        </button>
+
+        {filterOpen && (
+        <div style={{ padding: "14px 28px", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px 28px", alignItems: "start" }}>
         {/* 성별 + 연령 */}
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+        <div style={{ gridColumn: "1 / -1", display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>성별</span>
             {SEX_OPTIONS.map(o => <ToggleChip key={o.id} label={o.label} active={sexes.includes(o.id)} onClick={() => setSexes(sexes.includes(o.id) ? sexes.filter(x => x !== o.id) : [...sexes, o.id])} />)}
@@ -642,7 +671,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
 
         {/* 시도 · 시군구 · 읍면동 (안주현 요청 반영) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>지역</span>
           {sidos.map(s => <Tag key={s} label={sidoShort(s)} onRemove={() => { setSidos(sidos.filter(x => x !== s)); setSigoongus([]); setEupmds([]); }} />)}
           <DropdownMulti options={SIDO_LIST.map(s => ({ value: s, label: s }))} selected={sidos} onChange={v => { setSidos(v); if (v.length !== 1) { setSigoongus([]); setEupmds([]); } }} placeholder="시도 추가" />
@@ -676,7 +705,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
 
         {/* 업종 — 카드 탭 전용 */}
-        {tab === "card" && <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        {tab === "card" && <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>업종</span>
           {majorCats.map(c => <Tag key={c} label={c} onRemove={() => { setMajorCats(majorCats.filter(x => x !== c)); const mids = categories.find(cat => cat.major === c)?.middles.map(m => m.middle) || []; setMiddleCats(middleCats.filter(x => !mids.includes(x))); setSubCats([]); }} />)}
           {middleCats.map(c => <Tag key={`m-${c}`} label={`↳ ${c}`} onRemove={() => { setMiddleCats(middleCats.filter(x => x !== c)); setSubCats([]); }} />)}
@@ -911,7 +940,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {anyFilter && <button onClick={reset} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)`, borderRadius: 16, padding: "4px 14px", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</button>}
             {filterParts.length > 0 && <span style={{ fontSize: 10, color: P.sub }}>{filterParts.join(" · ")}</span>}
@@ -925,6 +954,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
           )}
         </div>
+        </div>
+        )}
       </div>
 
       {aiExploreOpen && tab === "card" && <AiExplore />}

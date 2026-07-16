@@ -76,15 +76,26 @@ export const badgeVar = (tone: BadgeTone) => ({
   fg: `var(--badge-${tone}-fg)`,
 });
 
-/* 차트 시리즈 팔레트 (다중 계열용) — 채도 낮은 실무 톤 */
+/* 차트 시리즈 팔레트 (다중 계열용) — 중후·안정 톤(저채도 하모니, 라이트/다크 자동) */
 export const SERIES = [
-  "var(--accent)",
-  "var(--male)",
-  "var(--accent-2)",
-  "var(--warning)",
-  "var(--success)",
-  "var(--female)",
+  "var(--series-1)",
+  "var(--series-2)",
+  "var(--series-3)",
+  "var(--series-4)",
+  "var(--series-5)",
+  "var(--series-6)",
 ] as const;
+
+/* 사이드바 독립 테마 토큰 (geocare §0.1) — DmpSidebar 전용 */
+export const SB = {
+  bg: "var(--sidebar-bg)",
+  fg: "var(--sidebar-fg)",
+  fgDim: "var(--sidebar-fg-dim)",
+  accent: "var(--sidebar-accent)",
+  accentFg: "var(--sidebar-accent-fg)",
+  border: "var(--sidebar-border)",
+  hover: "var(--sidebar-hover)",
+} as const;
 
 /* recharts <Tooltip> 다크 대응 표준 (CL 표준 §12) — 그대로 스프레드 */
 export const tooltipStyle: React.CSSProperties = {

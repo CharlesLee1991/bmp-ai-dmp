@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   },
 };
 
-// 플래시 방지: 하이드레이션 전에 저장된 테마를 <html>에 선반영 (CL 표준 §0.1)
-const themeInit = `(function(){try{var m=localStorage.getItem('dmp-theme-v1')||'system';var d=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
+// 플래시 방지: 하이드레이션 전에 저장된 2영역 테마(사이드바/콘텐츠)를 <html>에 선반영 (geocare §0.1)
+const themeInit = `(function(){try{var raw=localStorage.getItem('dmp-theme-v1');var s=raw?JSON.parse(raw):null;var sb=(s&&s.sidebar)||'dark',ct=(s&&s.content)||'light';var mq=window.matchMedia('(prefers-color-scheme: dark)').matches;var el=document.documentElement;if(ct==='dark'||(ct==='system'&&mq))el.classList.add('dark');el.classList.add((sb==='dark'||(sb==='system'&&mq))?'sidebar-dark':'sidebar-light');}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
