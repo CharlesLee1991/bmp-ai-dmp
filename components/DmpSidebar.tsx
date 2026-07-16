@@ -12,7 +12,7 @@ import { P, SB } from "@/lib/theme";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart,
-  PanelLeftClose, PanelLeftOpen, LogOut, type LucideIcon,
+  ChevronLeft, ChevronRight, LogOut, type LucideIcon,
 } from "lucide-react";
 import type { DmpUser } from "@/lib/auth";
 
@@ -76,8 +76,8 @@ export function DmpSidebar({
       {/* ── 로고 영역 ── */}
       <div style={{
         height: 60, display: "flex", alignItems: "center",
-        justifyContent: collapsed ? "center" : "space-between",
-        padding: collapsed ? "0" : "0 12px 0 14px",
+        justifyContent: collapsed ? "center" : "flex-start",
+        padding: collapsed ? "0" : "0 14px",
         borderBottom: `1px solid ${SB.border}`,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
@@ -94,19 +94,30 @@ export function DmpSidebar({
             </div>
           )}
         </div>
-        {!collapsed && (
-          <button onClick={toggle} title="사이드바 접기" style={iconBtn()}>
-            <PanelLeftClose size={16} strokeWidth={2} />
-          </button>
-        )}
       </div>
 
-      {/* 접힘 상태 펼치기 버튼 */}
-      {collapsed && (
-        <button onClick={toggle} title="사이드바 펼치기" style={{ ...iconBtn(), margin: "8px auto 2px", width: 34, height: 34 }}>
-          <PanelLeftOpen size={17} strokeWidth={2} />
-        </button>
-      )}
+      {/* 접기/펼치기 — 로고 우측에 튀어나온 switch pill (슬라이딩 노브) */}
+      <button
+        onClick={toggle}
+        title={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
+        aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
+        style={{
+          position: "absolute", top: 19, right: -17, zIndex: 46,
+          width: 44, height: 22, padding: 0, borderRadius: 999, cursor: "pointer",
+          background: collapsed ? SB.accent : "var(--accent)",
+          border: `1px solid ${collapsed ? SB.border : "var(--accent-strong)"}`,
+          boxShadow: P.shadowMd, transition: "background .16s",
+        }}
+      >
+        <span style={{
+          position: "absolute", top: 2, left: collapsed ? 2 : 23, width: 16, height: 16,
+          borderRadius: "50%", background: "#fff", boxShadow: P.shadowSoft,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: collapsed ? SB.fgDim : "var(--accent)", transition: "left .16s",
+        }}>
+          {collapsed ? <ChevronRight size={11} strokeWidth={2.6} /> : <ChevronLeft size={11} strokeWidth={2.6} />}
+        </span>
+      </button>
 
       {/* ── 메뉴 ── */}
       <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: collapsed ? "6px 8px" : "8px 10px", display: "flex", flexDirection: "column", gap: 3 }}>

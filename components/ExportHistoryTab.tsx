@@ -95,7 +95,7 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
           <div style={{
             display: "grid", gridTemplateColumns: userRole === "admin" ? "2fr 2.5fr 1fr 0.8fr 1.2fr 1.2fr" : "2fr 2.5fr 1fr 0.8fr 1.2fr",
             padding: "10px 16px", background: P.bg, borderBottom: `1px solid ${P.border}`,
-            fontSize: 10, fontWeight: 700, color: P.sub, letterSpacing: ".04em", textTransform: "uppercase" as const
+            fontSize: 11, fontWeight: 700, color: P.sub, letterSpacing: ".04em", textTransform: "uppercase" as const
           }}>
             <span>그룹명</span>
             <span>필터 조건</span>
@@ -121,7 +121,7 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
                 <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {row.segment_name}
                 </div>
-                {row.memo && <div style={{ fontSize: 10, color: P.sub, marginTop: 2 }}>{row.memo}</div>}
+                {row.memo && <div style={{ fontSize: 11, color: P.sub, marginTop: 2 }}>{row.memo}</div>}
               </div>
               <div style={{ fontSize: 11, color: P.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {filterSummary(row.filters)}
@@ -131,7 +131,7 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
               </div>
               <div style={{ textAlign: "center" }}>
                 <span style={{
-                  padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 600,
+                  padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600,
                   background: row.env === "prod" ? "var(--badge-success-bg)" : "var(--badge-warning-bg)",
                   color: row.env === "prod" ? "var(--badge-success-fg)" : "var(--badge-warning-fg)"
                 }}>{row.env === "prod" ? "상용" : "개발"}</span>
@@ -142,7 +142,7 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
               <div style={{ textAlign: "right", fontSize: 11, color: P.sub }}>
                 {fmtDate(row.created_at)}
                 {row.runcomm_target_id && (
-                  <div style={{ fontSize: 9, color: P.accent, marginTop: 1 }}>ID: {row.runcomm_target_id}</div>
+                  <div style={{ fontSize: 10.5, color: P.accent, marginTop: 1 }}>ID: {row.runcomm_target_id}</div>
                 )}
               </div>
             </div>

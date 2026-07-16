@@ -257,13 +257,13 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                       <span style={{
                         width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 9, fontWeight: 700, flexShrink: 0,
+                        fontSize: 10.5, fontWeight: 700, flexShrink: 0,
                         background: i === 0 ? CARD_COLORS[src] || "var(--sub)" : "rgba(0,0,0,.06)",
                         color: i === 0 ? "var(--card)" : P.sub
                       }}>{i + 1}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.subcategory}</div>
-                        <div style={{ fontSize: 9, color: P.sub }}>{fmt(c.total_txn)}건 · {fmtAmt(c.total_amt)}</div>
+                        <div style={{ fontSize: 10.5, color: P.sub }}>{fmt(c.total_txn)}건 · {fmtAmt(c.total_amt)}</div>
                       </div>
                     </div>
                   ))}
