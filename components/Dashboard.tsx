@@ -31,10 +31,14 @@ import {
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
   RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
   SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
-  Filter, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen,
+  Filter, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Users,
 } from "lucide-react";
 
 const SYSTEM_NAME = "런컴";   // 고객(시스템명) — 브레드크럼 중간 세그먼트
+
+// 공통 데모그래픽 필터(성별/연령/지역)를 실제 소비하는 화면 (조사 결과 기반).
+// 그 외 화면(AI탐색·전송이력·매체·카드사·쇼핑)은 자체 필터를 쓰므로 공통필터 비활성 표기.
+const DEMO_TABS: string[] = ["card", "subway", "bus", "membership", "spending"];
 
 const SEX_OPTIONS = [
   { id: "M", label: "남성" },
@@ -324,6 +328,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [campaignResult, setCampaignResult] = useState<any>(null);
   const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping" | "aiexplore" | "media">("card");
   const isAdmin = user.role === "admin";
+  const demoActive = DEMO_TABS.includes(tab);   // 공통 데모그래픽 필터 활성 화면 여부
 
   // 브레드크럼 메뉴 드롭다운 — 외부 클릭 닫기
   useEffect(() => {
@@ -701,12 +706,65 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
       </header>
 
-      {/* ─── FILTER PANEL (접기/펼치기 · 2컬럼) ─── */}
+      {/* ─── 타겟 정의(페르소나) + 공통 데모그래픽 필터 · 브레드크럼 하단 도킹 고정 ─── */}
+      <div style={{ position: "sticky", top: 56, zIndex: 45, background: P.chrome, borderBottom: `1px solid ${P.border}`, boxShadow: P.shadowSoft }}>
+        {/* 타겟 정의(페르소나) — 데이터종류별 + 데모그래픽 결합 정의 (전 화면 고정) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 28px", borderBottom: `1px dashed ${P.border}`, flexWrap: "wrap" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: P.accent, whiteSpace: "nowrap" }}>
+            <Target size={14} strokeWidth={2.2} /> 타겟 정의
+          </span>
+          <span style={{ fontSize: 12, color: filterParts.length ? P.text : P.sub, fontWeight: filterParts.length ? 600 : 400, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {filterParts.length ? filterParts.join(" · ") : "전체 오디언스 (필터 미설정)"}
+          </span>
+          {segEstimate && (
+            <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: P.accent, whiteSpace: "nowrap" }}>
+              ≈ {fmt(segEstimate.estimated_audience)}명
+            </span>
+          )}
+        </div>
+        {/* 공통 데모그래픽 (성별·연령·지역) — 소비 화면에서만 활성 */}
+        <div style={{ padding: "8px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", opacity: demoActive ? 1 : 0.45, pointerEvents: demoActive ? "auto" : "none", filter: demoActive ? "none" : "grayscale(0.6)" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 700, color: P.sub2, letterSpacing: ".04em", whiteSpace: "nowrap" }}>
+            <Users size={12} strokeWidth={2} /> 공통 필터
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>성별</span>
+            {SEX_OPTIONS.map(o => <ToggleChip key={o.id} label={o.label} active={sexes.includes(o.id)} onClick={() => setSexes(sexes.includes(o.id) ? sexes.filter(x => x !== o.id) : [...sexes, o.id])} />)}
+          </div>
+          <span style={{ width: 1, height: 22, background: P.border }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>연령</span>
+            {AGE_ORDER.map(a => <ToggleChip key={a} label={AGE_LABEL[a]} active={ages.includes(a)} onClick={() => setAges(ages.includes(a) ? ages.filter(x => x !== a) : [...ages, a])} />)}
+          </div>
+          <span style={{ width: 1, height: 22, background: P.border }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>지역</span>
+            {sidos.map(s => <Tag key={s} label={sidoShort(s)} onRemove={() => { setSidos(sidos.filter(x => x !== s)); setSigoongus([]); setEupmds([]); }} />)}
+            <DropdownMulti options={SIDO_LIST.map(s => ({ value: s, label: s }))} selected={sidos} onChange={v => { setSidos(v); if (v.length !== 1) { setSigoongus([]); setEupmds([]); } }} placeholder="시도 추가" />
+            {sidos.length === 1 && (<>
+              <span style={{ color: P.sub, fontSize: 11, margin: "0 2px" }}>›</span>
+              {sigoongus.map(g => <Tag key={`gg-${g}`} label={`↳ ${g}`} onRemove={() => { setSigoongus(sigoongus.filter(x => x !== g)); setEupmds([]); }} />)}
+              <DropdownMulti options={sigoongOptions.map(o => ({ value: o.sigoongu_nm, label: `${o.sigoongu_nm}` }))} selected={sigoongus} onChange={v => { setSigoongus(v); if (v.length !== 1) setEupmds([]); }} placeholder={sigoongOptions.length ? "+ 시군구" : "시군구 로딩…"} />
+            </>)}
+            {sidos.length === 1 && sigoongus.length === 1 && (<>
+              <span style={{ color: P.sub, fontSize: 11, margin: "0 2px" }}>›</span>
+              {eupmds.map(e => <Tag key={`em-${e}`} label={`↳ ${e}`} onRemove={() => setEupmds(eupmds.filter(x => x !== e))} />)}
+              <DropdownMulti options={eupmdOptions.map(o => ({ value: o.eupmeuandong_nm, label: `${o.eupmeuandong_nm}` }))} selected={eupmds} onChange={setEupmds} placeholder={eupmdOptions.length ? "+ 읍면동" : "읍면동 로딩…"} />
+            </>)}
+          </div>
+          {!demoActive && (
+            <span style={{ marginLeft: "auto", fontSize: 10, color: P.sub, fontStyle: "italic", whiteSpace: "nowrap" }}>이 화면은 화면 내 자체 필터 사용 — 공통 필터 미적용</span>
+          )}
+        </div>
+      </div>
+
+      {/* ─── 화면 필터 (카드 전용 · 접기/펼치기 · 2컬럼) ─── */}
+      {tab === "card" && (
       <div style={{ borderBottom: `1px solid ${P.border}` }}>
         {/* 좌상단 접기/펼치기 토글 — 기본 펼침 */}
         <button
           onClick={() => setFilterOpen(o => !o)}
-          title={filterOpen ? "필터 접기" : "필터 펼치기"}
+          title={filterOpen ? "화면 필터 접기" : "화면 필터 펼치기"}
           style={{
             display: "flex", alignItems: "center", gap: 8, width: "100%",
             padding: "11px 28px", background: filterOpen ? P.bgElevated : "transparent",
@@ -716,8 +774,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         >
           <ChevronDown size={16} strokeWidth={2.4} style={{ color: P.accent, transform: filterOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .16s" }} />
           <Filter size={14} strokeWidth={2} style={{ color: P.accent }} />
-          <span style={{ fontSize: 12.5, fontWeight: 700 }}>필터</span>
-          <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 500 }}>{filterOpen ? "펼침" : "접힘"}</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700 }}>화면 필터</span>
+          <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 400 }}>카드 데이터 전용</span>
+          <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 500 }}>· {filterOpen ? "펼침" : "접힘"}</span>
           {filterParts.length > 0 && (
             <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "var(--badge-teal-bg)", color: "var(--badge-teal-fg)" }}>
               {filterParts.length}개 적용
@@ -730,53 +789,6 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
         {filterOpen && (
         <div style={{ padding: "14px 28px", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px 28px", alignItems: "start" }}>
-        {/* 성별 + 연령 */}
-        <div style={{ gridColumn: "1 / -1", display: "flex", gap: 24, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>성별</span>
-            {SEX_OPTIONS.map(o => <ToggleChip key={o.id} label={o.label} active={sexes.includes(o.id)} onClick={() => setSexes(sexes.includes(o.id) ? sexes.filter(x => x !== o.id) : [...sexes, o.id])} />)}
-          </div>
-          <span style={{ width: 1, height: 24, background: P.border, alignSelf: "center" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>연령</span>
-            {AGE_ORDER.map(a => <ToggleChip key={a} label={AGE_LABEL[a]} active={ages.includes(a)} onClick={() => setAges(ages.includes(a) ? ages.filter(x => x !== a) : [...ages, a])} />)}
-          </div>
-        </div>
-
-        {/* 시도 · 시군구 · 읍면동 (안주현 요청 반영) */}
-        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>지역</span>
-          {sidos.map(s => <Tag key={s} label={sidoShort(s)} onRemove={() => { setSidos(sidos.filter(x => x !== s)); setSigoongus([]); setEupmds([]); }} />)}
-          <DropdownMulti options={SIDO_LIST.map(s => ({ value: s, label: s }))} selected={sidos} onChange={v => { setSidos(v); if (v.length !== 1) { setSigoongus([]); setEupmds([]); } }} placeholder="시도 추가" />
-          {sidos.length === 1 && (
-            <>
-              <span style={{ color: P.sub, fontSize: 11, margin: "0 2px" }}>›</span>
-              {sigoongus.map(g => <Tag key={`gg-${g}`} label={`↳ ${g}`} onRemove={() => { setSigoongus(sigoongus.filter(x => x !== g)); setEupmds([]); }} />)}
-              <DropdownMulti
-                options={sigoongOptions.map(o => ({ value: o.sigoongu_nm, label: `${o.sigoongu_nm}` }))}
-                selected={sigoongus}
-                onChange={v => { setSigoongus(v); if (v.length !== 1) setEupmds([]); }}
-                placeholder={sigoongOptions.length ? "+ 시군구" : "시군구 로딩…"}
-              />
-            </>
-          )}
-          {sidos.length === 1 && sigoongus.length === 1 && (
-            <>
-              <span style={{ color: P.sub, fontSize: 11, margin: "0 2px" }}>›</span>
-              {eupmds.map(e => <Tag key={`em-${e}`} label={`↳ ${e}`} onRemove={() => setEupmds(eupmds.filter(x => x !== e))} />)}
-              <DropdownMulti
-                options={eupmdOptions.map(o => ({ value: o.eupmeuandong_nm, label: `${o.eupmeuandong_nm}` }))}
-                selected={eupmds}
-                onChange={setEupmds}
-                placeholder={eupmdOptions.length ? "+ 읍면동" : "읍면동 로딩…"}
-              />
-            </>
-          )}
-          {sidos.length > 1 && (
-            <span style={{ fontSize: 10, color: P.sub, fontStyle: "italic" }}>※ 시군구·읍면동은 시도 1개 선택 시 활성화</span>
-          )}
-        </div>
-
         {/* 업종 — 카드 탭 전용 */}
         {tab === "card" && <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>업종</span>
@@ -1030,6 +1042,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
         )}
       </div>
+      )}
 
       {aiExploreOpen && tab === "card" && <AiExplore />}
 

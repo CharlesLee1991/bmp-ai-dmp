@@ -20,17 +20,27 @@ export type TabId =
   | "card" | "subway" | "bus" | "membership" | "aiexplore"
   | "exports" | "media" | "spending" | "cards" | "shopping";
 
-export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[] }[] = [
-  { id: "card", label: "카드", icon: CreditCard, roles: ["admin", "advertiser"] },
-  { id: "subway", label: "지하철", icon: TrainFront, roles: ["admin", "advertiser"] },
-  { id: "bus", label: "버스", icon: Bus, roles: ["admin", "advertiser"] },
-  { id: "membership", label: "멤버십", icon: Ticket, roles: ["admin", "advertiser"] },
-  { id: "aiexplore", label: "AI 탐색", icon: FlaskConical, roles: ["admin", "advertiser"] },
-  { id: "exports", label: "전송 이력", icon: ClipboardList, roles: ["admin", "advertiser"] },
-  { id: "media", label: "매체 성과", icon: BarChart3, roles: ["admin"] },
-  { id: "spending", label: "소비 트렌드", icon: TrendingUp, roles: ["admin"] },
-  { id: "cards", label: "카드사 비교", icon: Landmark, roles: ["admin"] },
-  { id: "shopping", label: "쇼핑상품", icon: ShoppingCart, roles: ["admin"] },
+export type MenuGroup = "audience" | "report" | "manage";
+
+// 메뉴 그룹: ① 오디언스·추출(런컴 전송) ② 분석 리포트·조회 ③ 관리
+export const GROUP_ORDER: MenuGroup[] = ["audience", "report", "manage"];
+export const GROUP_LABEL: Record<MenuGroup, string> = {
+  audience: "오디언스 · 추출",
+  report: "분석 리포트 · 조회",
+  manage: "관리",
+};
+
+export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]; group: MenuGroup }[] = [
+  { id: "card", label: "카드", icon: CreditCard, roles: ["admin", "advertiser"], group: "audience" },
+  { id: "subway", label: "지하철", icon: TrainFront, roles: ["admin", "advertiser"], group: "audience" },
+  { id: "bus", label: "버스", icon: Bus, roles: ["admin", "advertiser"], group: "audience" },
+  { id: "membership", label: "멤버십", icon: Ticket, roles: ["admin", "advertiser"], group: "audience" },
+  { id: "aiexplore", label: "AI 탐색", icon: FlaskConical, roles: ["admin", "advertiser"], group: "audience" },
+  { id: "media", label: "매체 성과", icon: BarChart3, roles: ["admin"], group: "report" },
+  { id: "spending", label: "소비 트렌드", icon: TrendingUp, roles: ["admin"], group: "report" },
+  { id: "cards", label: "카드사 비교", icon: Landmark, roles: ["admin"], group: "report" },
+  { id: "shopping", label: "쇼핑상품", icon: ShoppingCart, roles: ["admin"], group: "report" },
+  { id: "exports", label: "전송 이력", icon: ClipboardList, roles: ["admin", "advertiser"], group: "manage" },
 ];
 
 export const TAB_LABEL: Record<TabId, string> = TABS.reduce(
@@ -87,34 +97,43 @@ export function DmpSidebar({
         </div>
       </div>
 
-      {/* ── 메뉴 ── */}
-      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: collapsed ? "6px 8px" : "8px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
-        {!collapsed && (
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: SB.fgDim, letterSpacing: ".08em", padding: "6px 8px 4px" }}>메뉴</div>
-        )}
-        {items.map(({ id, label, icon: Icon }) => {
-          const active = tab === id;
+      {/* ── 메뉴 (그룹화) ── */}
+      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: collapsed ? "6px 8px" : "8px 10px", display: "flex", flexDirection: "column", gap: collapsed ? 3 : 2 }}>
+        {GROUP_ORDER.map((g, gi) => {
+          const groupItems = items.filter(t => t.group === g);
+          if (!groupItems.length) return null;
           return (
-            <button
-              key={id}
-              onClick={() => onSelect(id)}
-              title={collapsed ? label : undefined}
-              style={{
-                display: "flex", alignItems: "center", gap: 11,
-                justifyContent: collapsed ? "center" : "flex-start",
-                width: "100%", padding: collapsed ? "9px 0" : "8px 11px",
-                borderRadius: 9, cursor: "pointer", border: "none", textAlign: "left",
-                fontSize: 13, fontWeight: active ? 600 : 500, whiteSpace: "nowrap",
-                background: active ? SB.accent : "transparent",
-                color: active ? SB.accentFg : SB.fg,
-                transition: "background .13s, color .13s",
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = SB.hover; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
-            >
-              <Icon size={17} strokeWidth={active ? 2.3 : 1.9} style={{ flexShrink: 0 }} />
-              {!collapsed && label}
-            </button>
+            <div key={g} style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: gi > 0 ? (collapsed ? 6 : 8) : 0 }}>
+              {collapsed
+                ? (gi > 0 && <div style={{ height: 1, background: SB.border, margin: "2px 8px 4px" }} />)
+                : <div style={{ fontSize: 9.5, fontWeight: 700, color: SB.fgDim, letterSpacing: ".07em", padding: "4px 10px 3px" }}>{GROUP_LABEL[g]}</div>
+              }
+              {groupItems.map(({ id, label, icon: Icon }) => {
+                const active = tab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => onSelect(id)}
+                    title={collapsed ? label : undefined}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 11,
+                      justifyContent: collapsed ? "center" : "flex-start",
+                      width: "100%", padding: collapsed ? "9px 0" : "8px 11px",
+                      borderRadius: 9, cursor: "pointer", border: "none", textAlign: "left",
+                      fontSize: 13, fontWeight: active ? 600 : 500, whiteSpace: "nowrap",
+                      background: active ? SB.accent : "transparent",
+                      color: active ? SB.accentFg : SB.fg,
+                      transition: "background .13s, color .13s",
+                    }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.background = SB.hover; }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <Icon size={17} strokeWidth={active ? 2.3 : 1.9} style={{ flexShrink: 0 }} />
+                    {!collapsed && label}
+                  </button>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
