@@ -3,6 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { fmt } from "@/lib/data";
+import { ClipboardList, Inbox } from "lucide-react";
 
 const P = {
   bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
@@ -61,7 +62,7 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: P.text }}>📋 전송 이력</h3>
+          <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: P.text }}><ClipboardList size={16} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />전송 이력</h3>
           <span style={{ fontSize: 11, color: P.sub, background: P.glow, padding: "3px 10px", borderRadius: 12 }}>
             {filtered.length}건
           </span>
@@ -73,7 +74,7 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
               cursor: "pointer", border: `1px solid ${envFilter === env ? P.accent : P.border}`,
               background: envFilter === env ? P.glow : "transparent",
               color: envFilter === env ? P.accent : P.sub
-            }}>{env === "all" ? "전체" : env === "prod" ? "🟢 상용" : "🧪 개발"}</button>
+            }}>{env === "all" ? "전체" : env === "prod" ? "상용" : "개발"}</button>
           ))}
         </div>
       </div>
@@ -84,7 +85,7 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
           padding: "60px 28px", textAlign: "center", background: P.card,
           borderRadius: 12, border: `1px solid ${P.border}`
         }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+          <div style={{ marginBottom: 12 }}><Inbox size={40} style={{ color: "var(--sub-2)" }} /></div>
           <div style={{ fontSize: 14, fontWeight: 700, color: P.text, marginBottom: 6 }}>전송 이력이 없습니다</div>
           <div style={{ fontSize: 12, color: P.sub }}>오디언스 탭에서 필터를 설정하고 전송해보세요</div>
         </div>
@@ -131,8 +132,8 @@ export default function ExportHistoryTab({ userRole }: { userRole: string }) {
               <div style={{ textAlign: "center" }}>
                 <span style={{
                   padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 600,
-                  background: row.env === "prod" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)",
-                  color: row.env === "prod" ? "#059669" : "#d97706"
+                  background: row.env === "prod" ? "var(--badge-success-bg)" : "var(--badge-warning-bg)",
+                  color: row.env === "prod" ? "var(--badge-success-fg)" : "var(--badge-warning-fg)"
                 }}>{row.env === "prod" ? "상용" : "개발"}</span>
               </div>
               {userRole === "admin" && (

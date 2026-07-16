@@ -6,6 +6,7 @@
     ② 3D Scatter: x=광고비 · y=전환율 · z=노출 → 3축 효율 공간
 */
 import { useEffect, useRef, useState } from "react";
+import { Box, Globe } from "lucide-react";
 
 export type MediaRow = {
   platform_name: string; platform_idx: number;
@@ -164,7 +165,7 @@ export default function Echarts3DMediaCharts({ rows, days }: { rows: MediaRow[];
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={panel}>
         <div style={head}>
-          🧊 시간 × 매체 × 노출 — 3D 지형
+          <Box size={15} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />시간 × 매체 × 노출 — 3D 지형
           <span style={sub}>x = 날짜 · y = 매체 TOP8 · z = 노출 · 색 = 노출 강도 (3축 전부 실데이터)</span>
         </div>
         {loading && !series.length ? <Empty msg="매체별 일별 시계열 조달 중…" h={400} /> : <Bar3D series={series} />}
@@ -172,7 +173,7 @@ export default function Echarts3DMediaCharts({ rows, days }: { rows: MediaRow[];
       </div>
       <div style={panel}>
         <div style={head}>
-          🌐 광고비 × 전환율 × 노출 — 3D 효율 공간
+          <Globe size={15} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />광고비 × 전환율 × 노출 — 3D 효율 공간
           <span style={sub}>x = 광고비 · y = 전환율 · z = 노출 · 색 = 노출 강도 (3축 전부 실데이터)</span>
         </div>
         {rows.length ? <Scatter3D rows={rows} /> : <Empty msg="데이터 로딩 중…" h={400} />}

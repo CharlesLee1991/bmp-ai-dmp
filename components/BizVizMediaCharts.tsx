@@ -11,6 +11,7 @@
     6. 팔레트 = BIZVIZ-DESIGN.md §1 정본 hex만
 */
 import { useEffect, useRef } from "react";
+import { Orbit, BarChart3, PieChart, Activity } from "lucide-react";
 
 // ── 데이터 계약 (라이브 MediaPerformanceTab 스키마와 동일) ──
 export type MediaRow = {
@@ -21,8 +22,9 @@ export type MediaRow = {
 export type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
 
 // ── §1 정본 팔레트 ──
+// §1 정본 hex — BizViz는 브랜드 격리 다크(테마 토큰 미적용). 정본 팔레트만 사용.
 const C = { base: "#101318", surface: "#161A20", line: "#232935", grid: "#1A1F27",
-            ink: "var(--border)", dim: "var(--sub)", sky: "#4FBEFF" };
+            ink: "#DEE4EC", dim: "#8B94A3", sky: "#4FBEFF" };
 // 차트 시리즈 6-hue (인접 hue 연속 금지 순서: sky→teal→purple→blue→amber→red)
 const HUES = ["#4FBEFF", "#3BD6B4", "#9B8AF5", "#6B9EF2", "#F2C74B", "#F2685A"];
 
@@ -287,22 +289,22 @@ export default function BizVizMediaCharts({ rows, daily }: { rows: MediaRow[]; d
     <div className="dark" style={{ background: C.base, borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       {/* 궤도계 — 임팩트 컷 (전폭) */}
       <div style={panel}>
-        <div style={head}>🪐 매체 우주 조망 — 궤도계<span style={sub}>반경 = 광고비 · 크기 = 노출 · 색 = 매체</span></div>
+        <div style={head}><Orbit size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} color={C.sky} />매체 우주 조망 — 궤도계<span style={sub}>반경 = 광고비 · 크기 = 노출 · 색 = 매체</span></div>
         {rows.length ? <CosmosCanvas rows={rows} /> : <Empty />}
         {hint}
       </div>
       {/* 3열: 바 · 도넛 · 리본 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
         <div style={panel}>
-          <div style={head}>📊 매체별 노출 TOP6 — 3D 바</div>
+          <div style={head}><BarChart3 size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} color={C.sky} />매체별 노출 TOP6 — 3D 바</div>
           {rows.length ? <BarCanvas rows={rows} /> : <Empty />}{hint}
         </div>
         <div style={panel}>
-          <div style={head}>🍩 전환 점유 — 3D 도넛</div>
+          <div style={head}><PieChart size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} color={C.sky} />전환 점유 — 3D 도넛</div>
           {rows.filter(r => r.conversions > 0).length ? <DonutCanvas rows={rows} /> : <Empty msg="전환 데이터 없음" />}{hint}
         </div>
         <div style={panel}>
-          <div style={head}>🎗️ 일별 노출 추이 — 발광 리본</div>
+          <div style={head}><Activity size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} color={C.sky} />일별 노출 추이 — 발광 리본</div>
           {daily.length >= 2 ? <RibbonCanvas daily={daily} /> : <Empty msg="추이 데이터 부족" />}{hint}
         </div>
       </div>

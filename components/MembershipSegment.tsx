@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
+import { Ticket, Smartphone, Store, Clock, Wallet, Users, Medal, Circle } from "lucide-react";
 
 const P = {
   bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
@@ -121,7 +122,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
     <div style={{ padding: "24px 28px 40px", background: P.bg, minHeight: 600 }}>
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: P.text, marginBottom: 3 }}>
-          🎟️ 멤버십 사용 행태
+          <Ticket size={16} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 6, color: P.accent }} /> 멤버십 사용 행태
         </div>
         <div style={{ fontSize: 12, color: P.sub }}>NH멤버십 적립·사용 데이터 기반 오디언스 분석 · 오늘 17:00 이후 집계 반영</div>
       </div>
@@ -129,7 +130,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
       {/* ── 적립앱 섹션 ── */}
       <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.app}`, paddingBottom: 8 }}>
-          📱 적립앱별 오디언스
+          <Smartphone size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.app }} /> 적립앱별 오디언스
           <span style={{ fontSize: 11, fontWeight: 400, color: P.sub, marginLeft: 8 }}>앱 선택 시 연령·성별 분포 표시</span>
         </div>
 
@@ -200,7 +201,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
       {partnerTop.length > 0 && (
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: P.sub }}>🏪 가맹점 필터 (이용량 TOP {partnerTop.length})</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: P.sub }}><Store size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4, color: P.sub }} /> 가맹점 필터 (이용량 TOP {partnerTop.length})</div>
             {selPartner && (
               <button onClick={() => setSelPartner("")}
                 style={{ fontSize: 10, color: P.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
@@ -233,7 +234,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
 
       {!isLoading && noData && (
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🎟️</div>
+          <div style={{ marginBottom: 8 }}><Ticket size={34} strokeWidth={1.75} style={{ color: P.sub }} /></div>
           <div style={{ fontSize: 14, fontWeight: 700, color: P.sub, marginBottom: 4 }}>멤버십 데이터 집계 중</div>
           <div style={{ fontSize: 12, color: P.sub }}>오늘 17:00 KST 이후 NH멤버십 데이터가 반영됩니다</div>
         </div>
@@ -262,7 +263,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14, marginBottom: 16 }}>
             <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-                ⏰ 시간대별 이용 분포
+                <Clock size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} /> 시간대별 이용 분포
               </div>
               <ResponsiveContainer width="100%" height={150}>
                 <BarChart data={hourData} barSize={14}>
@@ -275,11 +276,11 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              <div style={{ fontSize: 10, color: P.sub, marginTop: 6 }}>🟣 점심(11~14시)·저녁(19~21시) 강조</div>
+              <div style={{ fontSize: 10, color: P.sub, marginTop: 6 }}><Circle size={8} fill={P.accent} strokeWidth={0} style={{ verticalAlign: "0px", marginRight: 5 }} /> 점심(11~14시)·저녁(19~21시) 강조</div>
             </div>
             <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-                💰 금액 구간별
+                <Wallet size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} /> 금액 구간별
               </div>
               {amtData.map((a: any, i: number) => (
                 <div key={a.name} style={{ marginBottom: 8 }}>
@@ -299,7 +300,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-                👥 연령 × 성별 분포
+                <Users size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} /> 연령 × 성별 분포
               </div>
               <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 12 }}>
                 <div style={{ width: 90, height: 90 }}>
@@ -338,13 +339,13 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
 
             <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-                🏪 가맹점 TOP 15
+                <Store size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} /> 가맹점 TOP 15
               </div>
               {partnerTop.slice(0, 10).map((p, i) => (
                 <div key={p.partner_cd} style={{ marginBottom: 6 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
                     <span style={{ color: P.text, fontWeight: i < 3 ? 700 : 400, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>
-                      {i < 3 ? ["🥇","🥈","🥉"][i] : `${i+1}.`} {p.partner_name || p.partner_cd}
+                      {i < 3 ? <Medal size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 2, color: ["#EAB308","#94A3B8","#B45309"][i] }} /> : `${i+1}.`} {p.partner_name || p.partner_cd}
                     </span>
                     <span style={{ color: P.sub, marginLeft: 4, flexShrink: 0 }}>{fmt(Number(p.cnt))}</span>
                   </div>

@@ -61,6 +61,21 @@ export const P = {
   shadowLg: "var(--shadow-lg)",
 } as const;
 
+/* 상태 배지 톤 (라이트/다크 자동 페어) — DMP_UI_UX_표준.md §7
+   사용:  style={{ ...badge("success"), padding, borderRadius, fontSize }} */
+export type BadgeTone = "info" | "sky" | "success" | "warning" | "danger" | "violet" | "teal" | "neutral";
+export function badge(tone: BadgeTone): React.CSSProperties {
+  return {
+    background: `var(--badge-${tone}-bg)`,
+    color: `var(--badge-${tone}-fg)`,
+    border: `1px solid var(--badge-${tone}-bg)`,
+  };
+}
+export const badgeVar = (tone: BadgeTone) => ({
+  bg: `var(--badge-${tone}-bg)`,
+  fg: `var(--badge-${tone}-fg)`,
+});
+
 /* 차트 시리즈 팔레트 (다중 계열용) — 채도 낮은 실무 톤 */
 export const SERIES = [
   "var(--accent)",

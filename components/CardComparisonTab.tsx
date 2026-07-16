@@ -7,6 +7,7 @@ import {
   LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 import { fmt } from "@/lib/data";
+import { CreditCard, Wallet, TrendingUp, Store } from "lucide-react";
 
 const P = {
   bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
@@ -94,7 +95,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
   if (isLoading && !apiData) {
     return (
       <div style={{ padding: "60px 28px", textAlign: "center", color: P.sub }}>
-        <div style={{ fontSize: 24, marginBottom: 12 }}>💳</div>
+        <div style={{ fontSize: 24, marginBottom: 12 }}><CreditCard size={24} style={{ color: "var(--accent)" }} /></div>
         <div style={{ fontSize: 13 }}>카드사 비교 데이터 로딩 중...</div>
       </div>
     );
@@ -103,7 +104,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
   if (!hasData && !isLoading) {
     return (
       <div style={{ padding: "60px 28px", textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>💳</div>
+        <div style={{ fontSize: 40, marginBottom: 16 }}><CreditCard size={40} style={{ color: "var(--accent)" }} /></div>
         <div style={{ fontSize: 16, fontWeight: 700, color: P.text, marginBottom: 8 }}>카드사별 비교 리포트</div>
         <div style={{ fontSize: 13, color: P.sub, lineHeight: 1.8, maxWidth: 500, margin: "0 auto" }}>
           BQ 통합 큐브 생성 대기 중입니다.<br />
@@ -154,7 +155,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
         {/* 카드사별 비중 */}
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            💳 카드사별 결제 비중
+            <CreditCard size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />카드사별 결제 비중
           </h3>
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             <div style={{ width: 150, height: 150, flexShrink: 0, position: "relative" }}>
@@ -187,7 +188,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
         {/* 카드사별 평균 결제금액 */}
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            💰 카드사별 평균 결제금액
+            <Wallet size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />카드사별 평균 결제금액
           </h3>
           <div style={{ height: 200 }}>
             <ResponsiveContainer>
@@ -214,7 +215,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
       <div style={{ padding: "0 28px 16px" }}>
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            📈 카드사별 월별 결제 추이
+            <TrendingUp size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />카드사별 월별 결제 추이
           </h3>
           <div style={{ height: 220 }}>
             <ResponsiveContainer>
@@ -238,7 +239,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
       <div style={{ padding: "0 28px 28px" }}>
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            🏪 카드사별 인기 업종 TOP 5
+            <Store size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />카드사별 인기 업종 TOP 5
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(cardSources.length, 5)}, 1fr)`, gap: 16 }}>
             {cardSources.map(src => {

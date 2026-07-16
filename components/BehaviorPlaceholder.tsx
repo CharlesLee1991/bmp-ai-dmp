@@ -1,18 +1,19 @@
 import React from "react";
+import { TrainFront, Bus, Ticket, type LucideIcon } from "lucide-react";
 
 const C = { card: "var(--card)", border: "var(--border)", text: "var(--text)", sub: "var(--sub)", accent: "var(--accent)" };
 
 const ST: Record<string, { bg: string; fg: string; label: string }> = {
-  ready: { bg: "#dcfce7", fg: "#166534", label: "준비됨" },
-  soon: { bg: "#fef9c3", fg: "#854d0e", label: "곧 제공" },
-  block: { bg: "#fee2e2", fg: "#991b1b", label: "런컴 데이터" },
+  ready: { bg: "var(--badge-success-bg)", fg: "var(--badge-success-fg)", label: "준비됨" },
+  soon: { bg: "var(--badge-warning-bg)", fg: "var(--badge-warning-fg)", label: "곧 제공" },
+  block: { bg: "var(--badge-danger-bg)", fg: "var(--badge-danger-fg)", label: "런컴 데이터" },
 };
 
 type Dim = { name: string; status: "ready" | "soon" | "block"; note?: string };
 
-const MAP: Record<string, { icon: string; title: string; desc: string; dims: Dim[]; foot: string }> = {
+const MAP: Record<string, { icon: LucideIcon; title: string; desc: string; dims: Dim[]; foot: string }> = {
   subway: {
-    icon: "🚇",
+    icon: TrainFront,
     title: "지하철 이용 행태",
     desc: "기본 구분(성별·연령·지역) + 지하철 이용 차원으로 오디언스를 찾습니다.",
     dims: [
@@ -25,7 +26,7 @@ const MAP: Record<string, { icon: string; title: string; desc: string; dims: Dim
     foot: "현행 cube_transit은 노선·역·교통수단 구분이 비어 있어, tb_tam_f1 재적재로 ‘교통수단·지역·시간’부터 활성화합니다. 노선·역은 런컴 원본 확정 후 추가.",
   },
   bus: {
-    icon: "🚌",
+    icon: Bus,
     title: "버스 이용 행태",
     desc: "기본 구분(성별·연령·지역) + 버스 이용 차원으로 오디언스를 찾습니다.",
     dims: [
@@ -37,7 +38,7 @@ const MAP: Record<string, { icon: string; title: string; desc: string; dims: Dim
     foot: "지하철과 동일 큐브(cube_transit)를 공유합니다. 재적재로 버스/지하철을 분리하면 함께 활성화됩니다.",
   },
   membership: {
-    icon: "🎟️",
+    icon: Ticket,
     title: "멤버십 사용 행태",
     desc: "기본 구분(성별·연령·지역) + 멤버십 적립/사용 차원으로 오디언스를 찾습니다.",
     dims: [
@@ -53,9 +54,10 @@ const MAP: Record<string, { icon: string; title: string; desc: string; dims: Dim
 export default function BehaviorPlaceholder({ behavior }: { behavior: string }) {
   const m = MAP[behavior];
   if (!m) return null;
+  const Icon = m.icon;
   return (
     <div style={{ margin: "40px 28px", padding: "48px 32px", border: "2px dashed var(--border-strong)", borderRadius: 16, background: C.card, textAlign: "center" }}>
-      <div style={{ fontSize: 48 }}>{m.icon}</div>
+      <div style={{ fontSize: 48 }}><Icon size={48} style={{ color: "var(--accent)" }} /></div>
       <h2 style={{ fontSize: 20, margin: "12px 0 6px", color: C.text }}>{m.title}</h2>
       <p style={{ color: C.sub, fontSize: 13, marginBottom: 24 }}>{m.desc}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 680, margin: "0 auto" }}>

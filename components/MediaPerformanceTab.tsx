@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { BarChart3, Repeat } from "lucide-react";
 
 // BizViz 코스믹 시각화 (신규 버전) — 코드분할: three.js는 선택 시에만 로드
 const BizVizMediaCharts = dynamic(() => import("./BizVizMediaCharts"), { ssr: false });
@@ -99,7 +100,7 @@ export default function MediaPerformanceTab() {
     <div style={{ padding: "20px 28px", display: "flex", flexDirection: "column", gap: 18 }}>
       {/* 헤더 + 기간 */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: P.text }}>📊 매체별 광고 성과</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: P.text }}><BarChart3 size={16} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />매체별 광고 성과</div>
         <div style={{ display: "flex", gap: 6 }}>
           {[7, 30, 90].map(d => (
             <button key={d} onClick={() => setDays(d)} style={{ padding: "4px 12px", fontSize: 12, borderRadius: 14, cursor: "pointer", border: `1px solid ${days === d ? P.accent : P.border}`, background: days === d ? P.accent : "var(--card)", color: days === d ? "var(--card)" : P.sub }}>{d}일</button>
@@ -111,13 +112,13 @@ export default function MediaPerformanceTab() {
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 11, color: P.sub }}>시각화</span>
           <div style={{ display: "flex", border: `1px solid ${P.border}`, borderRadius: 16, overflow: "hidden" }}>
-            {([["current", "현재"], ["clean", "정제 2D"], ["gl3d", "🧊 3D"], ["bizviz", "✦ BizViz"]] as const).map(([v, lab]) => (
+            {([["current", "현재"], ["clean", "정제 2D"], ["gl3d", "3D"], ["bizviz", "✦ BizViz"]] as const).map(([v, lab]) => (
               <button key={v} onClick={() => setViz(v)} style={{ padding: "4px 12px", fontSize: 12, cursor: "pointer", border: "none", background: viz === v ? (v === "bizviz" ? "#101318" : P.accent) : "var(--card)", color: viz === v ? "var(--card)" : P.sub, fontWeight: viz === v ? 700 : 400 }}>{lab}</button>
             ))}
           </div>
         </div>
       </div>
-      {err && <div style={{ color: "#d64545", fontSize: 13 }}>오류: {err}</div>}
+      {err && <div style={{ color: "var(--danger)", fontSize: 13 }}>오류: {err}</div>}
 
       {/* KPI */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
@@ -174,10 +175,10 @@ export default function MediaPerformanceTab() {
           <tbody>
             {rows.filter(r => r.impressions > 0).map(r => (
               <tr key={r.platform_idx} onClick={() => setSel(r.platform_idx)}
-                style={{ borderTop: `1px solid ${P.border}`, cursor: "pointer", background: sel === r.platform_idx ? "#eef5fd" : "var(--card)" }}>
+                style={{ borderTop: `1px solid ${P.border}`, cursor: "pointer", background: sel === r.platform_idx ? "var(--badge-info-bg)" : "var(--card)" }}>
                 <td style={{ padding: "8px 14px", fontWeight: 600, color: P.text }}>
                   {r.platform_name}
-                  {creativeIdx.has(r.platform_idx) && <span title="소재 반응 데이터 있음 — 클릭 시 우측 폐루프에 이 매체의 반응 소재 표시" style={{ marginLeft: 6, fontSize: 11 }}>🔁</span>}
+                  {creativeIdx.has(r.platform_idx) && <span title="소재 반응 데이터 있음 — 클릭 시 우측 폐루프에 이 매체의 반응 소재 표시" style={{ marginLeft: 6 }}><Repeat size={12} style={{ verticalAlign: "-2px", color: "var(--accent)" }} /></span>}
                 </td>
                 <td style={{ padding: "8px 14px" }}>
                   <div style={{ height: 8, background: "var(--bg-elevated)", borderRadius: 4 }}>
@@ -199,7 +200,7 @@ export default function MediaPerformanceTab() {
       {/* ─── 폐루프: 오디언스 × 광고소재 성과 ─── */}
       <div style={{ border: `1px solid ${P.border}`, borderRadius: 10, padding: 16, marginTop: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: P.text }}>🔁 오디언스 반응 소재 (폐루프)</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: P.text }}><Repeat size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />오디언스 반응 소재 (폐루프)</div>
           <select value={audSel} onChange={e => setAudSel(e.target.value)}
             style={{ padding: "6px 10px", fontSize: 12.5, borderRadius: 8, border: `1px solid ${P.border}`, color: P.text, background: "var(--card)" }}>
             <option value="">오디언스 선택…</option>
@@ -208,7 +209,7 @@ export default function MediaPerformanceTab() {
             ))}
           </select>
           {adLoading && <div style={{ fontSize: 12, color: P.accent }}>조회 중… (첫 조회는 최대 1~2분)</div>}
-          {adErr && <div style={{ fontSize: 12, color: "#d64545" }}>오류: {adErr}</div>}
+          {adErr && <div style={{ fontSize: 12, color: "var(--danger)" }}>오류: {adErr}</div>}
           <div style={{ fontSize: 11, color: P.sub }}>
             선택한 오디언스가 최근 {days}일 실제 전환한 광고소재 TOP
             {sel != null && selName && <span style={{ marginLeft: 6, color: P.accent, fontWeight: 700 }}>· 매체 필터: {selName}</span>}

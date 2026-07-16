@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
+import { TrainFront, Bus, MapPin, Clock, Users, Medal, Circle } from "lucide-react";
 
 const P = {
   bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
@@ -25,8 +26,8 @@ const CAT_OPTIONS = [
 ];
 const ONOFF_OPTIONS = [
   { value: "", label: "전체" },
-  { value: "A", label: "🟢 승차" },
-  { value: "R", label: "🔴 하차" },
+  { value: "A", label: "승차" },
+  { value: "R", label: "하차" },
 ];
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -121,7 +122,9 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
       {/* 헤더 */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: P.text, marginBottom: 3 }}>
-          {tab === "subway" ? "🚇 지하철" : "🚌 버스"} 이용 세그먼트
+          {tab === "subway"
+            ? <><TrainFront size={16} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 6, color: P.accent }} />지하철</>
+            : <><Bus size={16} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 6, color: P.accent }} />버스</>} 이용 세그먼트
         </div>
         <div style={{ fontSize: 12, color: P.sub }}>교통카드 이용 데이터 기반 오디언스 분석</div>
       </div>
@@ -150,7 +153,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
       {stationTop.length > 0 && (
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: P.sub }}>🚉 역별 필터 (이용량 TOP {stationTop.length})</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: P.sub }}><MapPin size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4, color: P.sub }} /> 역별 필터 (이용량 TOP {stationTop.length})</div>
             {selectedStation && (
               <button onClick={() => setSelectedStation("")}
                 style={{ fontSize: 10, color: P.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
@@ -188,7 +191,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
 
       {!isLoading && noData && (
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>{tab === "subway" ? "🚇" : "🚌"}</div>
+          <div style={{ marginBottom: 8 }}>{tab === "subway" ? <TrainFront size={30} strokeWidth={1.75} style={{ color: P.sub }} /> : <Bus size={30} strokeWidth={1.75} style={{ color: P.sub }} />}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: P.sub, marginBottom: 4 }}>교통 데이터 집계 중</div>
           <div style={{ fontSize: 12, color: P.sub }}>오늘 19:00 KST 이후 데이터가 반영됩니다</div>
         </div>
@@ -216,7 +219,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
           {/* 시간대별 이용 분포 */}
           <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "18px 20px", marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-              ⏰ 시간대별 이용 분포{selectedStation && stationTop.find(s=>s.station_id===selectedStation) ? ` — ${stationTop.find(s=>s.station_id===selectedStation)!.station_name}역` : ""}
+              <Clock size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} /> 시간대별 이용 분포{selectedStation && stationTop.find(s=>s.station_id===selectedStation) ? ` — ${stationTop.find(s=>s.station_id===selectedStation)!.station_name}역` : ""}
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={hourData} barSize={14}>
@@ -229,14 +232,14 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <div style={{ fontSize: 10, color: P.sub, marginTop: 6 }}>🟩 출퇴근 시간대 (7~9시, 17~19시) 강조</div>
+            <div style={{ fontSize: 10, color: P.sub, marginTop: 6 }}><Circle size={8} fill={P.accent} strokeWidth={0} style={{ verticalAlign: "0px", marginRight: 5 }} /> 출퇴근 시간대 (7~9시, 17~19시) 강조</div>
           </div>
 
           {/* 연령×성별 + 지역 */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-                👥 연령 × 성별 분포
+                <Users size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} /> 연령 × 성별 분포
               </div>
               <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 12 }}>
                 <div style={{ width: 100, height: 100 }}>
@@ -276,7 +279,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
 
             <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 12, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-                📍 지역별 이용자
+                <MapPin size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} /> 지역별 이용자
               </div>
               {regionTop.map((r, i) => {
                 const w = r.cnt / maxRegion * 100;
@@ -284,7 +287,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
                   <div key={r.region} style={{ marginBottom: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
                       <span style={{ color: P.text, fontWeight: i < 3 ? 700 : 400 }}>
-                        {i < 3 ? ["🥇","🥈","🥉"][i] : `${i+1}.`} {r.region}
+                        {i < 3 ? <Medal size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 2, color: ["#EAB308","#94A3B8","#B45309"][i] }} /> : `${i+1}.`} {r.region}
                       </span>
                       <span style={{ color: P.sub }}>{fmt(Number(r.cnt))}명</span>
                     </div>

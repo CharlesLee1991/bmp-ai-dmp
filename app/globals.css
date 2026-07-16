@@ -53,6 +53,18 @@
   --chip-fg:       #1d4e89;
   --chip-border:   #bcd9f5;
 
+  /* ── 상태 배지 톤 (라이트/다크 자동 페어) — CL 표준 §4·§5
+     라이트 = 파스텔 배경 + 진한 전경 / 다크(.dark) = 반투명 배경 + 밝은 전경 ── */
+  --badge-info-bg:     #dbeafe;  --badge-info-fg:     #1d4ed8;
+  --badge-sky-bg:      #e0f2fe;  --badge-sky-fg:      #0369a1;
+  --badge-success-bg:  #dcfce7;  --badge-success-fg:  #15803d;
+  --badge-warning-bg:  #fef3c7;  --badge-warning-fg:  #92400e;
+  --badge-danger-bg:   #fee2e2;  --badge-danger-fg:   #b91c1c;
+  --badge-violet-bg:   #ede9fe;  --badge-violet-fg:   #6d28d9;
+  --badge-teal-bg:     #ccfbf1;  --badge-teal-fg:     #0f766e;
+  --badge-neutral-bg:  #f1f5f9;  --badge-neutral-fg:  #475569;
+  --scrim:             rgba(15,23,42,0.45);
+
   /* ── 효과 ── */
   --ring:          rgba(13,148,136,0.35);
   --shadow-soft:   0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.05);
@@ -105,6 +117,17 @@
   --chip:          rgba(45,212,191,0.16);
   --chip-fg:       #7ee7d8;
   --chip-border:   rgba(45,212,191,0.32);
+
+  /* 상태 배지 톤 — 다크: 반투명 배경 + 밝은 전경 (대비 확보) */
+  --badge-info-bg:     rgba(59,130,246,0.18);   --badge-info-fg:     #93c5fd;
+  --badge-sky-bg:      rgba(14,165,233,0.18);    --badge-sky-fg:      #7dd3fc;
+  --badge-success-bg:  rgba(16,185,129,0.18);    --badge-success-fg:  #6ee7b7;
+  --badge-warning-bg:  rgba(245,158,11,0.18);    --badge-warning-fg:  #fcd34d;
+  --badge-danger-bg:   rgba(239,68,68,0.20);     --badge-danger-fg:   #fca5a5;
+  --badge-violet-bg:   rgba(139,92,246,0.22);    --badge-violet-fg:   #c4b5fd;
+  --badge-teal-bg:     rgba(20,184,166,0.18);    --badge-teal-fg:     #5eead4;
+  --badge-neutral-bg:  rgba(148,163,184,0.18);   --badge-neutral-fg:  #cbd5e1;
+  --scrim:             rgba(2,6,15,0.62);
 
   --ring:          rgba(45,212,191,0.45);
   --shadow-soft:   0 1px 2px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.34);

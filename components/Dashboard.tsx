@@ -28,7 +28,8 @@ import { ThemeMenu } from "@/lib/ThemeContext";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
-  RotateCcw, type LucideIcon,
+  RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
+  SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle, type LucideIcon,
 } from "lucide-react";
 
 /* 탭 아이콘 SSOT (CL 표준 §9 — 이모지 대신 lucide 라인 아이콘) */
@@ -150,7 +151,7 @@ function DropdownMulti({ options, selected, onChange, placeholder, searchable }:
                 ref={inputRef}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder={`🔍 검색 (총 ${options.length}개${q ? `, ${filtered.length}건 일치` : ""})`}
+                placeholder={`검색 (총 ${options.length}개${q ? `, ${filtered.length}건 일치` : ""})`}
                 style={{
                   width: "100%", padding: "6px 8px", fontSize: 11,
                   border: `1px solid ${P.border}`, borderRadius: 6,
@@ -745,7 +746,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {tab === "card" && shopCategories.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>쇼핑</span>
-            {shopCats.map(c => <Tag key={`sc-${c}`} label={`🛒 ${c}`} onRemove={() => setShopCats(shopCats.filter(x => x !== c))} />)}
+            {shopCats.map(c => <Tag key={`sc-${c}`} label={c} onRemove={() => setShopCats(shopCats.filter(x => x !== c))} />)}
             <DropdownMulti options={shopCategories.map(c => ({ value: c.name, label: `${c.name} (${fmt(c.cnt)})` }))} selected={shopCats} onChange={setShopCats} placeholder="+ 쇼핑 카테고리" />
           </div>
         )}
@@ -754,7 +755,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>금액</span>
-            {amountFilters.map(a => <Tag key={`amt-${a}`} label={`💰 ${({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a}`} onRemove={() => setAmountFilters(amountFilters.filter(x => x !== a))} />)}
+            {amountFilters.map(a => <Tag key={`amt-${a}`} label={({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a} onRemove={() => setAmountFilters(amountFilters.filter(x => x !== a))} />)}
             <DropdownMulti options={[
               { value: "under_5k", label: "~5천원" },
               { value: "5k_10k", label: "5천~1만원" },
@@ -777,8 +778,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               };
               return (
                 <span style={{ display: "inline-flex", gap: 3, marginLeft: 4, borderLeft: "1px solid var(--border)", paddingLeft: 8 }}>
-                  {[10,20,30].map(p => <button key={`hi-${p}`} onClick={() => selectPct(HIGH_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #7c3aed33", background: "#f5f3ff", color: "#7c3aed", cursor: "pointer", fontWeight: 600 }}>상위{p}%</button>)}
-                  {[30,20,10].map(p => <button key={`lo-${p}`} onClick={() => selectPct(LOW_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #0d948833", background: "#f0fdfa", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}>하위{p}%</button>)}
+                  {[10,20,30].map(p => <button key={`hi-${p}`} onClick={() => selectPct(HIGH_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid var(--badge-violet-bg)", background: "var(--badge-violet-bg)", color: "var(--badge-violet-fg)", cursor: "pointer", fontWeight: 600 }}>상위{p}%</button>)}
+                  {[30,20,10].map(p => <button key={`lo-${p}`} onClick={() => selectPct(LOW_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid var(--badge-teal-bg)", background: "var(--badge-teal-bg)", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}>하위{p}%</button>)}
                 </span>
               );
             })()}
@@ -789,7 +790,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>매체</span>
-            {cardCompanies.map(c => <Tag key={`cc-${c}`} label={`🏦 ${({KB:"KB국민",NH:"NH농협",BC:"BC",SH:"신한",LOCA:"LOCA",NHPAY:"NH페이",OCB:"OCB",SKT:"SKT",SYRUP:"시럽",DLOCA:"D-LOCA"} as Record<string,string>)[c] || c}`} onRemove={() => setCardCompanies(cardCompanies.filter(x => x !== c))} />)}
+            {cardCompanies.map(c => <Tag key={`cc-${c}`} label={({KB:"KB국민",NH:"NH농협",BC:"BC",SH:"신한",LOCA:"LOCA",NHPAY:"NH페이",OCB:"OCB",SKT:"SKT",SYRUP:"시럽",DLOCA:"D-LOCA"} as Record<string,string>)[c] || c} onRemove={() => setCardCompanies(cardCompanies.filter(x => x !== c))} />)}
             <DropdownMulti options={[
               { value: "KB", label: "KB국민" },
               { value: "NH", label: "NH농협" },
@@ -809,7 +810,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>통신</span>
-            {telecoms.map(t => <Tag key={`tel-${t}`} label={`📡 ${({K:"KT",T:"SKT",U:"LG U+",Z:"알뜰폰"} as Record<string,string>)[t] || t}`} onRemove={() => setTelecoms(telecoms.filter(x => x !== t))} />)}
+            {telecoms.map(t => <Tag key={`tel-${t}`} label={({K:"KT",T:"SKT",U:"LG U+",Z:"알뜰폰"} as Record<string,string>)[t] || t} onRemove={() => setTelecoms(telecoms.filter(x => x !== t))} />)}
             <DropdownMulti options={[
               { value: "K", label: "KT" },
               { value: "T", label: "SKT" },
@@ -823,7 +824,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>단말</span>
-            {mobileBrands.map(b => <Tag key={`mb-${b}`} label={`📱 ${({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b}`} onRemove={() => setMobileBrands(mobileBrands.filter(x => x !== b))} />)}
+            {mobileBrands.map(b => <Tag key={`mb-${b}`} label={({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b} onRemove={() => setMobileBrands(mobileBrands.filter(x => x !== b))} />)}
             <DropdownMulti options={[
               { value: "Apple", label: "애플" },
               { value: "SAMSUNG", label: "삼성" },
@@ -838,7 +839,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>소비</span>
-            {audCats.map(c => <Tag key={`ac-${c}`} label={`🏷️ ${c}`} onRemove={() => setAudCats(audCats.filter(x => x !== c))} />)}
+            {audCats.map(c => <Tag key={`ac-${c}`} label={c} onRemove={() => setAudCats(audCats.filter(x => x !== c))} />)}
             <DropdownMulti options={[
               { value: "유통", label: "유통" },
               { value: "식생활", label: "식생활" },
@@ -896,8 +897,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>ADID</span>
             {uploadSession && uploadInfo ? (
               <>
-                <span style={{ padding: "4px 10px", borderRadius: 16, fontSize: 10, fontWeight: 600, background: "#dbeafe", color: "#1d4ed8", border: "1px solid #3b82f644" }}>
-                  📤 {fmt(uploadInfo.matched)}건 매칭 / {fmt(uploadInfo.total)}건 업로드 ({uploadInfo.rate}%)
+                <span style={{ padding: "4px 10px", borderRadius: 16, fontSize: 10, fontWeight: 600, background: "var(--badge-info-bg)", color: "var(--badge-info-fg)", border: "1px solid var(--badge-info-bg)" }}>
+                  {fmt(uploadInfo.matched)}건 매칭 / {fmt(uploadInfo.total)}건 업로드 ({uploadInfo.rate}%)
                 </span>
                 <button onClick={() => { setUploadSession(null); setUploadInfo(null); }} style={{ fontSize: 10, color: P.sub, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>
               </>
@@ -974,13 +975,13 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {/* ─── CAMPAIGN TARGET FINDER ─── */}
       {campaignOpen && tab === "card" && (
-        <div style={{ margin: "12px 28px 0", padding: 18, borderRadius: 12, background: "linear-gradient(135deg, #f5f3ff, #ede9fe)", border: "1px solid #7c3aed33" }}>
+        <div style={{ margin: "12px 28px 0", padding: 18, borderRadius: 12, background: P.card, border: `1px solid ${P.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>🎯 캠페인 타겟 찾기</div>
-            <button onClick={() => { setCampaignOpen(false); setCampaignResult(null); }} style={{ fontSize: 10, color: "#7c3aed", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
+            <div style={{ fontSize: 14, fontWeight: 700, color: P.app }}><Target size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.app }} />캠페인 타겟 찾기</div>
+            <button onClick={() => { setCampaignOpen(false); setCampaignResult(null); }} style={{ fontSize: 10, color: P.app, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: campaignResult ? 16 : 0 }}>
-            <input value={campaignText} onChange={e => setCampaignText(e.target.value)} placeholder="예: 수입차를 많이 살 것 같은 고소득 고객, 20대 여성 뷰티 관심 타겟, 건강식품 구매 가능성 높은 중장년..." style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #c4b5fd", fontSize: 13, outline: "none", background: "rgba(255,255,255,.8)" }} onKeyDown={e => { if (e.key === "Enter" && campaignText.trim() && !campaignLoading) { e.preventDefault(); document.getElementById("campaign-btn")?.click(); }}} />
+            <input value={campaignText} onChange={e => setCampaignText(e.target.value)} placeholder="예: 수입차를 많이 살 것 같은 고소득 고객, 20대 여성 뷰티 관심 타겟, 건강식품 구매 가능성 높은 중장년..." style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${P.border}`, fontSize: 13, outline: "none", background: P.bg, color: P.text }} onKeyDown={e => { if (e.key === "Enter" && campaignText.trim() && !campaignLoading) { e.preventDefault(); document.getElementById("campaign-btn")?.click(); }}} />
             <button id="campaign-btn" disabled={!campaignText.trim() || campaignLoading} onClick={async () => {
               setCampaignLoading(true); setCampaignResult(null);
               try {
@@ -990,23 +991,23 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 else alert("분석 실패: " + (data.error || ""));
               } catch (e: any) { alert("에러: " + e.message); }
               finally { setCampaignLoading(false); }
-            }} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: campaignLoading ? "wait" : "pointer", background: "#7c3aed", color: "#fff", border: "none", opacity: (!campaignText.trim() || campaignLoading) ? .5 : 1, whiteSpace: "nowrap" }}>
+            }} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: campaignLoading ? "wait" : "pointer", background: P.app, color: "#fff", border: "none", opacity: (!campaignText.trim() || campaignLoading) ? .5 : 1, whiteSpace: "nowrap" }}>
               {campaignLoading ? "분석 중..." : "타겟 추천"}
             </button>
           </div>
           {campaignResult && (
             <div>
-              {campaignResult.analysis && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
+              {campaignResult.analysis && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, padding: "10px 14px", background: P.cardAlt, borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
               <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(campaignResult.recommendations?.length || 1, 3)}, 1fr)`, gap: 10 }}>
                 {(campaignResult.recommendations || []).map((rec: any, i: number) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,.9)", borderRadius: 10, padding: 14, border: "1px solid #c4b5fd" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#5b21b6", marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i]} {rec.label}</div>
+                  <div key={i} style={{ background: P.cardAlt, borderRadius: 10, padding: 14, border: `1px solid ${P.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: P.app, marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i]} {rec.label}</div>
                     <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 8 }}>{rec.description}</div>
-                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 10px", background: "var(--badge-violet-bg)", borderRadius: 6, marginBottom: 8 }}>
                       <span style={{ fontWeight: 600 }}>조건:</span> {rec.filter_summary}
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? "#7c3aed" : "var(--sub-2)" }}>
-                      {rec.estimated_audience > 0 ? fmt(rec.estimated_audience) : "—"}<span style={{ fontSize: 11, fontWeight: 500, color: "#7c3aed88", marginLeft: 4 }}>명</span>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? P.app : "var(--sub-2)" }}>
+                      {rec.estimated_audience > 0 ? fmt(rec.estimated_audience) : "—"}<span style={{ fontSize: 11, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span>
                     </div>
                     <div style={{ fontSize: 9, color: "var(--sub-2)", marginTop: 2 }}>실시간 세그먼트 프리뷰 기반</div>
                   </div>
@@ -1026,7 +1027,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 16 }}>🎯</span>
+            <Target size={16} strokeWidth={2} style={{ color: P.accent, flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: P.accent }}>세그먼트 프리뷰{(segLoading || segValidating) && <span style={{ fontWeight: 400, color: P.sub, marginLeft: 8 }}>갱신 중…</span>}</div>
               <div style={{ fontSize: 11, color: P.sub, marginTop: 2 }}>{filterParts.join(" · ") || "필터 적용 중"}</div>
@@ -1052,8 +1053,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 else alert("AI 분석 실패: " + (data.error || ""));
               } catch (e: any) { alert("AI 분석 에러: " + e.message); }
               finally { setAiLoading(false); }
-            }} disabled={aiLoading} style={{ fontSize: 11, fontWeight: 600, color: "#7c3aed", background: "#ede9fe", border: "1px solid #7c3aed44", borderRadius: 20, padding: "6px 16px", cursor: aiLoading ? "wait" : "pointer", opacity: aiLoading ? .6 : 1 }}>
-              {aiLoading ? "🤖 분석 중..." : "🤖 AI 타겟 제안"}
+            }} disabled={aiLoading} style={{ fontSize: 11, fontWeight: 600, color: "var(--badge-violet-fg)", background: "var(--badge-violet-bg)", border: "1px solid var(--badge-violet-bg)", borderRadius: 20, padding: "6px 16px", cursor: aiLoading ? "wait" : "pointer", opacity: aiLoading ? .6 : 1, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Bot size={13} strokeWidth={2} />{aiLoading ? "분석 중..." : "AI 타겟 제안"}
             </button>
             {segEstimate && (
               <div style={{ textAlign: "right" }}>
@@ -1067,32 +1068,32 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {/* ─── AI RECOMMENDATION RESULT ─── */}
       {aiResult && (
-        <div style={{ margin: "8px 28px 0", padding: 18, borderRadius: 12, background: "linear-gradient(135deg, #ede9fe, #faf5ff)", border: "1px solid #7c3aed33" }}>
+        <div style={{ margin: "8px 28px 0", padding: 18, borderRadius: 12, background: P.card, border: `1px solid ${P.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>🤖 AI 효율 타겟 분석</div>
-            <button onClick={() => setAiResult(null)} style={{ fontSize: 10, color: "#7c3aed", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
+            <div style={{ fontSize: 14, fontWeight: 700, color: P.app }}><Bot size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.app }} />AI 효율 타겟 분석</div>
+            <button onClick={() => setAiResult(null)} style={{ fontSize: 10, color: P.app, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
           </div>
-          {aiResult.summary && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, marginBottom: 14, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8 }}>{aiResult.summary}</div>}
+          {aiResult.summary && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, marginBottom: 14, padding: "10px 14px", background: P.cardAlt, borderRadius: 8 }}>{aiResult.summary}</div>}
           {aiResult.insights?.length > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#7c3aed", marginBottom: 6 }}>💡 핵심 인사이트</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: P.app, marginBottom: 6 }}><Lightbulb size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5, color: P.app }} />핵심 인사이트</div>
               {aiResult.insights.map((ins: string, i: number) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--sub)", padding: "4px 0 4px 12px", borderLeft: "2px solid #a78bfa", marginBottom: 4 }}>{ins}</div>
+                <div key={i} style={{ fontSize: 12, color: "var(--sub)", padding: "4px 0 4px 12px", borderLeft: "2px solid var(--accent-2)", marginBottom: 4 }}>{ins}</div>
               ))}
             </div>
           )}
           {aiResult.recommendations?.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#7c3aed", marginBottom: 8 }}>🎯 추천 타겟 조합</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: P.app, marginBottom: 8 }}><Target size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5, color: P.app }} />추천 타겟 조합</div>
               <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(aiResult.recommendations.length, 3)}, 1fr)`, gap: 10 }}>
                 {aiResult.recommendations.map((rec: any, i: number) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,.85)", borderRadius: 10, padding: 14, border: "1px solid #c4b5fd" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#5b21b6", marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
+                  <div key={i} style={{ background: P.cardAlt, borderRadius: 10, padding: 14, border: `1px solid ${P.border}` }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: P.app, marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
                     {rec.description && <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 6 }}>{rec.description}</div>}
-                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 8px", background: "#f5f3ff", borderRadius: 6, marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 8px", background: "var(--badge-violet-bg)", borderRadius: 6, marginBottom: 6 }}>
                       <span style={{ fontWeight: 600 }}>조건:</span> {rec.filters}
                     </div>
-                    {rec.estimated_audience && <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>추정 규모: {rec.estimated_audience}</div>}
+                    {rec.estimated_audience && <div style={{ fontSize: 11, color: P.app, fontWeight: 600 }}>추정 규모: {rec.estimated_audience}</div>}
                     {rec.reason && <div style={{ fontSize: 10, color: "var(--sub-2)", marginTop: 4 }}>{rec.reason}</div>}
                   </div>
                 ))}
@@ -1114,7 +1115,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         <div style={{ padding: "0 28px 28px", display: "grid", gridTemplateColumns: "260px 1fr 240px", gap: 16 }}>
           {/* LEFT: 업종 */}
           <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🏪 업종 소분류 TOP 12</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><Package size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />업종 소분류 TOP 12</h3>
             {industryData.map((it, i) => {
               const w = industryData[0] ? it.users / industryData[0].users * 100 : 0;
               const name = PARTNER_MAP[it.code] || it.code;
@@ -1133,7 +1134,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           {/* CENTER: Age×Sex */}
           <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>📊 연령 × 성별 분포</h3>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><BarChart3 size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />연령 × 성별 분포</h3>
               <div style={{ display: "flex", gap: 10, padding: "2px 0" }}>
                 {[{ c: P.m, l: "남성" }, { c: P.f, l: "여성" }].map(x => (
                   <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: x.c }} /><span style={{ fontSize: 10, color: P.sub }}>{x.l}</span></div>
@@ -1177,7 +1178,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
           {/* RIGHT: Region */}
           <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}`, display: "flex", flexDirection: "column" }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>📍 {sidos.length === 1 ? `${sidos[0]} 시군구별` : "지역별 이용자"}</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><MapPin size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />{sidos.length === 1 ? `${sidos[0]} 시군구별` : "지역별 이용자"}</h3>
             <div style={{ flex: 1, overflow: "auto" }}>
               {regionRank.slice(0, 25).map((r, i) => {
                 const pct = regionRank[0] ? (r.users / regionRank[0].users * 100) : 0;
@@ -1200,7 +1201,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <div style={{ padding: "0 28px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             {/* 금액 구간 분포 */}
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>💰 결제 금액 구간 분포</h3>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><Wallet size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />결제 금액 구간 분포</h3>
               {(() => {
                 const maxAds = Math.max(...amountBuckets.map(b => b.ads_count));
                 const totalAds = amountBuckets.reduce((s, b) => s + b.ads_count, 0);
@@ -1221,7 +1222,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
             {/* 금액 구간별 거래액 */}
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid #d97706`, paddingBottom: 8 }}>💳 구간별 거래액</h3>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid var(--warning)`, paddingBottom: 8 }}><CreditCard size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--warning)" }} />구간별 거래액</h3>
               {(() => {
                 const maxAmt = Math.max(...amountBuckets.map(b => b.total_amt));
                 const totalAmt = amountBuckets.reduce((s, b) => s + b.total_amt, 0);
@@ -1249,7 +1250,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <div style={{ padding: "0 28px 20px", display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
             {/* 시간대별 광고 참여 */}
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid #6366f1", paddingBottom: 8 }}>📊 시간대별 광고 참여</h3>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid var(--accent-2)", paddingBottom: 8 }}><BarChart3 size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent-2)" }} />시간대별 광고 참여</h3>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 100 }}>
                 {adHourly.map((h, i) => {
                   const maxU = Math.max(...adHourly.map(x => x.users));
@@ -1257,7 +1258,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                   const isPeak = h.users === maxU;
                   return (
                     <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{ width: "100%", height: `${ht}%`, minHeight: 2, background: isPeak ? "#6366f1" : "#a5b4fc", borderRadius: "3px 3px 0 0", transition: "height .3s" }} />
+                      <div style={{ width: "100%", height: `${ht}%`, minHeight: 2, background: isPeak ? "var(--accent-2)" : "color-mix(in srgb, var(--accent-2) 45%, transparent)", borderRadius: "3px 3px 0 0", transition: "height .3s" }} />
                     </div>
                   );
                 })}
@@ -1274,7 +1275,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
             {/* OS별 광고 참여 */}
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid var(--success)", paddingBottom: 8 }}>📱 OS별 광고 참여</h3>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid var(--success)", paddingBottom: 8 }}><Smartphone size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--success)" }} />OS별 광고 참여</h3>
               {(() => {
                 const totalUsers = adOs.reduce((s, o) => s + o.users, 0);
                 const colors: Record<string, string> = { Android: "#3DDC84", iOS: "#007AFF", "기타": "var(--neutral)" };
@@ -1307,7 +1308,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <div style={{ padding: "0 28px 28px" }}>
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>🛒 쇼핑 카테고리 (최근 1주)</h3>
+                <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0, borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><ShoppingCart size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />쇼핑 카테고리 (최근 1주)</h3>
                 <span style={{ fontSize: 10, color: P.sub }}>쿠팡 결제 기반 · {shopCategories.reduce((s, c) => s + c.cnt, 0).toLocaleString()}건</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
@@ -1346,13 +1347,13 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {/* EXPORT MODAL */}
       {exportOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => !exporting && setExportOpen(false)}>
+        <div style={{ position: "fixed", inset: 0, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => !exporting && setExportOpen(false)}>
           <div style={{ background: P.card, borderRadius: 16, padding: 28, border: `1px solid ${P.border}`, width: 460, maxWidth: "90vw" }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 16px", color: P.accent }}>🚀 런컴 타겟 전송</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 16px", color: P.accent }}><Send size={16} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 7, color: P.accent }} />런컴 타겟 전송</h3>
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>타겟 소스</div>
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              <button disabled={exporting} onClick={() => setExportSource("filter")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "filter" ? P.glow : P.bg, color: exportSource === "filter" ? P.accent : P.sub, border: `1px solid ${exportSource === "filter" ? P.accent : P.border}` }}>🎛️ 필터 조건</button>
-              <button disabled={exporting} onClick={() => setExportSource("audience")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "audience" ? P.glow : P.bg, color: exportSource === "audience" ? P.accent : P.sub, border: `1px solid ${exportSource === "audience" ? P.accent : P.border}` }}>🤖 AI 오디언스</button>
+              <button disabled={exporting} onClick={() => setExportSource("filter")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "filter" ? P.glow : P.bg, color: exportSource === "filter" ? P.accent : P.sub, border: `1px solid ${exportSource === "filter" ? P.accent : P.border}` }}><SlidersHorizontal size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5 }} />필터 조건</button>
+              <button disabled={exporting} onClick={() => setExportSource("audience")} style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.5 : 1, background: exportSource === "audience" ? P.glow : P.bg, color: exportSource === "audience" ? P.accent : P.sub, border: `1px solid ${exportSource === "audience" ? P.accent : P.border}` }}><Bot size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5 }} />AI 오디언스</button>
             </div>
             {exportSource === "audience" && (
               <>
@@ -1372,14 +1373,14 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>성별: {sexes.length ? sexes.map(s => s === "M" ? "남성" : s === "F" ? "여성" : "알수없음").join(", ") : "전체"}</span>
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>연령: {ages.length ? ages.map(a => AGE_LABEL[a]).join(", ") : "전체"}</span>
               {majorCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)`, color: P.accent, fontWeight: 600 }}>업종: {middleCats.length ? middleCats.join(", ") : majorCats.join(", ")}</span>}
-              {shopCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#fef3c7", fontSize: 11, border: "1px solid #d9770644", color: "#92400e", fontWeight: 600 }}>🛒 쇼핑: {shopCats.join(", ")}</span>}
-              {amountFilters.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#ede9fe", fontSize: 11, border: "1px solid #7c3aed44", color: "#5b21b6", fontWeight: 600 }}>💰 금액: {amountFilters.map(a => ({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a).join(", ")}</span>}
-              {uploadSession && uploadInfo && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#dbeafe", fontSize: 11, border: "1px solid #3b82f644", color: "#1d4ed8", fontWeight: 600 }}>📤 ADID {fmt(uploadInfo.matched)}건 매칭</span>}
-              {cardCompanies.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#e0f2fe", fontSize: 11, border: "1px solid #0284c744", color: "#0c4a6e", fontWeight: 600 }}>🏦 매체: {cardCompanies.join(", ")}</span>}
-              {telecoms.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", fontSize: 11, border: "1px solid #16a34a44", color: "#14532d", fontWeight: 600 }}>📡 통신: {telecoms.map(t => ({K:"KT",T:"SKT",U:"LG U+",Z:"알뜰폰"} as Record<string,string>)[t] || t).join(", ")}</span>}
-              {mobileBrands.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>📱 단말: {mobileBrands.map(b => ({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b).join(", ")}</span>}
-              {audCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>🏷️ 소비: {audCats.join(", ")}</span>}
-              {apprlValueC && tab === "card" && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>💳 {apprlMetric === "cnt" ? "승인횟수" : "승인금액"}({apprlPeriod}일) {apprlOper === "between" ? `${apprlValueC}~${apprlValue2C || apprlValueC}` : `${apprlOper} ${apprlValueC}`}</span>}
+              {shopCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-warning-bg)", fontSize: 11, border: "1px solid var(--badge-warning-bg)", color: "var(--badge-warning-fg)", fontWeight: 600 }}>쇼핑: {shopCats.join(", ")}</span>}
+              {amountFilters.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-violet-bg)", fontSize: 11, border: "1px solid var(--badge-violet-bg)", color: "var(--badge-violet-fg)", fontWeight: 600 }}>금액: {amountFilters.map(a => ({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a).join(", ")}</span>}
+              {uploadSession && uploadInfo && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-info-bg)", fontSize: 11, border: "1px solid var(--badge-info-bg)", color: "var(--badge-info-fg)", fontWeight: 600 }}>ADID {fmt(uploadInfo.matched)}건 매칭</span>}
+              {cardCompanies.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-sky-bg)", fontSize: 11, border: "1px solid var(--badge-sky-bg)", color: "var(--badge-sky-fg)", fontWeight: 600 }}>매체: {cardCompanies.join(", ")}</span>}
+              {telecoms.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-success-bg)", fontSize: 11, border: "1px solid var(--badge-success-bg)", color: "var(--badge-success-fg)", fontWeight: 600 }}>통신: {telecoms.map(t => ({K:"KT",T:"SKT",U:"LG U+",Z:"알뜰폰"} as Record<string,string>)[t] || t).join(", ")}</span>}
+              {mobileBrands.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-violet-bg)", fontSize: 11, border: "1px solid var(--badge-violet-bg)", color: "var(--badge-violet-fg)", fontWeight: 600 }}>단말: {mobileBrands.map(b => ({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b).join(", ")}</span>}
+              {audCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-violet-bg)", fontSize: 11, border: "1px solid var(--badge-violet-bg)", color: "var(--badge-violet-fg)", fontWeight: 600 }}>소비: {audCats.join(", ")}</span>}
+              {apprlValueC && tab === "card" && <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--badge-violet-bg)", fontSize: 11, border: "1px solid var(--badge-violet-bg)", color: "var(--badge-violet-fg)", fontWeight: 600 }}>{apprlMetric === "cnt" ? "승인횟수" : "승인금액"}({apprlPeriod}일) {apprlOper === "between" ? `${apprlValueC}~${apprlValue2C || apprlValueC}` : `${apprlOper} ${apprlValueC}`}</span>}
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
             </>)}
@@ -1393,15 +1394,15 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
             {!exportResult && !exporting && (
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => handleExport("dev")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: P.bg, color: P.f, border: `1px solid color-mix(in srgb, var(--female) 27%, transparent)` }}>🧪 개발 전송</button>
-                <button onClick={() => handleExport("prod")} disabled={exportSource === "audience"} title={exportSource === "audience" ? "AI 오디언스 상용 전송은 7/12 승자 확정 + PO 승인 후 활성화됩니다" : undefined} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exportSource === "audience" ? "not-allowed" : "pointer", opacity: exportSource === "audience" ? 0.45 : 1, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none" }}>🚀 상용 전송</button>
+                <button onClick={() => handleExport("dev")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: P.bg, color: P.f, border: `1px solid color-mix(in srgb, var(--female) 27%, transparent)` }}><FlaskConical size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5 }} />개발 전송</button>
+                <button onClick={() => handleExport("prod")} disabled={exportSource === "audience"} title={exportSource === "audience" ? "AI 오디언스 상용 전송은 7/12 승자 확정 + PO 승인 후 활성화됩니다" : undefined} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exportSource === "audience" ? "not-allowed" : "pointer", opacity: exportSource === "audience" ? 0.45 : 1, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none" }}><Rocket size={13} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 5 }} />상용 전송</button>
               </div>
             )}
-            {exporting && <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: P.accent }}>⏳ ADID 추출 → S3 업로드 → 런컴 API 전송 중...</div>}
+            {exporting && <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: P.accent }}><Loader2 size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6 }} />ADID 추출 → S3 업로드 → 런컴 API 전송 중...</div>}
             {exportResult && (
               <div style={{ marginTop: 4, padding: 14, borderRadius: 8, fontSize: 12, background: exportResult.success ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${exportResult.success ? P.green : "var(--danger)"}44` }}>
-                {exportResult.success ? (<><div style={{ fontWeight: 700, color: P.green, marginBottom: 8 }}>✅ 전송 성공!</div><div>런컴 ID: <strong>{exportResult.data.runcomm_target_id}</strong></div><div>ADID 건수: <strong>{fmt(exportResult.data.ads_id_count)}</strong></div><div>환경: <strong>{exportResult.data.env}</strong></div><div style={{ color: P.sub, marginTop: 4 }}>소요: {exportResult.meta?.elapsed_ms}ms</div></>
-                ) : (<><div style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 4 }}>❌ 전송 실패</div><div style={{ color: P.sub }}>{exportResult.error}</div></>)}
+                {exportResult.success ? (<><div style={{ fontWeight: 700, color: P.green, marginBottom: 8 }}><CheckCircle2 size={14} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 6 }} />전송 성공!</div><div>런컴 ID: <strong>{exportResult.data.runcomm_target_id}</strong></div><div>ADID 건수: <strong>{fmt(exportResult.data.ads_id_count)}</strong></div><div>환경: <strong>{exportResult.data.env}</strong></div><div style={{ color: P.sub, marginTop: 4 }}>소요: {exportResult.meta?.elapsed_ms}ms</div></>
+                ) : (<><div style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 4 }}><XCircle size={14} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 6 }} />전송 실패</div><div style={{ color: P.sub }}>{exportResult.error}</div></>)}
                 <button onClick={() => setExportOpen(false)} style={{ marginTop: 12, width: "100%", padding: "8px", borderRadius: 8, fontSize: 12, background: P.bg, color: P.sub, border: `1px solid ${P.border}`, cursor: "pointer" }}>닫기</button>
               </div>
             )}
