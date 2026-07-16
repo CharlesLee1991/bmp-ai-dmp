@@ -67,7 +67,7 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
         <div style={{ height: 300, padding: "12px 16px 4px" }}>
           <ResponsiveContainer>
             <ScatterChart margin={{ top: 8, right: 24, bottom: 20, left: 8 }}>
-              <CartesianGrid stroke="rgba(0,0,0,.06)" />
+              <CartesianGrid stroke="var(--border)" />
               <XAxis type="number" dataKey="x" name="광고비" tickFormatter={won} tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false}
                 label={{ value: "광고비 →", position: "insideBottomRight", offset: -4, fontSize: 10, fill: P.sub }} />
               <YAxis type="number" dataKey="y" name="전환율" unit="%" tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false} width={44}
@@ -94,10 +94,10 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
           <div style={{ height: 320, padding: "12px 12px 4px" }}>
             <ResponsiveContainer>
               <BarChart data={barData} layout="vertical" margin={{ top: 4, right: 40, bottom: 4, left: 4 }}>
-                <CartesianGrid horizontal={false} stroke="rgba(0,0,0,.06)" />
+                <CartesianGrid horizontal={false} stroke="var(--border)" />
                 <XAxis type="number" tickFormatter={fmt} tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: P.text }} axisLine={false} tickLine={false} width={84} />
-                <Tooltip content={<TT fmtVal={fmt} />} cursor={{ fill: "rgba(9,103,210,.05)" }} />
+                <Tooltip content={<TT fmtVal={fmt} />} cursor={{ fill: "var(--accent-glow)" }} />
                 <Bar dataKey="노출" fill={P.accent} radius={[0, 4, 4, 0]} maxBarSize={22}>
                   <LabelList dataKey="노출" position="right" formatter={fmt} style={{ fontSize: 10, fill: P.sub }} />
                 </Bar>
@@ -132,7 +132,7 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
             {lineData.length >= 2 ? (
               <ResponsiveContainer>
                 <LineChart data={lineData} margin={{ top: 8, right: 16, bottom: 4, left: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} minTickGap={20} />
                   <YAxis yAxisId="l" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={fmt} width={44} />
                   <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 9, fill: P.good }} axisLine={false} tickLine={false} tickFormatter={fmt} width={44} />

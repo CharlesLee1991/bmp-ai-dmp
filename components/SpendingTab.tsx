@@ -165,7 +165,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
             <div style={{ height: 200 }}>
               <ResponsiveContainer>
                 <LineChart data={trendData.rows}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="ym_label" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={50} />
                   <Tooltip

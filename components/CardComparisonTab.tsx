@@ -196,7 +196,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                 avg: s.avg_per_txn,
                 fill: CARD_COLORS[s.card_source] || "var(--sub)"
               }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmtAmt(Number(v))} width={50} />
                 <Tooltip contentStyle={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }}
@@ -219,7 +219,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
           <div style={{ height: 220 }}>
             <ResponsiveContainer>
               <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="ym" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={50} />
                 <Tooltip contentStyle={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }}

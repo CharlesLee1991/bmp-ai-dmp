@@ -223,7 +223,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
                 <CartesianGrid strokeDasharray="3 3" stroke={P.border} vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: P.sub }} interval={1} />
                 <YAxis tick={{ fontSize: 10, fill: P.sub }} tickFormatter={v => fmt(v)} width={40} />
-                <Tooltip formatter={(v: any) => [fmt(Number(v)), "이용자"]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                <Tooltip formatter={(v: any) => [fmt(Number(v)), "이용자"]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text)", boxShadow: "var(--shadow-md)", fontSize: 11, borderRadius: 8 }} />
                 <Bar dataKey="cnt" radius={[4, 4, 0, 0]}>
                   {hourData.map((entry: any, i: number) => <Cell key={i} fill={entry.fill} />)}
                 </Bar>
@@ -267,7 +267,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
                 <BarChart data={ageData} barSize={10} barGap={2}>
                   <XAxis dataKey="name" tick={{ fontSize: 9, fill: P.sub }} />
                   <YAxis hide />
-                  <Tooltip formatter={(v: any) => [fmt(Number(v)), ""]} contentStyle={{ fontSize: 10, borderRadius: 8 }} />
+                  <Tooltip formatter={(v: any) => [fmt(Number(v)), ""]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text)", boxShadow: "var(--shadow-md)", fontSize: 10, borderRadius: 8 }} />
                   <Bar dataKey="남성" fill={P.m} radius={[3, 3, 0, 0]} />
                   <Bar dataKey="여성" fill={P.f} radius={[3, 3, 0, 0]} />
                 </BarChart>

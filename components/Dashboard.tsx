@@ -776,7 +776,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 setAmountFilters(selected);
               };
               return (
-                <span style={{ display: "inline-flex", gap: 3, marginLeft: 4, borderLeft: "1px solid rgba(0,0,0,.1)", paddingLeft: 8 }}>
+                <span style={{ display: "inline-flex", gap: 3, marginLeft: 4, borderLeft: "1px solid var(--border)", paddingLeft: 8 }}>
                   {[10,20,30].map(p => <button key={`hi-${p}`} onClick={() => selectPct(HIGH_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #7c3aed33", background: "#f5f3ff", color: "#7c3aed", cursor: "pointer", fontWeight: 600 }}>상위{p}%</button>)}
                   {[30,20,10].map(p => <button key={`lo-${p}`} onClick={() => selectPct(LOW_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #0d948833", background: "#f0fdfa", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}>하위{p}%</button>)}
                 </span>
@@ -1119,9 +1119,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               const w = industryData[0] ? it.users / industryData[0].users * 100 : 0;
               const name = PARTNER_MAP[it.code] || it.code;
               return (
-                <div key={i} onClick={() => { if (!middleCats.includes(name) && !majorCats.includes(name)) { setMiddleCats(prev => [...prev, name]); }}} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer", borderRadius: 4, padding: "1px 0", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <div key={i} onClick={() => { if (!middleCats.includes(name) && !majorCats.includes(name)) { setMiddleCats(prev => [...prev, name]); }}} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer", borderRadius: 4, padding: "1px 0", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-                  <div style={{ flex: 1, height: 20, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ flex: 1, height: 20, background: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, color-mix(in srgb, var(--accent) 53%, transparent), color-mix(in srgb, var(--accent) 7%, transparent))`, transition: "width .5s" }} />
                   </div>
                   <span style={{ fontSize: 9, color: P.sub, width: 42, textAlign: "right", flexShrink: 0 }}>{fmt(it.users)}</span>
@@ -1151,7 +1151,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <div style={{ flex: 1, height: 180 }}>
                 <ResponsiveContainer>
                   <BarChart data={barData} barSize={14} barGap={2}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="name" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={44} />
                     <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: P.text }} formatter={(v: any) => [fmt(Number(v)), ""]} />
@@ -1182,11 +1182,11 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {regionRank.slice(0, 25).map((r, i) => {
                 const pct = regionRank[0] ? (r.users / regionRank[0].users * 100) : 0;
                 return (
-                  <div key={i} onClick={() => { if (!sidos.includes(r.name)) setSidos(prev => [...prev, r.name]); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,.05)", cursor: "pointer", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <span style={{ width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, flexShrink: 0, background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "var(--card)" : P.sub }}>{i + 1}</span>
+                  <div key={i} onClick={() => { if (!sidos.includes(r.name)) setSidos(prev => [...prev, r.name]); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid var(--border-soft)", cursor: "pointer", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <span style={{ width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, flexShrink: 0, background: i < 3 ? P.accent : "var(--border)", color: i < 3 ? "var(--card)" : P.sub }}>{i + 1}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span><span style={{ fontSize: 10, fontWeight: 700, color: P.accent, flexShrink: 0 }}>{fmt(r.users)}</span></div>
-                      <div style={{ height: 3, background: "rgba(0,0,0,.04)", borderRadius: 2, overflow: "hidden" }}><div style={{ height: "100%", background: i < 3 ? P.accent : P.m, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .65 }} /></div>
+                      <div style={{ height: 3, background: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}><div style={{ height: "100%", background: i < 3 ? P.accent : P.m, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .65 }} /></div>
                     </div>
                   </div>
                 );
@@ -1207,9 +1207,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 return amountBuckets.map((b, i) => {
                   const pct = totalAds > 0 ? (b.ads_count / totalAds * 100) : 0;
                   return (
-                    <div key={i} onClick={() => { if (b.bucket && !amountFilters.includes(b.bucket)) setAmountFilters(prev => [...prev, b.bucket]); }} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, cursor: "pointer", borderRadius: 4, transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <div key={i} onClick={() => { if (b.bucket && !amountFilters.includes(b.bucket)) setAmountFilters(prev => [...prev, b.bucket]); }} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, cursor: "pointer", borderRadius: 4, transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                       <span style={{ fontSize: 11, color: P.sub, width: 60, textAlign: "right", flexShrink: 0 }}>{b.label}</span>
-                      <div style={{ flex: 1, height: 18, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
+                      <div style={{ flex: 1, height: 18, background: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
                         <div style={{ height: "100%", background: `hsl(${200 + i * 15}, 55%, ${55 + i * 3}%)`, borderRadius: 4, width: `${maxAds > 0 ? b.ads_count / maxAds * 100 : 0}%`, transition: "width .4s" }} />
                       </div>
                       <span style={{ fontSize: 10, color: P.sub, width: 40, textAlign: "right", flexShrink: 0 }}>{pct.toFixed(1)}%</span>
@@ -1231,7 +1231,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                   return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                       <span style={{ fontSize: 11, color: P.sub, width: 60, textAlign: "right", flexShrink: 0 }}>{b.label}</span>
-                      <div style={{ flex: 1, height: 18, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ flex: 1, height: 18, background: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
                         <div style={{ height: "100%", background: `hsl(${35 + i * 5}, 75%, ${50 + i * 3}%)`, borderRadius: 4, width: `${maxAmt > 0 ? b.total_amt / maxAmt * 100 : 0}%`, transition: "width .4s" }} />
                       </div>
                       <span style={{ fontSize: 10, color: P.sub, width: 50, textAlign: "right", flexShrink: 0 }}>{amtLabel}</span>
@@ -1287,7 +1287,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                         <span style={{ fontSize: 12, fontWeight: 600 }}>{o.os}</span>
                         <span style={{ fontSize: 11, color: P.sub }}>{pct.toFixed(1)}%</span>
                       </div>
-                      <div style={{ height: 20, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ height: 20, background: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
                         <div style={{ height: "100%", background: colors[o.os] || "var(--neutral)", borderRadius: 4, width: `${pct}%`, transition: "width .4s" }} />
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
@@ -1321,7 +1321,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                       <div style={{ fontSize: 11, fontWeight: 700, color: cc.fg, marginBottom: 4 }}>{cat.name}{isSelected && " ✓"}</div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: P.text }}>{fmt(cat.cnt)}<span style={{ fontSize: 10, fontWeight: 400, color: P.sub }}>건</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                        <div style={{ flex: 1, height: 4, background: "rgba(0,0,0,.06)", borderRadius: 2, overflow: "hidden", marginRight: 6 }}>
+                        <div style={{ flex: 1, height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden", marginRight: 6 }}>
                           <div style={{ height: "100%", background: cc.fg, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .7 }} />
                         </div>
                         <span style={{ fontSize: 9, color: P.sub, fontWeight: 600, flexShrink: 0 }}>{pct}%</span>
