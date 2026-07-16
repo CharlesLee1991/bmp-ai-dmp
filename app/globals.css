@@ -234,3 +234,6 @@ textarea::placeholder {
 
 @keyframes dmpFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .dmp-pop { animation: dmpFadeIn .14s ease-out; }
+
+@keyframes dmpSpin { to { transform: rotate(360deg); } }
+.dmp-spin { animation: dmpSpin .9s linear infinite; }
