@@ -29,6 +29,8 @@ import type { DmpUser } from "@/lib/auth";
 import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
 import { DmpSidebar, TABS, TAB_LABEL, type TabId } from "./DmpSidebar";
+import { PersonaBuilder } from "./PersonaBuilder";
+import { type Persona, loadPersonas, savePersonas, mergePersonaFilters } from "@/lib/persona";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
@@ -326,6 +328,35 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [sbCollapsed, setSbCollapsed] = useState(false); // 사이드바 접힘 (상단바 토글이 제어)
   useEffect(() => { try { setSbCollapsed(localStorage.getItem("dmp-sidebar-collapsed") === "1"); } catch {} }, []);
   const toggleSidebar = () => setSbCollapsed(c => { const n = !c; try { localStorage.setItem("dmp-sidebar-collapsed", n ? "1" : "0"); } catch {} return n; });
+
+  /* ── 페르소나 (저장된 필터세트) ── */
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [personaIds, setPersonaIds] = useState<string[]>([]);   // 다중 선택
+  const [builderOpen, setBuilderOpen] = useState(false);
+  useEffect(() => { setPersonas(loadPersonas()); }, []);
+  // 선택 변경 → 합집합 필터를 화면 필터 상태에 적용 (해제 시 해당 필터 초기화)
+  // list 인자: setState 직후 호출 시 stale closure 방지용 최신 목록 전달
+  const applyPersonas = (ids: string[], list?: Persona[]) => {
+    setPersonaIds(ids);
+    const src = list || personas;
+    const sel = src.filter(p => ids.includes(p.id));
+    const m = mergePersonaFilters(sel);
+    setSexes(m.sexes); setAges(m.ages); setSidos(m.sidos);
+    setSigoongus([]); setEupmds([]);
+    setMajorCats(m.majorCats); setMiddleCats([]); setSubCats([]);
+    setAmountFilters(m.amountFilters); setCardCompanies(m.cardCompanies); setTelecoms(m.telecoms);
+  };
+  const togglePersona = (id: string) => applyPersonas(personaIds.includes(id) ? personaIds.filter(x => x !== id) : [...personaIds, id]);
+  const removePersona = (id: string) => {
+    const next = personas.filter(p => p.id !== id);
+    setPersonas(next); savePersonas(next);
+    if (personaIds.includes(id)) applyPersonas(personaIds.filter(x => x !== id), next);
+  };
+  const handlePersonaSave = (p: Persona) => {
+    const next = [...personas, p];
+    setPersonas(next); savePersonas(next); setBuilderOpen(false);
+    applyPersonas([...personaIds, p.id], next);   // 저장 즉시 선택·적용 (최신 목록 전달)
+  };
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
@@ -733,6 +764,34 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: P.accent, whiteSpace: "nowrap" }}>
             <Target size={14} strokeWidth={2.2} /> 타겟 정의
           </span>
+          {/* 저장된 페르소나 칩 — 다중 선택 = 필터 합집합 적용 */}
+          {personas.map(p => {
+            const active = personaIds.includes(p.id);
+            return (
+              <span key={p.id} title={`${p.filterSummary}${p.estimated ? ` · ≈${fmt(p.estimated)}명` : ""}${p.lifestyle ? `\n${p.lifestyle}` : ""}`}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 6px 3px 10px", borderRadius: 999,
+                  fontSize: 11, fontWeight: active ? 700 : 500, cursor: "pointer", userSelect: "none",
+                  background: active ? `var(--badge-${p.color}-bg)` : "transparent",
+                  color: active ? `var(--badge-${p.color}-fg)` : P.sub,
+                  border: `1px solid ${active ? `var(--badge-${p.color}-bg)` : P.border}`,
+                  transition: "all .13s",
+                }}
+                onClick={() => togglePersona(p.id)}
+              >
+                {p.name}
+                <span onClick={e => { e.stopPropagation(); removePersona(p.id); }} title="페르소나 삭제"
+                  style={{ display: "inline-flex", width: 15, height: 15, alignItems: "center", justifyContent: "center", borderRadius: "50%", fontSize: 11, lineHeight: 1, opacity: .55 }}>×</span>
+              </span>
+            );
+          })}
+          <button onClick={() => setBuilderOpen(true)} style={{
+            display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 11px", borderRadius: 999,
+            fontSize: 11, fontWeight: 600, cursor: "pointer", background: "transparent",
+            border: `1px dashed ${P.accent}`, color: P.accent,
+          }}>
+            <Sparkles size={12} strokeWidth={2.2} /> 페르소나 빌더
+          </button>
           <span style={{ fontSize: 12, color: filterParts.length ? P.text : P.sub, fontWeight: filterParts.length ? 600 : 400, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {filterParts.length ? filterParts.join(" · ") : "전체 오디언스 (필터 미설정)"}
           </span>
@@ -1062,6 +1121,16 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
         )}
       </div>
+      )}
+
+      {/* 페르소나 빌더 모달 */}
+      {builderOpen && (
+        <PersonaBuilder
+          onSave={handlePersonaSave}
+          onClose={() => setBuilderOpen(false)}
+          existingCount={personas.length}
+          fmt={fmt}
+        />
       )}
 
       {aiExploreOpen && tab === "card" && <AiExplore />}
