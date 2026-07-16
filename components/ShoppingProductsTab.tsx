@@ -8,15 +8,16 @@ import {
   ResponsiveContainer, Legend
 } from "recharts";
 import { fmt, categorize, FOOD_CATEGORIES, SHOP_CAT_COLORS as CAT_COLORS } from "@/lib/data";
+import { ShoppingCart, Ban, TrendingUp, CreditCard, Coins, Package, BarChart3, User } from "lucide-react";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096",
-  accent: "#0d9488", green: "#10b981",
-  glow: "rgba(13,148,136,0.08)",
-  up: "#10b981", down: "#ef4444", flat: "#94a3b8"
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)",
+  accent: "var(--accent)", green: "var(--success)",
+  glow: "var(--accent-glow)",
+  up: "var(--success)", down: "var(--danger)", flat: "var(--neutral)"
 };
-const CHART_COLORS = ["#0d9488", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#10b981", "#f97316", "#06b6d4", "#84cc16", "#a855f7", "#e11d48", "#14b8a6"];
+const CHART_COLORS = ["var(--accent)", "var(--male)", "var(--female)", "var(--accent-2)", "var(--accent)", "var(--success)", "#f97316", "#06b6d4", "#84cc16", "#a855f7", "#e11d48", "#14b8a6"];
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 function fmtAmt(n: number): string {
@@ -114,8 +115,8 @@ export default function ShoppingProductsTab() {
         <div style={{ padding: "14px 18px", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{title} ({items.length})</h3>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="text" placeholder="🔍 상품명 검색..." value={search} onChange={e => setSearch(e.target.value)} style={{ padding: "5px 12px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, width: 180, outline: "none" }} />
-            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ padding: "5px 10px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, background: "#fff", cursor: "pointer" }}>
+            <input type="text" placeholder="상품명 검색..." value={search} onChange={e => setSearch(e.target.value)} style={{ padding: "5px 12px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, width: 180, outline: "none" }} />
+            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ padding: "5px 10px", border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, background: "var(--card)", cursor: "pointer" }}>
               <option value="cnt">건수순</option><option value="revenue">매출순</option><option value="avg_price">고가순</option><option value="change">WoW순</option>
             </select>
           </div>
@@ -123,31 +124,31 @@ export default function ShoppingProductsTab() {
         {items.length > 0 ? (
           <div style={{ maxHeight: 500, overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-              <thead><tr style={{ background: "#f8fafc", position: "sticky", top: 0 }}>
-                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", width: 36 }}>#</th>
-                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569" }}>상품명</th>
-                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#475569", width: 70 }}>분류</th>
-                <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#475569", width: 60 }}>건수</th>
-                <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: 700, color: "#475569", width: 70 }}>WoW</th>
-                <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#475569", width: 70 }}>매출</th>
-                <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#475569", width: 70 }}>평균가</th>
+              <thead><tr style={{ background: "var(--bg-elevated)", position: "sticky", top: 0 }}>
+                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "var(--sub)", width: 36 }}>#</th>
+                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "var(--sub)" }}>상품명</th>
+                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--sub)", width: 70 }}>분류</th>
+                <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "var(--sub)", width: 60 }}>건수</th>
+                <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: 700, color: "var(--sub)", width: 70 }}>WoW</th>
+                <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "var(--sub)", width: 70 }}>매출</th>
+                <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "var(--sub)", width: 70 }}>평균가</th>
               </tr></thead>
               <tbody>{items.map((p, i) => {
                 const cc = CAT_COLORS[p.major] || CAT_COLORS["기타"];
                 const isUp = !p.isNew && p.change > 0; const isDown = !p.isNew && p.change < 0;
-                return (<tr key={i} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }} onClick={() => setSelectedProduct(p.title)} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                return (<tr key={i} style={{ borderBottom: "1px solid var(--bg-elevated)", cursor: "pointer" }} onClick={() => setSelectedProduct(p.title)} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   <td style={{ padding: "6px 12px", fontWeight: 800, color: i < 3 ? P.accent : P.sub, fontSize: i < 3 ? 13 : 11 }}>{i < 3 ? ["🥇","🥈","🥉"][i] : i + 1}</td>
                   <td style={{ padding: "6px 12px", fontWeight: 500, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</td>
                   <td style={{ padding: "6px 12px" }}><span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, background: cc.bg, color: cc.fg }}>{p.minor}</span></td>
                   <td style={{ padding: "6px 12px", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmt(p.cnt)}</td>
-                  <td style={{ padding: "6px 12px", textAlign: "center" }}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: p.isNew ? "#ede9fe" : isUp ? "#dcfce7" : isDown ? "#fee2e2" : "#f1f5f9", color: p.isNew ? "#7c3aed" : isUp ? "#16a34a" : isDown ? "#dc2626" : "#94a3b8" }}>{p.isNew ? "NEW" : (isUp ? "↑" : isDown ? "↓" : "→")}{!p.isNew && p.change + "%"}</span></td>
+                  <td style={{ padding: "6px 12px", textAlign: "center" }}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: p.isNew ? "var(--badge-violet-bg)" : isUp ? "var(--badge-success-bg)" : isDown ? "var(--badge-danger-bg)" : "var(--bg-elevated)", color: p.isNew ? "var(--badge-violet-fg)" : isUp ? "var(--badge-success-fg)" : isDown ? "var(--badge-danger-fg)" : "var(--neutral)" }}>{p.isNew ? "NEW" : (isUp ? "↑" : isDown ? "↓" : "→")}{!p.isNew && p.change + "%"}</span></td>
                   <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtAmt(p.revenue)}</td>
-                  <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#64748b" }}>₩{p.avg_price.toLocaleString()}</td>
+                  <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--sub)" }}>₩{p.avg_price.toLocaleString()}</td>
                 </tr>);
               })}</tbody>
             </table>
           </div>
-        ) : (<div style={{ textAlign: "center", padding: 60, color: P.sub }}><div style={{ fontSize: 28, marginBottom: 8 }}>🛒</div><div style={{ fontSize: 13, fontWeight: 600 }}>데이터 없음</div></div>)}
+        ) : (<div style={{ textAlign: "center", padding: 60, color: P.sub }}><div style={{ marginBottom: 8 }}><ShoppingCart size={28} strokeWidth={1.5} style={{ color: P.sub }} /></div><div style={{ fontSize: 13, fontWeight: 600 }}>데이터 없음</div></div>)}
       </div>
     );
   }
@@ -155,7 +156,7 @@ export default function ShoppingProductsTab() {
   function KpiRow({ s }: { s: typeof viewSummary }) {
     return (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
-        {[{ label: "전환 건수", value: fmt(s.total_purchases), color: P.accent }, { label: "총 매출", value: fmtAmt(s.total_revenue), color: "#3b82f6" }, { label: "상위 상품수", value: fmt(s.unique_products), color: "#f59e0b" }, { label: "평균 단가", value: s.avg_price > 0 ? "₩" + s.avg_price.toLocaleString() : "—", color: "#8b5cf6" }].map((kpi, i) => (
+        {[{ label: "전환 건수", value: fmt(s.total_purchases), color: P.accent }, { label: "총 매출", value: fmtAmt(s.total_revenue), color: "var(--male)" }, { label: "상위 상품수", value: fmt(s.unique_products), color: "var(--female)" }, { label: "평균 단가", value: s.avg_price > 0 ? "₩" + s.avg_price.toLocaleString() : "—", color: "var(--accent-2)" }].map((kpi, i) => (
           <div key={i} style={{ background: P.card, borderRadius: 10, padding: "14px 16px", border: `1px solid ${P.border}`, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: kpi.color, borderRadius: "0 2px 2px 0" }} />
             <div style={{ fontSize: 10, color: P.sub, marginBottom: 6, fontWeight: 500 }}>{kpi.label}</div>
@@ -171,7 +172,7 @@ export default function ShoppingProductsTab() {
     <div style={{ padding: "0 28px 28px" }}>
       {/* SUB TABS */}
       <div style={{ display: "flex", gap: 4, padding: "14px 0 0" }}>
-        {([{ id: "category" as const, label: "📊 카테고리 분석", desc: "대/중분류 드릴다운" }, { id: "nonfood" as const, label: "🔍 비식품 탐색", desc: "식음료 제외" }]).map(tab => (
+        {([{ id: "category" as const, label: "카테고리 분석", desc: "대/중분류 드릴다운" }, { id: "nonfood" as const, label: "비식품 탐색", desc: "식음료 제외" }]).map(tab => (
           <button key={tab.id} onClick={() => { setSubView(tab.id); setSelectedMajor(null); setSelectedMinor(null); setSearch(""); }}
             style={{ padding: "10px 20px", borderRadius: "10px 10px 0 0", fontSize: 12, fontWeight: subView === tab.id ? 700 : 500, cursor: "pointer", border: `1px solid ${subView === tab.id ? P.border : "transparent"}`, borderBottom: subView === tab.id ? `2px solid ${P.card}` : `1px solid ${P.border}`, background: subView === tab.id ? P.card : "transparent", color: subView === tab.id ? P.accent : P.sub, transition: "all .15s", marginBottom: -1, position: "relative", zIndex: subView === tab.id ? 1 : 0 }}>
             {tab.label}<span style={{ fontSize: 9, color: P.sub, marginLeft: 6 }}>{tab.desc}</span>
@@ -233,63 +234,63 @@ export default function ShoppingProductsTab() {
           </div>);
         })()}
 
-        <ProductTable items={viewProducts} title={selectedMajor ? `${CAT_EMOJI[selectedMajor] || ""} ${selectedMajor}${selectedMinor ? " > " + selectedMinor : ""} 상품` : "🏆 전체 인기 상품"} />
+        <ProductTable items={viewProducts} title={selectedMajor ? `${CAT_EMOJI[selectedMajor] || ""} ${selectedMajor}${selectedMinor ? " > " + selectedMinor : ""} 상품` : "전체 인기 상품"} />
         <KpiRow s={viewSummary} />
       </>)}
 
       {/* VIEW B: NON-FOOD */}
       {subView === "nonfood" && (<>
-        <div style={{ padding: "8px 0 14px", fontSize: 11, color: P.sub }}>🚫 식음료 12개 카테고리 자동 제외 — 생활용품, 전자기기, 패션, 기타 상품만 표시</div>
-        <ProductTable items={viewProducts} title="🔍 비식품 상품" />
+        <div style={{ padding: "8px 0 14px", fontSize: 11, color: P.sub }}><Ban size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6 }} />식음료 12개 카테고리 자동 제외 — 생활용품, 전자기기, 패션, 기타 상품만 표시</div>
+        <ProductTable items={viewProducts} title="비식품 상품" />
         <KpiRow s={viewSummary} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
           <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>📈 일별 전환 추이</h3>
-            {dailyTrend.length > 0 ? (<ResponsiveContainer width="100%" height={200}><AreaChart data={dailyTrend.map(d => ({ ...d, dt: String(d.dt).slice(5) }))}><defs><linearGradient id="shopGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={P.accent} stopOpacity={0.2} /><stop offset="100%" stopColor={P.accent} stopOpacity={0.02} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" /><XAxis dataKey="dt" tick={{ fontSize: 10, fill: P.sub }} /><YAxis tick={{ fontSize: 9, fill: P.sub }} tickFormatter={v => fmt(Number(v))} width={44} /><Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11 }} formatter={(v: any, name: string) => [name === "cnt" ? fmt(Number(v)) + "건" : fmtAmt(Number(v)), name === "cnt" ? "건수" : "매출"]} /><Area type="monotone" dataKey="cnt" stroke={P.accent} fill="url(#shopGrad)" strokeWidth={2} dot={{ r: 3 }} /></AreaChart></ResponsiveContainer>) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
+            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><TrendingUp size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />일별 전환 추이</h3>
+            {dailyTrend.length > 0 ? (<ResponsiveContainer width="100%" height={200}><AreaChart data={dailyTrend.map(d => ({ ...d, dt: String(d.dt).slice(5) }))}><defs><linearGradient id="shopGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={P.accent} stopOpacity={0.2} /><stop offset="100%" stopColor={P.accent} stopOpacity={0.02} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="dt" tick={{ fontSize: 10, fill: P.sub }} /><YAxis tick={{ fontSize: 9, fill: P.sub }} tickFormatter={v => fmt(Number(v))} width={44} /><Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }} formatter={(v: any, name: string) => [name === "cnt" ? fmt(Number(v)) + "건" : fmtAmt(Number(v)), name === "cnt" ? "건수" : "매출"]} /><Area type="monotone" dataKey="cnt" stroke={P.accent} fill="url(#shopGrad)" strokeWidth={2} dot={{ r: 3 }} /></AreaChart></ResponsiveContainer>) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
           </div>
           <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>💳 제휴처별 비교</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><CreditCard size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />제휴처별 비교</h3>
             {platforms.length > 0 ? (<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{platforms.map((p, i) => { const pct = totalPlatformCnt > 0 ? (p.cnt / totalPlatformCnt * 100) : 0; return (<div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 11, fontWeight: 600, width: 100, flexShrink: 0 }}>{p.platform_name}</span><div style={{ flex: 1, height: 22, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden", position: "relative" }}><div style={{ height: "100%", background: CHART_COLORS[i], borderRadius: 4, width: `${pct}%`, transition: "width .4s", display: "flex", alignItems: "center", paddingLeft: 6 }}>{pct > 15 && <span style={{ fontSize: 9, color: "#fff", fontWeight: 700 }}>{fmt(p.cnt)}건</span>}</div></div><span style={{ fontSize: 10, fontWeight: 700, color: P.accent, width: 44, textAlign: "right" }}>{pct.toFixed(1)}%</span><span style={{ fontSize: 10, color: P.sub, width: 50, textAlign: "right" }}>{fmtAmt(p.revenue)}</span></div>); })}</div>) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
           <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>💰 가격대별 구매 건수</h3>
-            {priceDist.length > 0 ? (<ResponsiveContainer width="100%" height={180}><BarChart data={priceDist}><CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" /><XAxis dataKey="price_range" tick={{ fontSize: 10, fill: P.sub }} /><YAxis tick={{ fontSize: 9, fill: P.sub }} tickFormatter={v => fmt(Number(v))} width={44} /><Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [fmt(Number(v)) + "건"]} /><Bar dataKey="cnt" radius={[4, 4, 0, 0]}>{priceDist.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Bar></BarChart></ResponsiveContainer>) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
+            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><Coins size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />가격대별 구매 건수</h3>
+            {priceDist.length > 0 ? (<ResponsiveContainer width="100%" height={180}><BarChart data={priceDist}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="price_range" tick={{ fontSize: 10, fill: P.sub }} /><YAxis tick={{ fontSize: 9, fill: P.sub }} tickFormatter={v => fmt(Number(v))} width={44} /><Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }} formatter={(v: any) => [fmt(Number(v)) + "건"]} /><Bar dataKey="cnt" radius={[4, 4, 0, 0]}>{priceDist.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Bar></BarChart></ResponsiveContainer>) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
           </div>
           <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>💰 가격대별 매출 비중</h3>
-            {priceDist.length > 0 ? (<ResponsiveContainer width="100%" height={180}><PieChart><Pie data={priceDist} dataKey="revenue" nameKey="price_range" cx="50%" cy="50%" outerRadius={70} innerRadius={35} paddingAngle={2} label={({ name, percent }: any) => percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ""} labelLine={{ strokeWidth: 1 }} style={{ fontSize: 9 }}>{priceDist.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Pie><Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} formatter={(v: any) => [fmtAmt(Number(v))]} /></PieChart></ResponsiveContainer>) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
+            <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><Coins size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />가격대별 매출 비중</h3>
+            {priceDist.length > 0 ? (<ResponsiveContainer width="100%" height={180}><PieChart><Pie data={priceDist} dataKey="revenue" nameKey="price_range" cx="50%" cy="50%" outerRadius={70} innerRadius={35} paddingAngle={2} label={({ name, percent }: any) => percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ""} labelLine={{ strokeWidth: 1 }} style={{ fontSize: 9 }}>{priceDist.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Pie><Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text)", boxShadow: "var(--shadow-md)", fontSize: 11, borderRadius: 8 }} formatter={(v: any) => [fmtAmt(Number(v))]} /></PieChart></ResponsiveContainer>) : <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 12 }}>—</div>}
           </div>
         </div>
       </>)}
 
       {/* PRODUCT DETAIL MODAL */}
-      {selectedProduct && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedProduct(null)}>
+      {selectedProduct && (<div style={{ position: "fixed", inset: 0, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedProduct(null)}>
         <div style={{ background: P.card, borderRadius: 16, padding: 0, border: `1px solid ${P.border}`, width: 720, maxWidth: "94vw", maxHeight: "90vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.15)" }} onClick={e => e.stopPropagation()}>
           <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${P.border}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, color: P.accent, fontWeight: 700, marginBottom: 4 }}>📦 상품 상세 추세</div>
+              <div style={{ fontSize: 10, color: P.accent, fontWeight: 700, marginBottom: 4 }}><Package size={12} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4 }} />상품 상세 추세</div>
               <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedProduct}</h3>
               {detail && <div style={{ fontSize: 11, color: P.sub, marginTop: 4 }}>{detail.period.from} ~ {detail.period.to} ({detail.period.days}일) · {detail.elapsed_ms}ms</div>}
             </div>
             <button onClick={() => setSelectedProduct(null)} style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, cursor: "pointer", fontSize: 14, color: P.sub, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
           </div>
-          {detailLoading && <div style={{ textAlign: "center", padding: 40, color: P.accent, fontSize: 13 }}>📊 추세 데이터 로딩 중...</div>}
+          {detailLoading && <div style={{ textAlign: "center", padding: 40, color: P.accent, fontSize: 13 }}><BarChart3 size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6 }} />추세 데이터 로딩 중...</div>}
           {detail && (<div style={{ padding: "16px 24px 24px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 18 }}>
-              {[{ label: "총 판매건수", value: fmt(detail.summary.total_cnt), color: P.accent }, { label: "총 매출", value: fmtAmt(detail.summary.total_revenue), color: "#3b82f6" }, { label: "평균 단가", value: "₩" + detail.summary.avg_price.toLocaleString(), color: "#f59e0b" }, { label: "판매일수", value: detail.summary.days_active + "일", color: "#8b5cf6" }].map((k, i) => (
+              {[{ label: "총 판매건수", value: fmt(detail.summary.total_cnt), color: P.accent }, { label: "총 매출", value: fmtAmt(detail.summary.total_revenue), color: "var(--male)" }, { label: "평균 단가", value: "₩" + detail.summary.avg_price.toLocaleString(), color: "var(--female)" }, { label: "판매일수", value: detail.summary.days_active + "일", color: "var(--accent-2)" }].map((k, i) => (
                 <div key={i} style={{ background: P.bg, borderRadius: 8, padding: "10px 12px", borderLeft: `3px solid ${k.color}` }}><div style={{ fontSize: 9, color: P.sub, fontWeight: 600 }}>{k.label}</div><div style={{ fontSize: 18, fontWeight: 800, color: k.color, marginTop: 2 }}>{k.value}</div></div>
               ))}
             </div>
             <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: P.text }}>📈 일별 판매 추이</div>
-              <ResponsiveContainer width="100%" height={180}><LineChart data={(detail.daily as any[]).map((d: any) => ({ ...d, dt: String(d.dt).slice(5) }))}><CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" /><XAxis dataKey="dt" tick={{ fontSize: 9, fill: P.sub }} /><YAxis tick={{ fontSize: 9, fill: P.sub }} width={36} /><Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11 }} formatter={(v: any, name: string) => [name === "cnt" ? v + "건" : fmtAmt(Number(v)), name === "cnt" ? "건수" : "매출"]} /><Line type="monotone" dataKey="cnt" stroke={P.accent} strokeWidth={2.5} dot={{ r: 2.5 }} name="cnt" /></LineChart></ResponsiveContainer>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: P.text }}><TrendingUp size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />일별 판매 추이</div>
+              <ResponsiveContainer width="100%" height={180}><LineChart data={(detail.daily as any[]).map((d: any) => ({ ...d, dt: String(d.dt).slice(5) }))}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="dt" tick={{ fontSize: 9, fill: P.sub }} /><YAxis tick={{ fontSize: 9, fill: P.sub }} width={36} /><Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }} formatter={(v: any, name: string) => [name === "cnt" ? v + "건" : fmtAmt(Number(v)), name === "cnt" ? "건수" : "매출"]} /><Line type="monotone" dataKey="cnt" stroke={P.accent} strokeWidth={2.5} dot={{ r: 2.5 }} name="cnt" /></LineChart></ResponsiveContainer>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-              <div><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>👤 성별</div><ResponsiveContainer width="100%" height={140}><PieChart><Pie data={detail.by_gender} dataKey="cnt" nameKey="label" cx="50%" cy="50%" outerRadius={50} innerRadius={25} label={({ label, percent }: any) => `${label} ${(percent * 100).toFixed(0)}%`} labelLine={{ strokeWidth: 1 }} style={{ fontSize: 9 }}>{(detail.by_gender as any[]).map((_: any, i: number) => <Cell key={i} fill={["#3b82f6", "#f59e0b", "#94a3b8"][i]} />)}</Pie><Tooltip contentStyle={{ fontSize: 10, borderRadius: 6 }} formatter={(v: any) => [v + "건"]} /></PieChart></ResponsiveContainer></div>
-              <div><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>📊 연령대</div><ResponsiveContainer width="100%" height={140}><BarChart data={detail.by_age} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.05)" /><XAxis type="number" tick={{ fontSize: 8, fill: P.sub }} /><YAxis type="category" dataKey="label" tick={{ fontSize: 9, fill: P.sub }} width={30} /><Tooltip contentStyle={{ fontSize: 10, borderRadius: 6 }} formatter={(v: any) => [v + "건"]} /><Bar dataKey="cnt" radius={[0, 3, 3, 0]}>{(detail.by_age as any[]).map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Bar></BarChart></ResponsiveContainer></div>
-              <div><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>💳 제휴처</div><div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>{(detail.by_platform as any[]).map((p: any, i: number) => { const total = (detail.by_platform as any[]).reduce((s: number, x: any) => s + x.cnt, 0); const pct = total > 0 ? (p.cnt / total * 100) : 0; return (<div key={i}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 3 }}><span style={{ fontWeight: 600 }}>{p.label}</span><span style={{ color: P.sub }}>{fmt(p.cnt)}건 ({pct.toFixed(0)}%)</span></div><div style={{ height: 6, background: "rgba(0,0,0,.04)", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", background: CHART_COLORS[i], borderRadius: 3, width: `${pct}%`, transition: "width .3s" }} /></div></div>); })}</div></div>
+              <div><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}><User size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />성별</div><ResponsiveContainer width="100%" height={140}><PieChart><Pie data={detail.by_gender} dataKey="cnt" nameKey="label" cx="50%" cy="50%" outerRadius={50} innerRadius={25} label={({ label, percent }: any) => `${label} ${(percent * 100).toFixed(0)}%`} labelLine={{ strokeWidth: 1 }} style={{ fontSize: 9 }}>{(detail.by_gender as any[]).map((_: any, i: number) => <Cell key={i} fill={["var(--male)", "var(--female)", "var(--neutral)"][i]} />)}</Pie><Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text)", boxShadow: "var(--shadow-md)", fontSize: 10, borderRadius: 6 }} formatter={(v: any) => [v + "건"]} /></PieChart></ResponsiveContainer></div>
+              <div><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}><BarChart3 size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />연령대</div><ResponsiveContainer width="100%" height={140}><BarChart data={detail.by_age} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis type="number" tick={{ fontSize: 8, fill: P.sub }} /><YAxis type="category" dataKey="label" tick={{ fontSize: 9, fill: P.sub }} width={30} /><Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text)", boxShadow: "var(--shadow-md)", fontSize: 10, borderRadius: 6 }} formatter={(v: any) => [v + "건"]} /><Bar dataKey="cnt" radius={[0, 3, 3, 0]}>{(detail.by_age as any[]).map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Bar></BarChart></ResponsiveContainer></div>
+              <div><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}><CreditCard size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />제휴처</div><div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>{(detail.by_platform as any[]).map((p: any, i: number) => { const total = (detail.by_platform as any[]).reduce((s: number, x: any) => s + x.cnt, 0); const pct = total > 0 ? (p.cnt / total * 100) : 0; return (<div key={i}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 3 }}><span style={{ fontWeight: 600 }}>{p.label}</span><span style={{ color: P.sub }}>{fmt(p.cnt)}건 ({pct.toFixed(0)}%)</span></div><div style={{ height: 6, background: "rgba(0,0,0,.04)", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", background: CHART_COLORS[i], borderRadius: 3, width: `${pct}%`, transition: "width .3s" }} /></div></div>); })}</div></div>
             </div>
           </div>)}
         </div>

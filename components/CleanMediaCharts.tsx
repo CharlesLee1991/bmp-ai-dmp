@@ -17,9 +17,9 @@ export type MediaRow = {
 export type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
 
 // 앱 라이트 팔레트 정합 (MediaPerformanceTab P와 동일 계열)
-const P = { bg: "#fff", border: "#e5e9f0", sub: "#7b8794", text: "#1f2933", accent: "#0967d2", good: "#0ca678" };
+const P = { bg: "var(--card)", border: "var(--border)", sub: "var(--sub)", text: "var(--text)", accent: "var(--accent)", good: "var(--success)" };
 // 시리즈 컬러 (앱 톤 — 채도 낮은 실무 팔레트)
-const SERIES = ["#0967d2", "#0ca678", "#7b61ff", "#e8a838", "#e0567a", "#3aa0c4"];
+const SERIES = ["var(--accent)", "var(--success)", "#7b61ff", "#e8a838", "#e0567a", "#3aa0c4"];
 
 const fmt = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : n.toLocaleString();
 const won = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(2)}억원` : `${(n / 1e4).toFixed(0)}만원`;
@@ -32,7 +32,7 @@ const sub: React.CSSProperties = { color: P.sub, fontWeight: 400, fontSize: 11, 
 function TT({ active, payload, label, fmtVal }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: "#fff", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
+    <div style={{ background: "var(--card)", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
       {label != null && <div style={{ fontWeight: 700, color: P.text, marginBottom: 4 }}>{label}</div>}
       {payload.map((p: any, i: number) => (
         <div key={i} style={{ color: p.color || P.text }}>{p.name}: <b>{fmtVal ? fmtVal(p.value) : p.value.toLocaleString()}</b></div>
@@ -67,7 +67,7 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
         <div style={{ height: 300, padding: "12px 16px 4px" }}>
           <ResponsiveContainer>
             <ScatterChart margin={{ top: 8, right: 24, bottom: 20, left: 8 }}>
-              <CartesianGrid stroke="rgba(0,0,0,.06)" />
+              <CartesianGrid stroke="var(--border)" />
               <XAxis type="number" dataKey="x" name="광고비" tickFormatter={won} tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false}
                 label={{ value: "광고비 →", position: "insideBottomRight", offset: -4, fontSize: 10, fill: P.sub }} />
               <YAxis type="number" dataKey="y" name="전환율" unit="%" tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false} width={44}
@@ -75,7 +75,7 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
               <ZAxis type="number" dataKey="z" range={[40, 800]} name="노출" />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} content={({ active, payload }: any) => {
                 if (!active || !payload?.length) return null; const d = payload[0].payload;
-                return <div style={{ background: "#fff", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
+                return <div style={{ background: "var(--card)", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
                   <div style={{ fontWeight: 700, color: P.text }}>{d.name}</div>
                   <div style={{ color: P.sub }}>광고비 {won(d.x)} · 전환율 {d.y.toFixed(2)}% · 노출 {fmt(d.z)}</div>
                 </div>;
@@ -94,10 +94,10 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
           <div style={{ height: 320, padding: "12px 12px 4px" }}>
             <ResponsiveContainer>
               <BarChart data={barData} layout="vertical" margin={{ top: 4, right: 40, bottom: 4, left: 4 }}>
-                <CartesianGrid horizontal={false} stroke="rgba(0,0,0,.06)" />
+                <CartesianGrid horizontal={false} stroke="var(--border)" />
                 <XAxis type="number" tickFormatter={fmt} tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: P.text }} axisLine={false} tickLine={false} width={84} />
-                <Tooltip content={<TT fmtVal={fmt} />} cursor={{ fill: "rgba(9,103,210,.05)" }} />
+                <Tooltip content={<TT fmtVal={fmt} />} cursor={{ fill: "var(--accent-glow)" }} />
                 <Bar dataKey="노출" fill={P.accent} radius={[0, 4, 4, 0]} maxBarSize={22}>
                   <LabelList dataKey="노출" position="right" formatter={fmt} style={{ fontSize: 10, fill: P.sub }} />
                 </Bar>
@@ -132,7 +132,7 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
             {lineData.length >= 2 ? (
               <ResponsiveContainer>
                 <LineChart data={lineData} margin={{ top: 8, right: 16, bottom: 4, left: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} minTickGap={20} />
                   <YAxis yAxisId="l" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={fmt} width={44} />
                   <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 9, fill: P.good }} axisLine={false} tickLine={false} tickFormatter={fmt} width={44} />

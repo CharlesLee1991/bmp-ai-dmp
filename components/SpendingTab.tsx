@@ -7,15 +7,16 @@ import {
   LineChart, Line, Legend, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 import { fmt } from "@/lib/data";
+import { BarChart3, Tag, TrendingUp, Store } from "lucide-react";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096",
-  accent: "#0d9488", green: "#10b981",
-  glow: "rgba(13,148,136,0.08)"
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)",
+  accent: "var(--accent)", green: "var(--success)",
+  glow: "var(--accent-glow)"
 };
 
-const COLORS = ["#0d9488", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#10b981", "#eab308", "#60a5fa", "#f43f5e", "#6366f1", "#14b8a6", "#d946ef", "#ca8a04"];
+const COLORS = ["var(--accent)", "var(--male)", "var(--female)", "var(--accent-2)", "var(--accent)", "var(--success)", "#eab308", "#60a5fa", "#f43f5e", "#6366f1", "#14b8a6", "#d946ef", "#ca8a04"];
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -89,7 +90,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
   if (isLoading && !apiData) {
     return (
       <div style={{ padding: "60px 28px", textAlign: "center", color: P.sub }}>
-        <div style={{ fontSize: 24, marginBottom: 12 }}>📊</div>
+        <div style={{ fontSize: 24, marginBottom: 12 }}><BarChart3 size={24} style={{ color: "var(--accent)" }} /></div>
         <div style={{ fontSize: 13 }}>소비 트렌드 데이터 로딩 중...</div>
       </div>
     );
@@ -97,7 +98,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
 
   if (error || (!isLive && !isLoading)) {
     return (
-      <div style={{ padding: "60px 28px", textAlign: "center", color: "#ef4444" }}>
+      <div style={{ padding: "60px 28px", textAlign: "center", color: "var(--danger)" }}>
         <div style={{ fontSize: 13 }}>데이터 로드 실패</div>
       </div>
     );
@@ -119,7 +120,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
         {/* LEFT: 대분류 도넛 + 바 */}
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            🏷️ 대분류별 소비 비중
+            <Tag size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />대분류별 소비 비중
           </h3>
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             {/* Donut */}
@@ -159,13 +160,13 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
         {/* RIGHT: 월별 트렌드 라인차트 */}
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            📈 월별 소비 트렌드 (대분류 Top 5)
+            <TrendingUp size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />월별 소비 트렌드 (대분류 Top 5)
           </h3>
           {trendData.rows && trendData.rows.length > 0 ? (
             <div style={{ height: 200 }}>
               <ResponsiveContainer>
                 <LineChart data={trendData.rows}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="ym_label" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={50} />
                   <Tooltip
@@ -189,7 +190,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
       <div style={{ padding: "0 28px 28px" }}>
         <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}>
-            🏪 소분류 TOP 20 — 결제 건수
+            <Store size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />소분류 TOP 20 — 결제 건수
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {subcategoryData.map((item, i) => {
@@ -200,7 +201,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
                   <span style={{
                     width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 9, fontWeight: 700, flexShrink: 0,
-                    background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "#fff" : P.sub
+                    background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "var(--card)" : P.sub
                   }}>{i + 1}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>

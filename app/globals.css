@@ -1,23 +1,179 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
+/* ══════════════════════════════════════════════════════════════════
+   DMP Audience Explorer — 디자인 토큰 (CL UI/UX 표준 이식 · 프리미엄 톤)
+   근거: CL_UI_UX_표준.md §0 / §0.1
+   - 인라인 스타일은 var(--token) 을 그대로 소비한다 (Tailwind 미사용).
+   - 라이트/다크 페어를 항상 같이 정의. 기본 = 라이트.
+   - 다크 elevation: base(bg) 8% → card/popover 15% (표준 §0.1)
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 표면 (surface) ── */
+  --bg:            #f4f6fa;   /* 페이지 배경 (프리미엄 쿨그레이) */
+  --bg-elevated:   #eef1f6;   /* 살짝 뜬 영역 (muted) */
+  --card:          #ffffff;   /* 카드/패널 */
+  --card-2:        #fbfcfe;   /* 카드 내부 보조면 */
+  --chrome:        #ffffff;   /* 헤더/탭바 크롬 (프로스트글래스 베이스) */
+  --chrome-blur:   rgba(255,255,255,0.72);
+
+  /* ── 경계/구분 ── */
+  --border:        #e4e8ef;
+  --border-soft:   #eef1f5;
+  --border-strong: #d4dae3;
+
+  /* ── 텍스트 ── */
+  --text:          #101828;   /* 본문 (near-black navy) */
+  --sub:           #667085;   /* 보조 */
+  --sub-2:         #98a2b3;   /* 더 옅은 메타 */
+
+  /* ── 브랜드/강조 ── */
+  --primary:       #1e293b;   /* 진한 남색 — 필수 액션 버튼 (표준 §1) */
+  --primary-fg:    #ffffff;
+  --accent:        #0d9488;   /* 브랜드 teal (강조·링크·선택) */
+  --accent-strong: #0b7d73;
+  --accent-fg:     #ffffff;
+  --accent-glow:   rgba(13,148,136,0.09);
+  --accent-2:      #7c6cf0;   /* 보조 강조 (멤버십 앱 등) */
+  --accent-2-glow: rgba(124,108,240,0.10);
+
+  /* ── 시맨틱/데이터 인코딩 ── */
+  --success:       #10b981;
+  --danger:        #ef4444;   /* action-critical (전송/삭제) */
+  --danger-strong: #dc2626;
+  --danger-fg:     #ffffff;
+  --warning:       #f59e0b;
+  --neutral:       #94a3b8;
+  --male:          #3b82f6;   /* 남성 */
+  --female:        #f59e0b;   /* 여성 */
+  --unknown:       #a0aec0;
+
+  /* 칩(필터 선택) — 표준 §0 chip 토큰 */
+  --chip:          #e4f0ff;
+  --chip-fg:       #1d4e89;
+  --chip-border:   #bcd9f5;
+
+  /* ── 상태 배지 톤 (라이트/다크 자동 페어) — CL 표준 §4·§5
+     라이트 = 파스텔 배경 + 진한 전경 / 다크(.dark) = 반투명 배경 + 밝은 전경 ── */
+  --badge-info-bg:     #dbeafe;  --badge-info-fg:     #1d4ed8;
+  --badge-sky-bg:      #e0f2fe;  --badge-sky-fg:      #0369a1;
+  --badge-success-bg:  #dcfce7;  --badge-success-fg:  #15803d;
+  --badge-warning-bg:  #fef3c7;  --badge-warning-fg:  #92400e;
+  --badge-danger-bg:   #fee2e2;  --badge-danger-fg:   #b91c1c;
+  --badge-violet-bg:   #ede9fe;  --badge-violet-fg:   #6d28d9;
+  --badge-teal-bg:     #ccfbf1;  --badge-teal-fg:     #0f766e;
+  --badge-neutral-bg:  #f1f5f9;  --badge-neutral-fg:  #475569;
+  --scrim:             rgba(15,23,42,0.45);
+
+  /* ── 효과 ── */
+  --ring:          rgba(13,148,136,0.35);
+  --shadow-soft:   0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.05);
+  --shadow-md:     0 4px 12px rgba(16,24,40,0.08);
+  --shadow-lg:     0 12px 34px rgba(16,24,40,0.14);
+  --scrollbar:     #cbd5e1;
+
+  --radius:        10px;
+  color-scheme: light;
+}
+
+/* ══════════════════ 다크 테마 (표준 §0.1 elevation) ══════════════════ */
+.dark {
+  color-scheme: dark;
+
+  --bg:            #0f1420;   /* base ~8% */
+  --bg-elevated:   #161c29;
+  --card:          #1a2130;   /* +7pp elevation → 카드가 떠 보임 */
+  --card-2:        #1f2736;
+  --chrome:        #141a26;
+  --chrome-blur:   rgba(20,26,38,0.72);
+
+  --border:        #2a3242;
+  --border-soft:   #232b39;
+  --border-strong: #384254;
+
+  --text:          #e5e9f0;
+  --sub:           #94a1b5;
+  --sub-2:         #6b7688;
+
+  --primary:       #e5e9f0;   /* 다크에선 밝은 표면이 primary (표준) */
+  --primary-fg:    #0f1420;
+  --accent:        #2dd4bf;   /* 밝은 teal — 다크 대비 확보 */
+  --accent-strong: #14b8a6;
+  --accent-fg:     #05201d;
+  --accent-glow:   rgba(45,212,191,0.14);
+  --accent-2:      #a396ff;
+  --accent-2-glow: rgba(163,150,255,0.16);
+
+  --success:       #34d399;
+  --danger:        #f87171;
+  --danger-strong: #ef4444;
+  --danger-fg:     #1a0b0b;
+  --warning:       #fbbf24;
+  --neutral:       #64748b;
+  --male:          #60a5fa;
+  --female:        #fbbf24;
+  --unknown:       #64748b;
+
+  --chip:          rgba(45,212,191,0.16);
+  --chip-fg:       #7ee7d8;
+  --chip-border:   rgba(45,212,191,0.32);
+
+  /* 상태 배지 톤 — 다크: 반투명 배경 + 밝은 전경 (대비 확보) */
+  --badge-info-bg:     rgba(59,130,246,0.18);   --badge-info-fg:     #93c5fd;
+  --badge-sky-bg:      rgba(14,165,233,0.18);    --badge-sky-fg:      #7dd3fc;
+  --badge-success-bg:  rgba(16,185,129,0.18);    --badge-success-fg:  #6ee7b7;
+  --badge-warning-bg:  rgba(245,158,11,0.18);    --badge-warning-fg:  #fcd34d;
+  --badge-danger-bg:   rgba(239,68,68,0.20);     --badge-danger-fg:   #fca5a5;
+  --badge-violet-bg:   rgba(139,92,246,0.22);    --badge-violet-fg:   #c4b5fd;
+  --badge-teal-bg:     rgba(20,184,166,0.18);    --badge-teal-fg:     #5eead4;
+  --badge-neutral-bg:  rgba(148,163,184,0.18);   --badge-neutral-fg:  #cbd5e1;
+  --scrim:             rgba(2,6,15,0.62);
+
+  --ring:          rgba(45,212,191,0.45);
+  --shadow-soft:   0 1px 2px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.34);
+  --shadow-md:     0 6px 16px rgba(0,0,0,0.42);
+  --shadow-lg:     0 16px 40px rgba(0,0,0,0.55);
+  --scrollbar:     #384254;
+}
+
+/* ══════════════════ 리셋 & 베이스 ══════════════════ */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html { -webkit-text-size-adjust: 100%; }
+
 body {
-  background: #f5f7fa;
-  color: #1a202c;
+  background: var(--bg);
+  color: var(--text);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background-color .2s ease, color .2s ease;
 }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--sub-2); }
+* { scrollbar-color: var(--scrollbar) transparent; scrollbar-width: thin; }
 
-select:focus { border-color: #0d9488 !important; outline: none; }
-button:hover { opacity: 0.85; }
+::selection { background: var(--accent-glow); color: var(--accent-strong); }
+
+select:focus,
+input:focus,
+textarea:focus { border-color: var(--accent) !important; outline: none; }
+button:hover { opacity: 0.9; }
+
+/* 표준 §11.3 프로스트글래스 헤더 유틸 */
+.dmp-frost {
+  background: var(--chrome-blur);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+}
 
 @keyframes dmpSegSlide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
 .dmp-seg-prog { animation: dmpSegSlide 1.1s ease-in-out infinite; }
+
+@keyframes dmpFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.dmp-pop { animation: dmpFadeIn .14s ease-out; }
