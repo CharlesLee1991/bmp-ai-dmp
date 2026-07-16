@@ -96,11 +96,13 @@ import { P, badge, tooltipStyle, tooltipCursor, cardStyle, SERIES } from "@/lib/
 ## 4. 앱 셸 — 좌측 사이드바 + 상단바 (geocare AppSidebar/AppLayout 이식)
 
 레이아웃 = `flex`( **`<DmpSidebar>`**(좌) + **메인 컬럼**(우) ). `components/DmpSidebar.tsx`.
-- **사이드바**(`--sidebar-*` 독립 토큰): 로고 상단(h60) → 세로 메뉴(lucide 아이콘 + 라벨) → 하단 계정 푸터(아바타·이름·역할·로그아웃). **접힘(아이콘 전용) 토글** + localStorage `dmp-sidebar-collapsed`(펼침 232 / 접힘 62px).
+- **사이드바**(`--sidebar-*` 독립 토큰): 로고 상단(h60) → 세로 메뉴(lucide 아이콘 + 라벨) → 하단 계정 푸터(아바타·이름·역할·로그아웃). 메뉴 SSOT = `TABS`(`DmpSidebar.tsx`), 역할 필터(admin/advertiser).
 - **선택 하이라이트(geocare식)**: active = `background: var(--sidebar-accent)` 채움 + `color: var(--sidebar-accent-fg)` + `fontWeight 600` (좌측바 아님). hover = `var(--sidebar-hover)`.
-- 메뉴 SSOT = `TABS`(`DmpSidebar.tsx`), 역할 필터(admin/advertiser).
-- **상단바**(메인 컬럼 최상단, `.dmp-frost` sticky): 현재 메뉴명(`TAB_LABEL[tab]`) + LIVE 상태 pill + `<ThemeMenu />`. 높이 56px, 하단 border.
-- 필터패널·콘텐츠·모달은 메인 컬럼 안. 필터패널은 **접기/펼치기 토글(좌상단, 기본 펼침)** + 카드 탭 **2컬럼 그리드**(성별/연령·지역·업종·Actions = 전폭 span, 나머지 2열).
+- **접기/펼치기 = switch pill**: 로고 우측에 **튀어나온 스위치 필(슬라이딩 노브 + 방향 chevron)**. `position:absolute; right:-17` 로 사이드바 경계 밖으로 돌출 → 항상 눈에 띔. localStorage `dmp-sidebar-collapsed`(펼침 232 / 접힘 62px).
+- **상단바**(메인 컬럼 최상단, `.dmp-frost` sticky, **하단 `box-shadow: var(--shadow-md)`**): **브레드크럼** `DMP Explorer > {고객/시스템명} > [메뉴아이콘] 메뉴명 ▾`. 마지막 세그먼트는 **드롭다운**(메뉴 아이콘 + 라벨, 클릭 시 바로 이동). 우측 = LIVE pill + `<ThemeMenu />`. 높이 56px.
+- 필터패널·콘텐츠·모달은 메인 컬럼 안. 필터패널은 **접기/펼치기 토글(좌상단, chevron+Filter, 기본 펼침)** + 카드 탭 **2컬럼 그리드**(성별/연령·지역·업종·Actions = 전폭 span, 나머지 2열).
+- **데이터 밴드(예: 쇼핑 카테고리)**: 픽토그램 대신 **실사 이미지 헤더밴드**(키워드 실사 + 로드 실패 시 색상 그라디언트 폴백) + 하단 스크림 + **흰색 그림자 글자**(`textShadow`). 카테고리명은 밴드 안, 지표는 밴드 아래.
+- **테이블 가독성**: 데이터 테이블/그리드의 본문·배지 글자는 최소 10.5–12px(차트 축 tick 제외). 9/10px 데이터 셀은 한 단계 상향.
 
 ---
 

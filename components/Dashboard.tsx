@@ -25,14 +25,16 @@ import MembershipSegment from "./MembershipSegment";
 import type { DmpUser } from "@/lib/auth";
 import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
-import { DmpSidebar, TAB_LABEL, type TabId } from "./DmpSidebar";
+import { DmpSidebar, TABS, TAB_LABEL, type TabId } from "./DmpSidebar";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
   RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
   SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
-  Filter, ChevronDown,
+  Filter, ChevronDown, ChevronRight,
 } from "lucide-react";
+
+const SYSTEM_NAME = "런컴";   // 고객(시스템명) — 브레드크럼 중간 세그먼트
 
 const SEX_OPTIONS = [
   { id: "M", label: "남성" },
@@ -313,11 +315,20 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [aiExploreOpen, setAiExploreOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(true);   // 필터 접기/펼치기 (기본 펼침)
+  const [bcOpen, setBcOpen] = useState(false);           // 브레드크럼 메뉴 드롭다운
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
   const [tab, setTab] = useState<"card" | "subway" | "bus" | "membership" | "spending" | "cards" | "exports" | "shopping" | "aiexplore" | "media">("card");
   const isAdmin = user.role === "admin";
+
+  // 브레드크럼 메뉴 드롭다운 — 외부 클릭 닫기
+  useEffect(() => {
+    if (!bcOpen) return;
+    const h = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest?.("[data-bc-menu]")) setBcOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [bcOpen]);
 
   /* month range filter */
   const [ymPreset, setYmPreset] = useState<number>(12);
@@ -615,9 +626,53 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {/* ─── MAIN COLUMN ─── */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
 
-      {/* TOP BAR (프로스트글래스 · 현재 메뉴 + 상태 + 테마) · CL 표준 §11.3 */}
-      <header className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 50, height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", borderBottom: `1px solid ${P.border}` }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: P.text, letterSpacing: "-0.02em" }}>{TAB_LABEL[tab as TabId]}</div>
+      {/* TOP BAR — 브레드크럼(DMP Explorer > 고객 > 아이콘+메뉴명+드롭다운) · 하단 그림자 (geocare §11.3) */}
+      <header className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 50, height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", borderBottom: `1px solid ${P.border}`, boxShadow: P.shadowMd }}>
+        {/* 브레드크럼 */}
+        <nav style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: P.sub, minWidth: 0 }}>
+          <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>DMP Explorer</span>
+          <ChevronRight size={13} strokeWidth={2} style={{ opacity: .45, flexShrink: 0 }} />
+          <span style={{ whiteSpace: "nowrap" }}>{SYSTEM_NAME}</span>
+          <ChevronRight size={13} strokeWidth={2} style={{ opacity: .45, flexShrink: 0 }} />
+          {/* 현재 메뉴 + 드롭다운(바로 이동) */}
+          <div data-bc-menu style={{ position: "relative" }}>
+            {(() => { const Cur = TABS.find(t => t.id === tab)?.icon; return (
+              <button onClick={() => setBcOpen(o => !o)} style={{
+                display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 8px 4px 6px", borderRadius: 8,
+                background: bcOpen ? P.bgElevated : "transparent", border: `1px solid ${bcOpen ? P.border : "transparent"}`,
+                cursor: "pointer", color: P.text, fontSize: 13, fontWeight: 700, whiteSpace: "nowrap",
+              }}>
+                {Cur && <Cur size={15} strokeWidth={2.2} style={{ color: P.accent }} />}
+                {TAB_LABEL[tab as TabId]}
+                <ChevronDown size={13} strokeWidth={2.4} style={{ opacity: .6, transform: bcOpen ? "rotate(180deg)" : "none", transition: "transform .14s" }} />
+              </button>
+            ); })()}
+            {bcOpen && (
+              <div className="dmp-pop" style={{
+                position: "absolute", top: "100%", left: 0, marginTop: 6, zIndex: 200,
+                minWidth: 190, padding: 5, background: P.card, border: `1px solid ${P.border}`,
+                borderRadius: 10, boxShadow: P.shadowLg, maxHeight: 420, overflowY: "auto",
+              }}>
+                {TABS.filter(t => t.roles.includes(user.role)).map(({ id, label, icon: Icon }) => {
+                  const active = tab === id;
+                  return (
+                    <button key={id} onClick={() => { if (id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(id); setBcOpen(false); }} style={{
+                      display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "8px 10px", borderRadius: 7,
+                      border: "none", cursor: "pointer", textAlign: "left", fontSize: 12.5, fontWeight: active ? 700 : 500,
+                      background: active ? P.glow : "transparent", color: active ? P.accent : P.text,
+                    }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = P.bgElevated; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <Icon size={15} strokeWidth={active ? 2.3 : 1.9} style={{ color: active ? P.accent : P.sub }} />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </nav>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {isLoading && <span style={{ fontSize: 10, color: P.f, fontWeight: 600 }}>Loading...</span>}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: P.sub, padding: "4px 10px", borderRadius: 999, background: P.bgElevated, border: `1px solid ${P.borderSoft}` }}>

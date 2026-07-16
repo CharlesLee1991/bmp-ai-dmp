@@ -33,6 +33,20 @@ const CAT_EMOJI: Record<string, string> = {
   "곡물/시리얼": "🌾", "정육": "🥩", "생활용품": "🧴", "전자기기": "📱", "패션/아동": "👟", "기타": "📦"
 };
 
+// 카테고리명 → 실사 이미지 키워드(헤더밴드 배경). LoremFlickr(키워드 실사) + 로드 실패 시 색상 폴백.
+const CAT_IMG_KEYWORD: Record<string, string> = {
+  "채소": "vegetables", "과일": "fruit", "유제품": "dairy,milk", "라면/면류": "noodles,ramen",
+  "음료/생수": "beverage,drink", "커피": "coffee", "간식/과자": "snacks,cookies", "가공식품": "cannedfood",
+  "달걀": "eggs", "조미료/양념": "spices,sauce", "곡물/시리얼": "cereal,grain", "정육": "meat,butcher",
+  "생활용품": "household,goods", "전자기기": "electronics,gadget", "패션/아동": "fashion,clothes", "기타": "grocery,shopping",
+};
+function catImageUrl(name: string): string {
+  const kw = CAT_IMG_KEYWORD[name] || "grocery";
+  // lock=고정값으로 카테고리별 동일 이미지 유지
+  const lock = (Array.from(name).reduce((a, c) => a + c.charCodeAt(0), 0) % 90) + 1;
+  return `https://loremflickr.com/320/120/${kw}?lock=${lock}`;
+}
+
 const GENDER_OPTIONS = [{ id: "", label: "전체" }, { id: "M", label: "남성" }, { id: "F", label: "여성" }];
 const AGE_OPTIONS = [{ id: "", label: "전체" }, { id: "10s", label: "10대" }, { id: "20s", label: "20대" }, { id: "30s", label: "30대" }, { id: "40s", label: "40대" }, { id: "50s", label: "50대" }, { id: "60s+", label: "60대+" }];
 const PERIOD_OPTIONS = [{ id: 7, label: "1주" }, { id: 14, label: "2주" }, { id: 28, label: "4주" }];
@@ -123,7 +137,7 @@ export default function ShoppingProductsTab() {
         </div>
         {items.length > 0 ? (
           <div style={{ maxHeight: 500, overflowY: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead><tr style={{ background: "var(--bg-elevated)", position: "sticky", top: 0 }}>
                 <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "var(--sub)", width: 36 }}>#</th>
                 <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "var(--sub)" }}>상품명</th>
@@ -139,9 +153,9 @@ export default function ShoppingProductsTab() {
                 return (<tr key={i} style={{ borderBottom: "1px solid var(--bg-elevated)", cursor: "pointer" }} onClick={() => setSelectedProduct(p.title)} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   <td style={{ padding: "6px 12px", fontWeight: 800, color: i < 3 ? P.accent : P.sub, fontSize: i < 3 ? 13 : 11 }}>{i < 3 ? ["🥇","🥈","🥉"][i] : i + 1}</td>
                   <td style={{ padding: "6px 12px", fontWeight: 500, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</td>
-                  <td style={{ padding: "6px 12px" }}><span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, background: cc.bg, color: cc.fg }}>{p.minor}</span></td>
+                  <td style={{ padding: "6px 12px" }}><span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 10.5, fontWeight: 600, background: cc.bg, color: cc.fg }}>{p.minor}</span></td>
                   <td style={{ padding: "6px 12px", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmt(p.cnt)}</td>
-                  <td style={{ padding: "6px 12px", textAlign: "center" }}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: p.isNew ? "var(--badge-violet-bg)" : isUp ? "var(--badge-success-bg)" : isDown ? "var(--badge-danger-bg)" : "var(--bg-elevated)", color: p.isNew ? "var(--badge-violet-fg)" : isUp ? "var(--badge-success-fg)" : isDown ? "var(--badge-danger-fg)" : "var(--neutral)" }}>{p.isNew ? "NEW" : (isUp ? "↑" : isDown ? "↓" : "→")}{!p.isNew && p.change + "%"}</span></td>
+                  <td style={{ padding: "6px 12px", textAlign: "center" }}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: p.isNew ? "var(--badge-violet-bg)" : isUp ? "var(--badge-success-bg)" : isDown ? "var(--badge-danger-bg)" : "var(--bg-elevated)", color: p.isNew ? "var(--badge-violet-fg)" : isUp ? "var(--badge-success-fg)" : isDown ? "var(--badge-danger-fg)" : "var(--neutral)" }}>{p.isNew ? "NEW" : (isUp ? "↑" : isDown ? "↓" : "→")}{!p.isNew && p.change + "%"}</span></td>
                   <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtAmt(p.revenue)}</td>
                   <td style={{ padding: "6px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--sub)" }}>₩{p.avg_price.toLocaleString()}</td>
                 </tr>);
@@ -213,11 +227,19 @@ export default function ShoppingProductsTab() {
             const pct = totalCnt > 0 ? (cat.cnt / totalCnt * 100) : 0;
             const isActive = selectedMajor === cat.name;
             return (<button key={cat.name} onClick={() => { setSelectedMajor(isActive ? null : cat.name); setSelectedMinor(null); setSearch(""); }}
-              style={{ padding: "12px 14px", borderRadius: 10, border: `2px solid ${isActive ? cc.fg : P.border}`, background: isActive ? cc.bg : P.card, cursor: "pointer", textAlign: "left" as const, transition: "all .15s", boxShadow: isActive ? `0 2px 8px ${cc.fg}22` : "none" }}>
-              <div style={{ fontSize: 18, marginBottom: 4 }}>{CAT_EMOJI[cat.name] || "📦"}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: cc.fg, marginBottom: 2 }}>{cat.name}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: P.text }}>{fmtAmt(cat.cnt)}<span style={{ fontSize: 9, color: P.sub, marginLeft: 2 }}>건</span></div>
-              <div style={{ fontSize: 9, color: P.sub, marginTop: 2 }}>{pct.toFixed(1)}% · {cat.products}종</div>
+              style={{ padding: 0, borderRadius: 12, overflow: "hidden", border: `2px solid ${isActive ? P.accent : P.border}`, background: P.card, cursor: "pointer", textAlign: "left" as const, transition: "all .15s", boxShadow: isActive ? "var(--shadow-md)" : "none" }}>
+              {/* 실사 이미지 헤더밴드 + 흰색 그림자 글자 */}
+              <div style={{ position: "relative", height: 60, overflow: "hidden", background: `linear-gradient(135deg, ${cc.fg}, ${cc.bg})` }}>
+                <img src={catImageUrl(cat.name)} alt="" loading="lazy" referrerPolicy="no-referrer"
+                  onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.55) 100%)" }} />
+                <span style={{ position: "absolute", left: 11, bottom: 8, color: "#fff", fontWeight: 800, fontSize: 14, letterSpacing: "-0.01em", textShadow: "0 1px 5px rgba(0,0,0,.75)" }}>{cat.name}</span>
+              </div>
+              <div style={{ padding: "9px 13px 11px" }}>
+                <div style={{ fontSize: 17, fontWeight: 800, color: P.text }}>{fmtAmt(cat.cnt)}<span style={{ fontSize: 10, color: P.sub, marginLeft: 2 }}>건</span></div>
+                <div style={{ fontSize: 10, color: P.sub, marginTop: 2 }}>{pct.toFixed(1)}% · {cat.products}종</div>
+              </div>
             </button>);
           })}
         </div>
@@ -226,15 +248,15 @@ export default function ShoppingProductsTab() {
           const md = categoryStats.find(c => c.name === selectedMajor);
           if (!md) return null;
           return (<div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>
-            <span style={{ fontSize: 18 }}>{CAT_EMOJI[selectedMajor] || "📦"}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: (CAT_COLORS[selectedMajor] || CAT_COLORS["기타"]).fg }}>{selectedMajor}</span>
+            <span style={{ width: 12, height: 12, borderRadius: 3, background: (CAT_COLORS[selectedMajor] || CAT_COLORS["기타"]).fg, flexShrink: 0 }} />
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: (CAT_COLORS[selectedMajor] || CAT_COLORS["기타"]).fg }}>{selectedMajor}</span>
             <span style={{ width: 1, height: 18, background: P.border }} />
             <button onClick={() => setSelectedMinor(null)} style={{ padding: "4px 12px", borderRadius: 14, fontSize: 10, fontWeight: !selectedMinor ? 700 : 500, cursor: "pointer", border: `1px solid ${!selectedMinor ? P.accent : P.border}`, background: !selectedMinor ? P.glow : "transparent", color: !selectedMinor ? P.accent : P.sub }}>전체 ({fmtAmt(md.cnt)})</button>
             {md.minorList.map((m: any) => (<button key={m.name} onClick={() => setSelectedMinor(selectedMinor === m.name ? null : m.name)} style={{ padding: "4px 12px", borderRadius: 14, fontSize: 10, fontWeight: selectedMinor === m.name ? 700 : 500, cursor: "pointer", border: `1px solid ${selectedMinor === m.name ? P.accent : P.border}`, background: selectedMinor === m.name ? P.glow : "transparent", color: selectedMinor === m.name ? P.accent : P.sub }}>{m.name} ({fmtAmt(m.cnt)})</button>))}
           </div>);
         })()}
 
-        <ProductTable items={viewProducts} title={selectedMajor ? `${CAT_EMOJI[selectedMajor] || ""} ${selectedMajor}${selectedMinor ? " > " + selectedMinor : ""} 상품` : "전체 인기 상품"} />
+        <ProductTable items={viewProducts} title={selectedMajor ? `${selectedMajor}${selectedMinor ? " > " + selectedMinor : ""} 상품` : "전체 인기 상품"} />
         <KpiRow s={viewSummary} />
       </>)}
 
