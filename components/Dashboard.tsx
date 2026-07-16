@@ -25,19 +25,13 @@ import MembershipSegment from "./MembershipSegment";
 import type { DmpUser } from "@/lib/auth";
 import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
+import { DmpSidebar, TAB_LABEL, type TabId } from "./DmpSidebar";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
   RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
-  SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle, type LucideIcon,
+  SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
 } from "lucide-react";
-
-/* 탭 아이콘 SSOT (CL 표준 §9 — 이모지 대신 lucide 라인 아이콘) */
-const TAB_ICON: Record<string, LucideIcon> = {
-  card: CreditCard, subway: TrainFront, bus: Bus, membership: Ticket,
-  aiexplore: FlaskConical, exports: ClipboardList, media: BarChart3,
-  spending: TrendingUp, cards: Landmark, shopping: ShoppingCart,
-};
 
 const SEX_OPTIONS = [
   { id: "M", label: "남성" },
@@ -606,19 +600,22 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
   return (
-    <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text }}>
+    <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text, display: "flex" }}>
 
-      {/* ─── STICKY CHROME (헤더 + 탭바) · CL 표준 §11.3 프로스트글래스 도킹 ─── */}
-      <div className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 60 }}>
-      {/* HEADER */}
-      <header style={{ height: 60, padding: "0 28px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${P.border}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 11, background: "linear-gradient(135deg, var(--male), var(--accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#fff", boxShadow: P.shadowSoft }}>D</div>
-          <div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: "-0.03em", color: P.text }}>DMP Audience Explorer</h1>
-            <p style={{ fontSize: 10.5, color: P.sub, margin: 0 }}>BizSpring · 13큐브 · 16세그먼트 키 · 멀티셀렉트</p>
-          </div>
-        </div>
+      {/* ─── LEFT SIDEBAR (geocare AppSidebar 패턴 이식) ─── */}
+      <DmpSidebar
+        tab={tab as TabId}
+        onSelect={(id) => { if (id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(id); }}
+        user={user}
+        onLogout={onLogout}
+      />
+
+      {/* ─── MAIN COLUMN ─── */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+
+      {/* TOP BAR (프로스트글래스 · 현재 메뉴 + 상태 + 테마) · CL 표준 §11.3 */}
+      <header className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 50, height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", borderBottom: `1px solid ${P.border}` }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: P.text, letterSpacing: "-0.02em" }}>{TAB_LABEL[tab as TabId]}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {isLoading && <span style={{ fontSize: 10, color: P.f, fontWeight: 600 }}>Loading...</span>}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: P.sub, padding: "4px 10px", borderRadius: 999, background: P.bgElevated, border: `1px solid ${P.borderSoft}` }}>
@@ -626,49 +623,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             {isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "..."}
           </span>
           <ThemeMenu />
-          <span style={{ width: 1, height: 20, background: P.border }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-              background: isAdmin ? "linear-gradient(135deg, var(--male), var(--accent))" : P.border,
-              fontSize: 11, fontWeight: 700, color: isAdmin ? "#fff" : P.sub
-            }}>{user.display_name[0]}</div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: P.text }}>{user.display_name}</div>
-              <div style={{ fontSize: 9, color: P.sub }}>{isAdmin ? "관리자" : "광고주"}</div>
-            </div>
-            <button onClick={onLogout} style={{
-              marginLeft: 4, padding: "5px 11px", borderRadius: 8, fontSize: 10, cursor: "pointer",
-              background: "transparent", border: `1px solid ${P.border}`, color: P.sub
-            }}>로그아웃</button>
-          </div>
         </div>
       </header>
-
-      {/* TAB */}
-      <div style={{ padding: "0 20px", display: "flex", gap: 2, borderBottom: `1px solid ${P.border}`, background: P.chrome, overflowX: "auto" }}>
-        {([
-          { id: "card" as const, label: "카드", roles: ["admin", "advertiser"] },
-          { id: "subway" as const, label: "지하철", roles: ["admin", "advertiser"] },
-          { id: "bus" as const, label: "버스", roles: ["admin", "advertiser"] },
-          { id: "membership" as const, label: "멤버십", roles: ["admin", "advertiser"] },
-          { id: "aiexplore" as const, label: "AI 탐색", roles: ["admin", "advertiser"] },
-          { id: "exports" as const, label: "전송 이력", roles: ["admin", "advertiser"] },
-          { id: "media" as const, label: "매체 성과", roles: ["admin"] },
-          { id: "spending" as const, label: "소비 트렌드", roles: ["admin"] },
-          { id: "cards" as const, label: "카드사 비교", roles: ["admin"] },
-          { id: "shopping" as const, label: "쇼핑상품", roles: ["admin"] },
-        ]).filter(t => t.roles.includes(user.role)).map(t => {
-          const Icon = TAB_ICON[t.id]; const active = tab === t.id;
-          return (
-            <button key={t.id} onClick={() => { if (t.id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(t.id); }} style={{ padding: "11px 15px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: active ? 700 : 500, cursor: "pointer", border: "none", borderBottom: `2px solid ${active ? P.accent : "transparent"}`, background: "transparent", color: active ? P.accent : P.sub, whiteSpace: "nowrap", transition: "color .15s, border-color .15s" }}>
-              {Icon && <Icon size={15} strokeWidth={active ? 2.4 : 1.9} />}
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-      </div>{/* /sticky chrome */}
 
       {/* ─── FILTER PANEL ─── */}
       <div style={{ padding: "14px 28px", borderBottom: `1px solid ${P.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1413,6 +1369,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       <footer style={{ textAlign: "center", padding: "14px 0 20px", fontSize: 10, color: "rgba(107,122,153,.5)", borderTop: `1px solid ${P.border}` }}>
         {isLive ? `LIVE · Supabase RPC ${responseMs}ms` : "Static Fallback"} · BizSpring DMP · 13큐브 · 15키
       </footer>
+      </div>{/* /main column */}
     </div>
   );
 }
