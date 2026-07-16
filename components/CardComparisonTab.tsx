@@ -9,9 +9,9 @@ import {
 import { fmt } from "@/lib/data";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096",
-  accent: "#0d9488", green: "#10b981",
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)",
+  accent: "var(--accent)", green: "var(--success)",
 };
 
 const CARD_COLORS: Record<string, string> = {
@@ -86,7 +86,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
   const pieData = bySource.map(s => ({
     name: CARD_LABELS[s.card_source] || s.card_source,
     value: s.total_txn,
-    fill: CARD_COLORS[s.card_source] || "#888"
+    fill: CARD_COLORS[s.card_source] || "var(--sub)"
   }));
 
   const hasData = bySource.length > 0;
@@ -133,7 +133,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
             <button key={m} onClick={() => setMonths(m)} style={{
               padding: "5px 14px", borderRadius: 20, fontSize: 11, fontWeight: months === m ? 700 : 400,
               cursor: "pointer", border: `1px solid ${months === m ? P.accent : P.border}`,
-              background: months === m ? "rgba(13,148,136,0.08)" : "transparent",
+              background: months === m ? "var(--accent-glow)" : "transparent",
               color: months === m ? P.accent : P.sub
             }}>{m}개월</button>
           ))}
@@ -173,7 +173,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                 const pct = (summary.total_txn || 1) > 0 ? (s.total_txn / summary.total_txn * 100).toFixed(1) : "0";
                 return (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 2, background: CARD_COLORS[s.card_source] || "#888", flexShrink: 0 }} />
+                    <span style={{ width: 10, height: 10, borderRadius: 2, background: CARD_COLORS[s.card_source] || "var(--sub)", flexShrink: 0 }} />
                     <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{CARD_LABELS[s.card_source] || s.card_source}</span>
                     <span style={{ fontSize: 11, color: P.sub }}>{pct}%</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: P.text }}>{fmt(s.total_txn)}</span>
@@ -194,7 +194,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
               <BarChart data={bySource.map(s => ({
                 name: CARD_LABELS[s.card_source] || s.card_source,
                 avg: s.avg_per_txn,
-                fill: CARD_COLORS[s.card_source] || "#888"
+                fill: CARD_COLORS[s.card_source] || "var(--sub)"
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: P.sub }} axisLine={false} tickLine={false} />
@@ -202,7 +202,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                 <Tooltip contentStyle={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11, color: P.text }}
                   formatter={(v: any) => [Number(v).toLocaleString() + "원", "평균"]} />
                 <Bar dataKey="avg" radius={[6, 6, 0, 0]}>
-                  {bySource.map((s, i) => <Cell key={i} fill={CARD_COLORS[s.card_source] || "#888"} />)}
+                  {bySource.map((s, i) => <Cell key={i} fill={CARD_COLORS[s.card_source] || "var(--sub)"} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -226,7 +226,7 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                   formatter={(v: any, name: string) => [fmt(Number(v)) + "건", CARD_LABELS[name] || name]} />
                 <Legend wrapperStyle={{ fontSize: 10 }} formatter={(v: string) => CARD_LABELS[v] || v} />
                 {cardSources.map((src: string) => (
-                  <Line key={src} type="monotone" dataKey={src} stroke={CARD_COLORS[src] || "#888"} strokeWidth={2} dot={{ r: 3 }} />
+                  <Line key={src} type="monotone" dataKey={src} stroke={CARD_COLORS[src] || "var(--sub)"} strokeWidth={2} dot={{ r: 3 }} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
@@ -247,8 +247,8 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                 <div key={src}>
                   <div style={{
                     fontSize: 12, fontWeight: 700, marginBottom: 10, paddingBottom: 6,
-                    borderBottom: `2px solid ${CARD_COLORS[src] || "#888"}`,
-                    color: CARD_COLORS[src] || "#888"
+                    borderBottom: `2px solid ${CARD_COLORS[src] || "var(--sub)"}`,
+                    color: CARD_COLORS[src] || "var(--sub)"
                   }}>
                     {CARD_LABELS[src] || src}
                   </div>
@@ -257,8 +257,8 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                       <span style={{
                         width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 9, fontWeight: 700, flexShrink: 0,
-                        background: i === 0 ? CARD_COLORS[src] || "#888" : "rgba(0,0,0,.06)",
-                        color: i === 0 ? "#fff" : P.sub
+                        background: i === 0 ? CARD_COLORS[src] || "var(--sub)" : "rgba(0,0,0,.06)",
+                        color: i === 0 ? "var(--card)" : P.sub
                       }}>{i + 1}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.subcategory}</div>

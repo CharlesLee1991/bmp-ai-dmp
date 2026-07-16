@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096", accent: "#0d9488",
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)", accent: "var(--accent)",
 };
 
 export default function LoginPage({ onLogin }: { onLogin: (user: any) => void }) {
@@ -47,7 +47,7 @@ export default function LoginPage({ onLogin }: { onLogin: (user: any) => void })
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{
             width: 56, height: 56, borderRadius: 14, margin: "0 auto 16px",
-            background: "linear-gradient(135deg, #3b82f6, #0d9488)",
+            background: "linear-gradient(135deg, var(--male), var(--accent))",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 24, fontWeight: 900, color: "#fff"
           }}>D</div>
@@ -101,7 +101,7 @@ export default function LoginPage({ onLogin }: { onLogin: (user: any) => void })
           style={{
             width: "100%", padding: "12px", borderRadius: 8, fontSize: 14, fontWeight: 700,
             cursor: loading ? "default" : "pointer", border: "none",
-            background: loading ? P.border : "linear-gradient(135deg, #3b82f6, #0d9488)",
+            background: loading ? P.border : "linear-gradient(135deg, var(--male), var(--accent))",
             color: "#fff", letterSpacing: "-0.02em", transition: "all .2s"
           }}
         >{loading ? "로그인 중..." : "로그인"}</button>

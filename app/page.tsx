@@ -25,9 +25,9 @@ export default function Home() {
   if (checking) {
     return (
       <div style={{
-        minHeight: "100vh", background: "#f5f7fa", display: "flex",
+        minHeight: "100vh", background: "var(--bg)", display: "flex",
         alignItems: "center", justifyContent: "center",
-        fontFamily: "'Pretendard', sans-serif", color: "#718096", fontSize: 13
+        fontFamily: "'Pretendard', sans-serif", color: "var(--sub)", fontSize: 13
       }}>로딩 중...</div>
     );
   }

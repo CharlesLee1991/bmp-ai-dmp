@@ -7,10 +7,10 @@ import {
 } from "recharts";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096",
-  accent: "#0d9488", glow: "rgba(13,148,136,0.08)",
-  m: "#3b82f6", f: "#f59e0b",
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)",
+  accent: "var(--accent)", glow: "var(--accent-glow)",
+  m: "var(--male)", f: "var(--female)",
 };
 
 const AGE_LABEL: Record<string, string> = {
@@ -90,7 +90,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
   const hourData = useMemo(() =>
     (d?.hour_dist ?? []).map((h: any) => ({
       name: `${h.hour}시`, cnt: Number(h.cnt),
-      fill: (h.hour >= 7 && h.hour <= 9) || (h.hour >= 17 && h.hour <= 19) ? P.accent : "#cbd5e0"
+      fill: (h.hour >= 7 && h.hour <= 9) || (h.hour >= 17 && h.hour <= 19) ? P.accent : "var(--border-strong)"
     })), [d]);
 
   const ageData = useMemo(() =>

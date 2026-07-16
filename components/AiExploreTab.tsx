@@ -47,7 +47,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   pending: { label: "승인 대기", color: "#b45309" },
   executed: { label: "생성됨", color: "#047857" },
   approved: { label: "실행 중", color: "#1d4ed8" },
-  rejected: { label: "거절", color: "#94a3b8" },
+  rejected: { label: "거절", color: "var(--neutral)" },
   failed: { label: "실패", color: "#b91c1c" },
 };
 
@@ -118,7 +118,7 @@ export default function AiExploreTab() {
       {/* 헤드라인 */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 18, fontWeight: 800, color: "#0c4a6e" }}>🧪 AI 오디언스 탐색</div>
-        <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: "var(--sub)", marginTop: 4 }}>
           문장으로 타겟을 설명하면 AI가 SQL로 변환합니다 · 피처스토어 533만 ADID · <b>승인 전에는 아무것도 실행되지 않습니다</b>
         </div>
       </div>
@@ -126,9 +126,9 @@ export default function AiExploreTab() {
       {/* ① 예시 갤러리 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginBottom: 18 }}>
         {EXAMPLES.map(g => (
-          <div key={g.group} style={{ padding: 14, borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0" }}>
+          <div key={g.group} style={{ padding: 14, borderRadius: 12, background: "var(--card)", border: "1px solid var(--border)" }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>{g.icon} {g.group}</div>
-            <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 8 }}>{g.desc}</div>
+            <div style={{ fontSize: 10, color: "var(--neutral)", marginBottom: 8 }}>{g.desc}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {g.items.map(it => (
                 <button key={it} onClick={() => { setText(it); create(it); }}
@@ -160,22 +160,22 @@ export default function AiExploreTab() {
         {r?.request_id && (
           <div style={{ marginTop: 14 }}>
             <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8, fontSize: 12 }}>
-              <span style={{ fontWeight: 700, color: STATUS_META[r.status]?.color || "#334155" }}>상태: {STATUS_META[r.status]?.label || r.status}</span>
-              {r.est_gb != null && <span style={{ color: "#64748b" }}>예상 스캔 {r.est_gb}GB</span>}
+              <span style={{ fontWeight: 700, color: STATUS_META[r.status]?.color || "var(--text)" }}>상태: {STATUS_META[r.status]?.label || r.status}</span>
+              {r.est_gb != null && <span style={{ color: "var(--sub)" }}>예상 스캔 {r.est_gb}GB</span>}
               {r.est_rows != null && <span style={{ color: "#0369a1", fontWeight: 700 }}>👥 예상 {fmtRows(r.est_rows)}</span>}
               {r.result_table && <span style={{ color: "#047857", fontWeight: 600 }}>→ dmp_data.{r.result_table}</span>}
             </div>
-            <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "#0f172a", color: "#e2e8f0", fontSize: 11, overflowX: "auto", maxHeight: 180 }}>{r.generated_sql || "(SQL 없음)"}</pre>
+            <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "var(--text)", color: "var(--border)", fontSize: 11, overflowX: "auto", maxHeight: 180 }}>{r.generated_sql || "(SQL 없음)"}</pre>
             {r.status === "pending" && (
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                 <button disabled={acting} onClick={() => act("preview")}
-                  style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#fff", color: "#0369a1", border: "1px solid #7dd3fc" }}>
+                  style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "var(--card)", color: "#0369a1", border: "1px solid #7dd3fc" }}>
                   {acting ? "조회 중..." : "👥 인원 조회"}</button>
                 <button disabled={acting} onClick={() => act("approve")}
                   style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#059669", color: "#fff", border: "none" }}>
                   {acting ? "실행 중..." : "✓ 승인 · 오디언스 생성"}</button>
                 <button disabled={acting} onClick={() => act("reject")}
-                  style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#fff", color: "#b91c1c", border: "1px solid #fca5a5" }}>✕ 거절</button>
+                  style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "var(--card)", color: "#b91c1c", border: "1px solid #fca5a5" }}>✕ 거절</button>
               </div>
             )}
           </div>
@@ -183,15 +183,15 @@ export default function AiExploreTab() {
       </div>
 
       {/* ③ 요청 이력 */}
-      <div style={{ padding: 18, borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0" }}>
+      <div style={{ padding: 18, borderRadius: 12, background: "var(--card)", border: "1px solid var(--border)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>📋 탐색 이력 <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>최근 {history.length}건 · 생성된 오디언스는 30일 보관</span></div>
-          <button onClick={loadHistory} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", cursor: "pointer" }}>{histLoading ? "..." : "↻ 새로고침"}</button>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>📋 탐색 이력 <span style={{ fontSize: 11, color: "var(--neutral)", fontWeight: 400 }}>최근 {history.length}건 · 생성된 오디언스는 30일 보관</span></div>
+          <button onClick={loadHistory} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer" }}>{histLoading ? "..." : "↻ 새로고침"}</button>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #e2e8f0", color: "#64748b", textAlign: "left" }}>
+              <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--sub)", textAlign: "left" }}>
                 <th style={{ padding: "6px 8px" }}>요청 문장</th>
                 <th style={{ padding: "6px 8px" }}>상태</th>
                 <th style={{ padding: "6px 8px" }}>예상 인원</th>
@@ -202,28 +202,28 @@ export default function AiExploreTab() {
             </thead>
             <tbody>
               {history.map(h => (
-                <tr key={h.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <tr key={h.id} style={{ borderBottom: "1px solid var(--bg-elevated)" }}>
                   <td style={{ padding: "7px 8px", maxWidth: 340, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={h.query_text}>{h.query_text}</td>
-                  <td style={{ padding: "7px 8px", fontWeight: 700, color: STATUS_META[h.status]?.color || "#334155" }}>{STATUS_META[h.status]?.label || h.status}</td>
+                  <td style={{ padding: "7px 8px", fontWeight: 700, color: STATUS_META[h.status]?.color || "var(--text)" }}>{STATUS_META[h.status]?.label || h.status}</td>
                   <td style={{ padding: "7px 8px" }}>{fmtRows(h.est_rows)}</td>
                   <td style={{ padding: "7px 8px", fontFamily: "monospace", fontSize: 11, color: "#047857" }}>{h.result_table || "—"}</td>
-                  <td style={{ padding: "7px 8px", color: "#94a3b8", whiteSpace: "nowrap" }}>{(h.created_at || "").slice(5, 16).replace("T", " ")}</td>
+                  <td style={{ padding: "7px 8px", color: "var(--neutral)", whiteSpace: "nowrap" }}>{(h.created_at || "").slice(5, 16).replace("T", " ")}</td>
                   <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>
                     {h.status === "pending" && (
                       <>
                         <button disabled={acting} onClick={() => act("approve", h.id)} style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "none", background: "#059669", color: "#fff", cursor: "pointer", fontWeight: 700 }}>승인</button>
-                        <button disabled={acting} onClick={() => act("reject", h.id)} style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#b91c1c", cursor: "pointer", fontWeight: 700 }}>거절</button>
+                        <button disabled={acting} onClick={() => act("reject", h.id)} style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "1px solid #fca5a5", background: "var(--card)", color: "#b91c1c", cursor: "pointer", fontWeight: 700 }}>거절</button>
                       </>
                     )}
                     {h.status !== "pending" && (
-                      <button disabled={loading} onClick={() => rerun(h.query_text)} title="같은 문장으로 다시 탐색(SQL 재생성)" style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "1px solid #93c5fd", background: "#fff", color: "#1d4ed8", cursor: "pointer", fontWeight: 700 }}>↻ 재실행</button>
+                      <button disabled={loading} onClick={() => rerun(h.query_text)} title="같은 문장으로 다시 탐색(SQL 재생성)" style={{ fontSize: 11, padding: "4px 10px", marginRight: 4, borderRadius: 6, border: "1px solid #93c5fd", background: "var(--card)", color: "#1d4ed8", cursor: "pointer", fontWeight: 700 }}>↻ 재실행</button>
                     )}
-                    <button onClick={() => cloneToInput(h.query_text)} title="이 문장을 입력창에 복제(편집 후 탐색)" style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", cursor: "pointer", fontWeight: 700 }}>⎘ 복제</button>
+                    <button onClick={() => cloneToInput(h.query_text)} title="이 문장을 입력창에 복제(편집 후 탐색)" style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--sub)", cursor: "pointer", fontWeight: 700 }}>⎘ 복제</button>
                   </td>
                 </tr>
               ))}
               {history.length === 0 && !histLoading && (
-                <tr><td colSpan={6} style={{ padding: 16, textAlign: "center", color: "#94a3b8" }}>아직 탐색 이력이 없습니다 — 위 예시를 눌러 시작해보세요</td></tr>
+                <tr><td colSpan={6} style={{ padding: 16, textAlign: "center", color: "var(--neutral)" }}>아직 탐색 이력이 없습니다 — 위 예시를 눌러 시작해보세요</td></tr>
               )}
             </tbody>
           </table>

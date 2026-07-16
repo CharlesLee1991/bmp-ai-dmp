@@ -14,8 +14,8 @@ export type MediaRow = {
 };
 export type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
 
-const P = { border: "#e5e9f0", sub: "#7b8794", text: "#1f2933", accent: "#0967d2" };
-const panel: React.CSSProperties = { border: `1px solid ${P.border}`, borderRadius: 10, overflow: "hidden", background: "#fff" };
+const P = { border: "var(--border)", sub: "var(--sub)", text: "var(--text)", accent: "var(--accent)" };
+const panel: React.CSSProperties = { border: `1px solid ${P.border}`, borderRadius: 10, overflow: "hidden", background: "var(--card)" };
 const head: React.CSSProperties = { padding: "12px 16px", fontSize: 13, fontWeight: 700, color: P.text, borderBottom: `1px solid ${P.border}` };
 const sub: React.CSSProperties = { color: P.sub, fontWeight: 400, fontSize: 11, marginLeft: 8 };
 
@@ -67,13 +67,13 @@ function Bar3D({ series }: { series: { name: string; rows: DailyRow[] }[] }) {
   const option = dates.length ? {
     tooltip: {
       formatter: (p: any) => `${names[p.value[1]]}<br/>${dates[p.value[0]]}<br/><b>노출 ${fmt(p.value[2])}</b>`,
-      backgroundColor: "#fff", borderColor: P.border, borderWidth: 1,
+      backgroundColor: "var(--card)", borderColor: P.border, borderWidth: 1,
       textStyle: { color: P.text, fontSize: 12 },
     },
     visualMap: {
       max: maxV, show: true, right: 8, top: "center", calculable: true,
       textStyle: { color: P.sub, fontSize: 10 }, formatter: (v: number) => fmt(v),
-      inRange: { color: ["#e3f0ff", "#9ec5f2", "#4a90e2", "#0967d2", "#0b3d91"] },
+      inRange: { color: ["#e3f0ff", "#9ec5f2", "#4a90e2", "var(--accent)", "#0b3d91"] },
     },
     xAxis3D: { type: "category", data: dates, name: "날짜", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9, interval: Math.max(0, Math.floor(dates.length / 8)) } },
     yAxis3D: { type: "category", data: names, name: "매체", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9 } },
@@ -82,10 +82,10 @@ function Bar3D({ series }: { series: { name: string; rows: DailyRow[] }[] }) {
       boxWidth: 150, boxDepth: 78, boxHeight: 62,
       viewControl: { autoRotate: false, distance: 210, alpha: 22, beta: 32 },
       light: { main: { intensity: 1.15, shadow: true, alpha: 40, beta: 30 }, ambient: { intensity: 0.42 } },
-      axisLine: { lineStyle: { color: "#c9d3e0" } },
-      splitLine: { lineStyle: { color: "#eef1f5" } },
+      axisLine: { lineStyle: { color: "var(--border-strong)" } },
+      splitLine: { lineStyle: { color: "var(--bg-elevated)" } },
       axisPointer: { lineStyle: { color: P.accent } },
-      environment: "#fff",
+      environment: "var(--card)",
     },
     series: [{ type: "bar3D", data, shading: "lambert", barSize: 4.2, itemStyle: { opacity: 0.94 }, emphasis: { label: { show: false }, itemStyle: { color: "#f2685a" } } }],
   } : null;
@@ -103,12 +103,12 @@ function Scatter3D({ rows }: { rows: MediaRow[] }) {
   const option = pts.length ? {
     tooltip: {
       formatter: (p: any) => `<b>${p.data.name}</b><br/>광고비 ${won(p.value[0])}<br/>전환율 ${p.value[1].toFixed(2)}%<br/>노출 ${fmt(p.value[2])}`,
-      backgroundColor: "#fff", borderColor: P.border, borderWidth: 1, textStyle: { color: P.text, fontSize: 12 },
+      backgroundColor: "var(--card)", borderColor: P.border, borderWidth: 1, textStyle: { color: P.text, fontSize: 12 },
     },
     visualMap: {
       max: maxImp, dimension: 2, show: true, right: 8, top: "center", calculable: true,
       textStyle: { color: P.sub, fontSize: 10 }, formatter: (v: number) => fmt(v),
-      inRange: { color: ["#b9e4d0", "#3bd6b4", "#4a90e2", "#0967d2", "#7b61ff"] },
+      inRange: { color: ["#b9e4d0", "#3bd6b4", "#4a90e2", "var(--accent)", "#7b61ff"] },
     },
     xAxis3D: { type: "value", name: "광고비", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9, formatter: (v: number) => won(v) } },
     yAxis3D: { type: "value", name: "전환율(%)", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9 } },
@@ -117,15 +117,15 @@ function Scatter3D({ rows }: { rows: MediaRow[] }) {
       boxWidth: 110, boxDepth: 110, boxHeight: 78,
       viewControl: { autoRotate: false, distance: 200, alpha: 20, beta: 38 },
       light: { main: { intensity: 1.1, alpha: 35, beta: 30 }, ambient: { intensity: 0.45 } },
-      axisLine: { lineStyle: { color: "#c9d3e0" } },
-      splitLine: { lineStyle: { color: "#eef1f5" } },
-      environment: "#fff",
+      axisLine: { lineStyle: { color: "var(--border-strong)" } },
+      splitLine: { lineStyle: { color: "var(--bg-elevated)" } },
+      environment: "var(--card)",
     },
     series: [{
       type: "scatter3D", symbolSize: 14,
       data: pts.map(p => ({ value: p.v, name: p.name })),
       itemStyle: { opacity: 0.86, borderWidth: 0.6, borderColor: "rgba(0,0,0,.18)" },
-      emphasis: { itemStyle: { color: "#f2685a" }, label: { show: true, formatter: (p: any) => p.data.name, textStyle: { color: P.text, fontSize: 11, backgroundColor: "#fff", padding: 4, borderRadius: 4 } } },
+      emphasis: { itemStyle: { color: "#f2685a" }, label: { show: true, formatter: (p: any) => p.data.name, textStyle: { color: P.text, fontSize: 11, backgroundColor: "var(--card)", padding: 4, borderRadius: 4 } } },
     }],
   } : null;
   const el = useChart(option, [rows.length], 400);

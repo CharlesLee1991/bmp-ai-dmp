@@ -9,13 +9,13 @@ import {
 import { fmt } from "@/lib/data";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096",
-  accent: "#0d9488", green: "#10b981",
-  glow: "rgba(13,148,136,0.08)"
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)",
+  accent: "var(--accent)", green: "var(--success)",
+  glow: "var(--accent-glow)"
 };
 
-const COLORS = ["#0d9488", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#10b981", "#eab308", "#60a5fa", "#f43f5e", "#6366f1", "#14b8a6", "#d946ef", "#ca8a04"];
+const COLORS = ["var(--accent)", "var(--male)", "var(--female)", "var(--accent-2)", "var(--accent)", "var(--success)", "#eab308", "#60a5fa", "#f43f5e", "#6366f1", "#14b8a6", "#d946ef", "#ca8a04"];
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -97,7 +97,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
 
   if (error || (!isLive && !isLoading)) {
     return (
-      <div style={{ padding: "60px 28px", textAlign: "center", color: "#ef4444" }}>
+      <div style={{ padding: "60px 28px", textAlign: "center", color: "var(--danger)" }}>
         <div style={{ fontSize: 13 }}>데이터 로드 실패</div>
       </div>
     );
@@ -200,7 +200,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
                   <span style={{
                     width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 9, fontWeight: 700, flexShrink: 0,
-                    background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "#fff" : P.sub
+                    background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "var(--card)" : P.sub
                   }}>{i + 1}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>

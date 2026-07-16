@@ -5,9 +5,9 @@ import useSWR from "swr";
 import { fmt } from "@/lib/data";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096", accent: "#0d9488",
-  green: "#10b981", glow: "rgba(13,148,136,0.08)",
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)", accent: "var(--accent)",
+  green: "var(--success)", glow: "var(--accent-glow)",
 };
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());

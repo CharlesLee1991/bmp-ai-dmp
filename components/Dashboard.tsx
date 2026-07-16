@@ -23,12 +23,19 @@ import BehaviorPlaceholder from "./BehaviorPlaceholder";
 import TransitSegment from "./TransitSegment";
 import MembershipSegment from "./MembershipSegment";
 import type { DmpUser } from "@/lib/auth";
+import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
+import { ThemeMenu } from "@/lib/ThemeContext";
+import {
+  CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
+  BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
+  RotateCcw, type LucideIcon,
+} from "lucide-react";
 
-const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096",
-  m: "#3b82f6", f: "#f59e0b", accent: "#0d9488",
-  green: "#10b981", glow: "rgba(13,148,136,0.08)"
+/* 탭 아이콘 SSOT (CL 표준 §9 — 이모지 대신 lucide 라인 아이콘) */
+const TAB_ICON: Record<string, LucideIcon> = {
+  card: CreditCard, subway: TrainFront, bus: Bus, membership: Ticket,
+  aiexplore: FlaskConical, exports: ClipboardList, media: BarChart3,
+  spending: TrendingUp, cards: Landmark, shopping: ShoppingCart,
 };
 
 const SEX_OPTIONS = [
@@ -58,7 +65,7 @@ function Tag({ label, onRemove }: { label: string; onRemove: () => void }) {
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
       padding: "4px 10px", borderRadius: 16, fontSize: 11, fontWeight: 600,
-      background: P.glow, color: P.accent, border: `1px solid ${P.accent}33`
+      background: P.glow, color: P.accent, border: `1px solid color-mix(in srgb, var(--accent) 20%, transparent)`
     }}>
       {label}
       <span onClick={onRemove} style={{ cursor: "pointer", fontSize: 13, lineHeight: 1, opacity: .7 }}>×</span>
@@ -568,7 +575,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   else { ageChart.forEach(r => { mT += r.M; fT += r.F; uT += r.U; }); }
   const total = mT + fT + uT;
   const showU = sexes.includes("U") || (!sexes.length && uT > 0);
-  const pieData = [{ name: "남성", value: mT, c: P.m }, { name: "여성", value: fT, c: P.f }, ...(showU && uT > 0 ? [{ name: "알수없음", value: uT, c: "#a0aec0" }] : [])];
+  const pieData = [{ name: "남성", value: mT, c: P.m }, { name: "여성", value: fT, c: P.f }, ...(showU && uT > 0 ? [{ name: "알수없음", value: uT, c: "var(--unknown)" }] : [])];
   const maxBar = Math.max(...ageChart.map(r => Math.max(r.M, r.F)), 1);
   const barData = ageChart.map(r => ({ name: AGE_LABEL[r.a] || r.a, 남성: r.M, 여성: r.F }));
   const topAge = ageChart.reduce((a, b) => (a.M + a.F + a.U) > (b.M + b.F + b.U) ? a : b, { M: 0, F: 0, U: 0, a: "-" });
@@ -600,24 +607,29 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   return (
     <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text }}>
 
+      {/* ─── STICKY CHROME (헤더 + 탭바) · CL 표준 §11.3 프로스트글래스 도킹 ─── */}
+      <div className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 60 }}>
       {/* HEADER */}
-      <header style={{ padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${P.border}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #3b82f6, #0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff" }}>D</div>
+      <header style={{ height: 60, padding: "0 28px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${P.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 11, background: "linear-gradient(135deg, var(--male), var(--accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#fff", boxShadow: P.shadowSoft }}>D</div>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>DMP Audience Explorer</h1>
-            <p style={{ fontSize: 11, color: P.sub, margin: 0 }}>BizSpring · 13큐브 · 16세그먼트 키 · 멀티셀렉트</p>
+            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: "-0.03em", color: P.text }}>DMP Audience Explorer</h1>
+            <p style={{ fontSize: 10.5, color: P.sub, margin: 0 }}>BizSpring · 13큐브 · 16세그먼트 키 · 멀티셀렉트</p>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {isLoading && <span style={{ fontSize: 10, color: P.f, fontWeight: 600 }}>Loading...</span>}
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: isLive ? P.green : error ? "#ef4444" : P.sub, boxShadow: isLive ? `0 0 8px ${P.green}` : "none" }} />
-          <span style={{ fontSize: 11, color: P.sub }}>{isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "..."}</span>
-          <span style={{ width: 1, height: 16, background: P.border }} />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: P.sub, padding: "4px 10px", borderRadius: 999, background: P.bgElevated, border: `1px solid ${P.borderSoft}` }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: isLive ? P.green : error ? "var(--danger)" : P.sub, boxShadow: isLive ? `0 0 8px ${P.green}` : "none" }} />
+            {isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "..."}
+          </span>
+          <ThemeMenu />
+          <span style={{ width: 1, height: 20, background: P.border }} />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
               width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-              background: isAdmin ? "linear-gradient(135deg, #3b82f6, #0d9488)" : P.border,
+              background: isAdmin ? "linear-gradient(135deg, var(--male), var(--accent))" : P.border,
               fontSize: 11, fontWeight: 700, color: isAdmin ? "#fff" : P.sub
             }}>{user.display_name[0]}</div>
             <div>
@@ -625,7 +637,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <div style={{ fontSize: 9, color: P.sub }}>{isAdmin ? "관리자" : "광고주"}</div>
             </div>
             <button onClick={onLogout} style={{
-              marginLeft: 4, padding: "4px 10px", borderRadius: 6, fontSize: 10, cursor: "pointer",
+              marginLeft: 4, padding: "5px 11px", borderRadius: 8, fontSize: 10, cursor: "pointer",
               background: "transparent", border: `1px solid ${P.border}`, color: P.sub
             }}>로그아웃</button>
           </div>
@@ -633,22 +645,29 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       </header>
 
       {/* TAB */}
-      <div style={{ padding: "0 28px", display: "flex", gap: 0, borderBottom: `1px solid ${P.border}` }}>
+      <div style={{ padding: "0 20px", display: "flex", gap: 2, borderBottom: `1px solid ${P.border}`, background: P.chrome, overflowX: "auto" }}>
         {([
-          { id: "card" as const, label: "💳 카드", roles: ["admin", "advertiser"] },
-          { id: "subway" as const, label: "🚇 지하철", roles: ["admin", "advertiser"] },
-          { id: "bus" as const, label: "🚌 버스", roles: ["admin", "advertiser"] },
-          { id: "membership" as const, label: "🎟️ 멤버십", roles: ["admin", "advertiser"] },
-          { id: "aiexplore" as const, label: "🧪 AI 탐색", roles: ["admin", "advertiser"] },
-          { id: "exports" as const, label: "📋 전송 이력", roles: ["admin", "advertiser"] },
-          { id: "media" as const, label: "📊 매체 성과", roles: ["admin"] },
-          { id: "spending" as const, label: "💳 소비 트렌드", roles: ["admin"] },
-          { id: "cards" as const, label: "🏦 카드사 비교", roles: ["admin"] },
-          { id: "shopping" as const, label: "🛒 쇼핑상품", roles: ["admin"] },
-        ]).filter(t => t.roles.includes(user.role)).map(t => (
-          <button key={t.id} onClick={() => { if (t.id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(t.id); }} style={{ padding: "12px 24px", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", border: "none", borderBottom: `2px solid ${tab === t.id ? P.accent : "transparent"}`, background: "transparent", color: tab === t.id ? P.accent : P.sub, transition: "all .2s" }}>{t.label}</button>
-        ))}
+          { id: "card" as const, label: "카드", roles: ["admin", "advertiser"] },
+          { id: "subway" as const, label: "지하철", roles: ["admin", "advertiser"] },
+          { id: "bus" as const, label: "버스", roles: ["admin", "advertiser"] },
+          { id: "membership" as const, label: "멤버십", roles: ["admin", "advertiser"] },
+          { id: "aiexplore" as const, label: "AI 탐색", roles: ["admin", "advertiser"] },
+          { id: "exports" as const, label: "전송 이력", roles: ["admin", "advertiser"] },
+          { id: "media" as const, label: "매체 성과", roles: ["admin"] },
+          { id: "spending" as const, label: "소비 트렌드", roles: ["admin"] },
+          { id: "cards" as const, label: "카드사 비교", roles: ["admin"] },
+          { id: "shopping" as const, label: "쇼핑상품", roles: ["admin"] },
+        ]).filter(t => t.roles.includes(user.role)).map(t => {
+          const Icon = TAB_ICON[t.id]; const active = tab === t.id;
+          return (
+            <button key={t.id} onClick={() => { if (t.id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(t.id); }} style={{ padding: "11px 15px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: active ? 700 : 500, cursor: "pointer", border: "none", borderBottom: `2px solid ${active ? P.accent : "transparent"}`, background: "transparent", color: active ? P.accent : P.sub, whiteSpace: "nowrap", transition: "color .15s, border-color .15s" }}>
+              {Icon && <Icon size={15} strokeWidth={active ? 2.4 : 1.9} />}
+              {t.label}
+            </button>
+          );
+        })}
       </div>
+      </div>{/* /sticky chrome */}
 
       {/* ─── FILTER PANEL ─── */}
       <div style={{ padding: "14px 28px", borderBottom: `1px solid ${P.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -759,7 +778,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               return (
                 <span style={{ display: "inline-flex", gap: 3, marginLeft: 4, borderLeft: "1px solid rgba(0,0,0,.1)", paddingLeft: 8 }}>
                   {[10,20,30].map(p => <button key={`hi-${p}`} onClick={() => selectPct(HIGH_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #7c3aed33", background: "#f5f3ff", color: "#7c3aed", cursor: "pointer", fontWeight: 600 }}>상위{p}%</button>)}
-                  {[30,20,10].map(p => <button key={`lo-${p}`} onClick={() => selectPct(LOW_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #0d948833", background: "#f0fdfa", color: "#0d9488", cursor: "pointer", fontWeight: 600 }}>하위{p}%</button>)}
+                  {[30,20,10].map(p => <button key={`lo-${p}`} onClick={() => selectPct(LOW_ORDER, p)} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 10, border: "1px solid #0d948833", background: "#f0fdfa", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}>하위{p}%</button>)}
                 </span>
               );
             })()}
@@ -842,31 +861,31 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {tab === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>결제</span>
-            <div style={{ display: "inline-flex", borderRadius: 6, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "inline-flex", borderRadius: 6, overflow: "hidden", border: "1px solid var(--border)" }}>
               {([["cnt","승인횟수"],["amt","승인금액"]] as const).map(([v, lab]) => (
-                <button key={v} onClick={() => setApprlMetric(v)} style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer", background: apprlMetric === v ? P.accent : "#fff", color: apprlMetric === v ? "#fff" : P.sub }}>{lab}</button>
+                <button key={v} onClick={() => setApprlMetric(v)} style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer", background: apprlMetric === v ? P.accent : "var(--card)", color: apprlMetric === v ? "var(--card)" : P.sub }}>{lab}</button>
               ))}
             </div>
-            <select value={apprlPeriod} onChange={e => setApprlPeriod(e.target.value as any)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text, cursor: "pointer" }}>
+            <select value={apprlPeriod} onChange={e => setApprlPeriod(e.target.value as any)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid var(--border)", background: "var(--card)", color: P.text, cursor: "pointer" }}>
               <option value="30">최근 30일</option>
               <option value="90">최근 90일</option>
               <option value="180">최근 180일</option>
               <option value="365">최근 365일</option>
             </select>
-            <select value={apprlOper} onChange={e => setApprlOper(e.target.value as any)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text, cursor: "pointer" }}>
+            <select value={apprlOper} onChange={e => setApprlOper(e.target.value as any)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid var(--border)", background: "var(--card)", color: P.text, cursor: "pointer" }}>
               <option value=">=">이상</option>
               <option value="<=">이하</option>
               <option value="between">범위</option>
             </select>
-            <input type="number" value={apprlValue} onChange={e => setApprlValue(e.target.value)} onBlur={commitApprl} onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} placeholder={apprlMetric === "cnt" ? "횟수" : "금액(원)"} style={{ width: 90, padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text }} />
+            <input type="number" value={apprlValue} onChange={e => setApprlValue(e.target.value)} onBlur={commitApprl} onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} placeholder={apprlMetric === "cnt" ? "횟수" : "금액(원)"} style={{ width: 90, padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid var(--border)", background: "var(--card)", color: P.text }} />
             {apprlOper === "between" && (
               <>
                 <span style={{ fontSize: 11, color: P.sub }}>~</span>
-                <input type="number" value={apprlValue2} onChange={e => setApprlValue2(e.target.value)} onBlur={commitApprl} onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} placeholder={apprlMetric === "cnt" ? "횟수" : "금액(원)"} style={{ width: 90, padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.text }} />
+                <input type="number" value={apprlValue2} onChange={e => setApprlValue2(e.target.value)} onBlur={commitApprl} onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} placeholder={apprlMetric === "cnt" ? "횟수" : "금액(원)"} style={{ width: 90, padding: "5px 8px", fontSize: 11, borderRadius: 6, border: "1px solid var(--border)", background: "var(--card)", color: P.text }} />
               </>
             )}
             {(apprlValue || apprlValueC) && (
-              <button onClick={() => { setApprlValue(""); setApprlValue2(""); setApprlValueC(""); setApprlValue2C(""); }} style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: P.sub, cursor: "pointer" }}>초기화</button>
+              <button onClick={() => { setApprlValue(""); setApprlValue2(""); setApprlValueC(""); setApprlValue2C(""); }} style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6, border: "1px solid var(--border)", background: "var(--card)", color: P.sub, cursor: "pointer" }}>초기화</button>
             )}
           </div>
         )}
@@ -883,7 +902,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 <button onClick={() => { setUploadSession(null); setUploadInfo(null); }} style={{ fontSize: 10, color: P.sub, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>
               </>
             ) : (
-              <label style={{ fontSize: 11, color: P.accent, cursor: "pointer", padding: "4px 12px", borderRadius: 16, border: `1px dashed ${P.accent}66`, background: `${P.accent}08` }}>
+              <label style={{ fontSize: 11, color: P.accent, cursor: "pointer", padding: "4px 12px", borderRadius: 16, border: `1px dashed color-mix(in srgb, var(--accent) 40%, transparent)`, background: `color-mix(in srgb, var(--accent) 3%, transparent)` }}>
                 {uploading ? "업로드 중..." : "+ ADID 파일 업로드"}
                 <input type="file" accept=".csv,.txt,.tsv" style={{ display: "none" }} disabled={uploading} onChange={async (e) => {
                   const file = e.target.files?.[0];
@@ -937,14 +956,15 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         {/* Actions */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {anyFilter && <button onClick={reset} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid ${P.accent}44`, borderRadius: 16, padding: "4px 14px", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</button>}
+            {anyFilter && <button onClick={reset} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)`, borderRadius: 16, padding: "4px 14px", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</button>}
             {filterParts.length > 0 && <span style={{ fontSize: 10, color: P.sub }}>{filterParts.join(" · ")}</span>}
           </div>
           {tab === "card" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: campaignOpen ? "#7c3aed" : "linear-gradient(135deg, #7c3aed, #a855f7)", color: "#fff", border: "none" }}>🎯 캠페인 타겟 찾기</button>
-              <button onClick={() => setAiExploreOpen(!aiExploreOpen)} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: aiExploreOpen ? "#0284c7" : "linear-gradient(135deg, #0284c7, #06b6d4)", color: "#fff", border: "none" }}>🧪 AI 오디언스 탐색</button>
-              <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 런컴 타겟 전송</button>
+              {/* CL 표준 §1 버튼 톤: 옵션 = outline / 필수(전송) = 단일 solid primary */}
+              <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: campaignOpen ? P.appGlow : "transparent", color: campaignOpen ? P.app : P.sub, border: `1px solid ${campaignOpen ? "var(--accent-2)" : P.border}` }}><Target size={14} strokeWidth={2} /> 캠페인 타겟 찾기</button>
+              <button onClick={() => setAiExploreOpen(!aiExploreOpen)} style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: aiExploreOpen ? P.glow : "transparent", color: aiExploreOpen ? P.accent : P.sub, border: `1px solid ${aiExploreOpen ? P.accent : P.border}` }}><FlaskConical size={14} strokeWidth={2} /> AI 오디언스 탐색</button>
+              <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none", boxShadow: P.shadowSoft }}><Send size={14} strokeWidth={2.2} /> 런컴 타겟 전송</button>
             </div>
           )}
         </div>
@@ -976,19 +996,19 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           </div>
           {campaignResult && (
             <div>
-              {campaignResult.analysis && <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
+              {campaignResult.analysis && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
               <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(campaignResult.recommendations?.length || 1, 3)}, 1fr)`, gap: 10 }}>
                 {(campaignResult.recommendations || []).map((rec: any, i: number) => (
                   <div key={i} style={{ background: "rgba(255,255,255,.9)", borderRadius: 10, padding: 14, border: "1px solid #c4b5fd" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#5b21b6", marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i]} {rec.label}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 8 }}>{rec.description}</div>
-                    <div style={{ fontSize: 11, color: "#374151", padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 8 }}>{rec.description}</div>
+                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, marginBottom: 8 }}>
                       <span style={{ fontWeight: 600 }}>조건:</span> {rec.filter_summary}
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? "#7c3aed" : "#9ca3af" }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? "#7c3aed" : "var(--sub-2)" }}>
                       {rec.estimated_audience > 0 ? fmt(rec.estimated_audience) : "—"}<span style={{ fontSize: 11, fontWeight: 500, color: "#7c3aed88", marginLeft: 4 }}>명</span>
                     </div>
-                    <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 2 }}>실시간 세그먼트 프리뷰 기반</div>
+                    <div style={{ fontSize: 9, color: "var(--sub-2)", marginTop: 2 }}>실시간 세그먼트 프리뷰 기반</div>
                   </div>
                 ))}
               </div>
@@ -999,9 +1019,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {/* ─── SEGMENT PREVIEW BANNER ─── */}
       {anyFilter && (
-        <div style={{ position: "relative", overflow: "hidden", margin: "12px 28px 0", padding: "12px 18px", borderRadius: 10, background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(13,148,136,0.06))", border: `1px solid ${P.accent}33`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "relative", overflow: "hidden", margin: "12px 28px 0", padding: "12px 18px", borderRadius: 10, background: "linear-gradient(135deg, rgba(59,130,246,0.04), var(--accent-glow))", border: `1px solid color-mix(in srgb, var(--accent) 20%, transparent)`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {(segLoading || segValidating) && (
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `${P.accent}22` }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `color-mix(in srgb, var(--accent) 13%, transparent)` }}>
               <div className="dmp-seg-prog" style={{ height: "100%", width: "35%", background: P.accent, borderRadius: 2 }} />
             </div>
           )}
@@ -1052,12 +1072,12 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <div style={{ fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>🤖 AI 효율 타겟 분석</div>
             <button onClick={() => setAiResult(null)} style={{ fontSize: 10, color: "#7c3aed", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
           </div>
-          {aiResult.summary && <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, marginBottom: 14, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8 }}>{aiResult.summary}</div>}
+          {aiResult.summary && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, marginBottom: 14, padding: "10px 14px", background: "rgba(255,255,255,.7)", borderRadius: 8 }}>{aiResult.summary}</div>}
           {aiResult.insights?.length > 0 && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#7c3aed", marginBottom: 6 }}>💡 핵심 인사이트</div>
               {aiResult.insights.map((ins: string, i: number) => (
-                <div key={i} style={{ fontSize: 12, color: "#4b5563", padding: "4px 0 4px 12px", borderLeft: "2px solid #a78bfa", marginBottom: 4 }}>{ins}</div>
+                <div key={i} style={{ fontSize: 12, color: "var(--sub)", padding: "4px 0 4px 12px", borderLeft: "2px solid #a78bfa", marginBottom: 4 }}>{ins}</div>
               ))}
             </div>
           )}
@@ -1068,12 +1088,12 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 {aiResult.recommendations.map((rec: any, i: number) => (
                   <div key={i} style={{ background: "rgba(255,255,255,.85)", borderRadius: 10, padding: 14, border: "1px solid #c4b5fd" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#5b21b6", marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
-                    {rec.description && <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>{rec.description}</div>}
-                    <div style={{ fontSize: 11, color: "#374151", padding: "6px 8px", background: "#f5f3ff", borderRadius: 6, marginBottom: 6 }}>
+                    {rec.description && <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 6 }}>{rec.description}</div>}
+                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 8px", background: "#f5f3ff", borderRadius: 6, marginBottom: 6 }}>
                       <span style={{ fontWeight: 600 }}>조건:</span> {rec.filters}
                     </div>
                     {rec.estimated_audience && <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>추정 규모: {rec.estimated_audience}</div>}
-                    {rec.reason && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 4 }}>{rec.reason}</div>}
+                    {rec.reason && <div style={{ fontSize: 10, color: "var(--sub-2)", marginTop: 4 }}>{rec.reason}</div>}
                   </div>
                 ))}
               </div>
@@ -1102,7 +1122,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 <div key={i} onClick={() => { if (!middleCats.includes(name) && !majorCats.includes(name)) { setMiddleCats(prev => [...prev, name]); }}} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer", borderRadius: 4, padding: "1px 0", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
                   <div style={{ flex: 1, height: 20, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, ${P.accent}88, ${P.accent}11)`, transition: "width .5s" }} />
+                    <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, color-mix(in srgb, var(--accent) 53%, transparent), color-mix(in srgb, var(--accent) 7%, transparent))`, transition: "width .5s" }} />
                   </div>
                   <span style={{ fontSize: 9, color: P.sub, width: 42, textAlign: "right", flexShrink: 0 }}>{fmt(it.users)}</span>
                 </div>
@@ -1124,7 +1144,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <div style={{ width: 120, flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height={120}>
                   <PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={36} outerRadius={54} dataKey="value" startAngle={90} endAngle={-270} strokeWidth={0}>{pieData.map((d, i) => <Cell key={i} fill={d.c} />)}</Pie>
-                    <Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [fmt(Number(v)), ""]} /></PieChart>
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: P.text }} formatter={(v: any) => [fmt(Number(v)), ""]} /></PieChart>
                 </ResponsiveContainer>
                 <div style={{ textAlign: "center" }}><div style={{ fontSize: 16, fontWeight: 800, color: P.text }}>{fmt(total)}</div><div style={{ fontSize: 9, color: P.sub }}>총 이용자</div></div>
               </div>
@@ -1134,7 +1154,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)" />
                     <XAxis dataKey="name" tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: P.sub }} axisLine={false} tickLine={false} tickFormatter={v => fmt(Number(v))} width={44} />
-                    <Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [fmt(Number(v)), ""]} />
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: P.text }} formatter={(v: any) => [fmt(Number(v)), ""]} />
                     <Bar dataKey="남성" fill={P.m} radius={[4, 4, 0, 0]} /><Bar dataKey="여성" fill={P.f} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -1147,8 +1167,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4, height: 22 }}>
                   <span style={{ fontSize: 10, color: P.sub, width: 36, textAlign: "right", flexShrink: 0 }}>{AGE_LABEL[row.a] || row.a}</span>
                   <div style={{ display: "flex", flex: 1, gap: 2 }}>
-                    <div style={{ display: "flex", justifyContent: "flex-end", flex: 1 }}><div style={{ height: 18, background: `linear-gradient(270deg, ${P.m}, ${P.m}33)`, borderRadius: "4px 0 0 4px", width: `${(row.M / maxBar) * 100}%`, minWidth: row.M > 0 ? 2 : 0, transition: "width .4s", display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 4 }}>{row.M > maxBar * .1 && <span style={{ fontSize: 8, color: "#fff", fontWeight: 700 }}>{fmt(row.M)}</span>}</div></div>
-                    <div style={{ flex: 1 }}><div style={{ height: 18, background: `linear-gradient(90deg, ${P.f}, ${P.f}33)`, borderRadius: "0 4px 4px 0", width: `${(row.F / maxBar) * 100}%`, minWidth: row.F > 0 ? 2 : 0, transition: "width .4s", display: "flex", alignItems: "center", paddingLeft: 4 }}>{row.F > maxBar * .1 && <span style={{ fontSize: 8, color: "#fff", fontWeight: 700 }}>{fmt(row.F)}</span>}</div></div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", flex: 1 }}><div style={{ height: 18, background: `linear-gradient(270deg, ${P.m}, color-mix(in srgb, var(--male) 20%, transparent))`, borderRadius: "4px 0 0 4px", width: `${(row.M / maxBar) * 100}%`, minWidth: row.M > 0 ? 2 : 0, transition: "width .4s", display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 4 }}>{row.M > maxBar * .1 && <span style={{ fontSize: 8, color: "#fff", fontWeight: 700 }}>{fmt(row.M)}</span>}</div></div>
+                    <div style={{ flex: 1 }}><div style={{ height: 18, background: `linear-gradient(90deg, ${P.f}, color-mix(in srgb, var(--female) 20%, transparent))`, borderRadius: "0 4px 4px 0", width: `${(row.F / maxBar) * 100}%`, minWidth: row.F > 0 ? 2 : 0, transition: "width .4s", display: "flex", alignItems: "center", paddingLeft: 4 }}>{row.F > maxBar * .1 && <span style={{ fontSize: 8, color: "#fff", fontWeight: 700 }}>{fmt(row.F)}</span>}</div></div>
                   </div>
                 </div>
               ))}
@@ -1163,7 +1183,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 const pct = regionRank[0] ? (r.users / regionRank[0].users * 100) : 0;
                 return (
                   <div key={i} onClick={() => { if (!sidos.includes(r.name)) setSidos(prev => [...prev, r.name]); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,.05)", cursor: "pointer", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,.03)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <span style={{ width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, flexShrink: 0, background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "#fff" : P.sub }}>{i + 1}</span>
+                    <span style={{ width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, flexShrink: 0, background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "var(--card)" : P.sub }}>{i + 1}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span><span style={{ fontSize: 10, fontWeight: 700, color: P.accent, flexShrink: 0 }}>{fmt(r.users)}</span></div>
                       <div style={{ height: 3, background: "rgba(0,0,0,.04)", borderRadius: 2, overflow: "hidden" }}><div style={{ height: "100%", background: i < 3 ? P.accent : P.m, borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .65 }} /></div>
@@ -1254,10 +1274,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
             {/* OS별 광고 참여 */}
             <div style={{ background: P.card, borderRadius: 12, padding: 18, border: `1px solid ${P.border}` }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid #10b981", paddingBottom: 8 }}>📱 OS별 광고 참여</h3>
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: "2px solid var(--success)", paddingBottom: 8 }}>📱 OS별 광고 참여</h3>
               {(() => {
                 const totalUsers = adOs.reduce((s, o) => s + o.users, 0);
-                const colors: Record<string, string> = { Android: "#3DDC84", iOS: "#007AFF", "기타": "#94a3b8" };
+                const colors: Record<string, string> = { Android: "#3DDC84", iOS: "#007AFF", "기타": "var(--neutral)" };
                 return adOs.map((o, i) => {
                   const pct = totalUsers > 0 ? (o.users / totalUsers * 100) : 0;
                   const ctr = o.imps > 0 ? (o.clicks / o.imps * 100).toFixed(2) : "0";
@@ -1268,7 +1288,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                         <span style={{ fontSize: 11, color: P.sub }}>{pct.toFixed(1)}%</span>
                       </div>
                       <div style={{ height: 20, background: "rgba(0,0,0,.04)", borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ height: "100%", background: colors[o.os] || "#94a3b8", borderRadius: 4, width: `${pct}%`, transition: "width .4s" }} />
+                        <div style={{ height: "100%", background: colors[o.os] || "var(--neutral)", borderRadius: 4, width: `${pct}%`, transition: "width .4s" }} />
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
                         <span style={{ fontSize: 9, color: P.sub }}>{fmt(o.users)}명</span>
@@ -1351,7 +1371,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>시도: {sidos.length ? sidos.join(", ") : "전국"}</span>
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>성별: {sexes.length ? sexes.map(s => s === "M" ? "남성" : s === "F" ? "여성" : "알수없음").join(", ") : "전체"}</span>
               <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.border}` }}>연령: {ages.length ? ages.map(a => AGE_LABEL[a]).join(", ") : "전체"}</span>
-              {majorCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid ${P.accent}44`, color: P.accent, fontWeight: 600 }}>업종: {middleCats.length ? middleCats.join(", ") : majorCats.join(", ")}</span>}
+              {majorCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: P.bg, fontSize: 11, border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)`, color: P.accent, fontWeight: 600 }}>업종: {middleCats.length ? middleCats.join(", ") : majorCats.join(", ")}</span>}
               {shopCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#fef3c7", fontSize: 11, border: "1px solid #d9770644", color: "#92400e", fontWeight: 600 }}>🛒 쇼핑: {shopCats.join(", ")}</span>}
               {amountFilters.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#ede9fe", fontSize: 11, border: "1px solid #7c3aed44", color: "#5b21b6", fontWeight: 600 }}>💰 금액: {amountFilters.map(a => ({under_5k:"~5천","5k_10k":"5천~1만","10k_30k":"1~3만","30k_50k":"3~5만","50k_100k":"5~10만","100k_300k":"10~30만",over_300k:"30만~"} as Record<string,string>)[a] || a).join(", ")}</span>}
               {uploadSession && uploadInfo && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#dbeafe", fontSize: 11, border: "1px solid #3b82f644", color: "#1d4ed8", fontWeight: 600 }}>📤 ADID {fmt(uploadInfo.matched)}건 매칭</span>}
@@ -1360,7 +1380,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {mobileBrands.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>📱 단말: {mobileBrands.map(b => ({Apple:"애플",SAMSUNG:"삼성",LG:"LG",ZTE:"ZTE",XIAOMI:"샤오미"} as Record<string,string>)[b] || b).join(", ")}</span>}
               {audCats.length > 0 && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>🏷️ 소비: {audCats.join(", ")}</span>}
               {apprlValueC && tab === "card" && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#eef2ff", fontSize: 11, border: "1px solid #6366f144", color: "#3730a3", fontWeight: 600 }}>💳 {apprlMetric === "cnt" ? "승인횟수" : "승인금액"}({apprlPeriod}일) {apprlOper === "between" ? `${apprlValueC}~${apprlValue2C || apprlValueC}` : `${apprlOper} ${apprlValueC}`}</span>}
-              <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid ${P.accent}44` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
+              <span style={{ padding: "4px 10px", borderRadius: 6, background: P.glow, fontSize: 11, fontWeight: 700, color: P.accent, border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)` }}>예상 {segEstimate ? fmt(segEstimate.estimated_audience) : fmt(total)}명</span>
             </div>
             </>)}
             <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>그룹명 (세그먼트 이름)</div>
@@ -1373,15 +1393,15 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
             {!exportResult && !exporting && (
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => handleExport("dev")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: P.bg, color: P.f, border: `1px solid ${P.f}44` }}>🧪 개발 전송</button>
-                <button onClick={() => handleExport("prod")} disabled={exportSource === "audience"} title={exportSource === "audience" ? "AI 오디언스 상용 전송은 7/12 승자 확정 + PO 승인 후 활성화됩니다" : undefined} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exportSource === "audience" ? "not-allowed" : "pointer", opacity: exportSource === "audience" ? 0.45 : 1, background: "linear-gradient(135deg, #3b82f6, #0d9488)", color: "#fff", border: "none" }}>🚀 상용 전송</button>
+                <button onClick={() => handleExport("dev")} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: P.bg, color: P.f, border: `1px solid color-mix(in srgb, var(--female) 27%, transparent)` }}>🧪 개발 전송</button>
+                <button onClick={() => handleExport("prod")} disabled={exportSource === "audience"} title={exportSource === "audience" ? "AI 오디언스 상용 전송은 7/12 승자 확정 + PO 승인 후 활성화됩니다" : undefined} style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: exportSource === "audience" ? "not-allowed" : "pointer", opacity: exportSource === "audience" ? 0.45 : 1, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none" }}>🚀 상용 전송</button>
               </div>
             )}
             {exporting && <div style={{ textAlign: "center", padding: 20, fontSize: 13, color: P.accent }}>⏳ ADID 추출 → S3 업로드 → 런컴 API 전송 중...</div>}
             {exportResult && (
-              <div style={{ marginTop: 4, padding: 14, borderRadius: 8, fontSize: 12, background: exportResult.success ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${exportResult.success ? P.green : "#ef4444"}44` }}>
+              <div style={{ marginTop: 4, padding: 14, borderRadius: 8, fontSize: 12, background: exportResult.success ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${exportResult.success ? P.green : "var(--danger)"}44` }}>
                 {exportResult.success ? (<><div style={{ fontWeight: 700, color: P.green, marginBottom: 8 }}>✅ 전송 성공!</div><div>런컴 ID: <strong>{exportResult.data.runcomm_target_id}</strong></div><div>ADID 건수: <strong>{fmt(exportResult.data.ads_id_count)}</strong></div><div>환경: <strong>{exportResult.data.env}</strong></div><div style={{ color: P.sub, marginTop: 4 }}>소요: {exportResult.meta?.elapsed_ms}ms</div></>
-                ) : (<><div style={{ fontWeight: 700, color: "#ef4444", marginBottom: 4 }}>❌ 전송 실패</div><div style={{ color: P.sub }}>{exportResult.error}</div></>)}
+                ) : (<><div style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 4 }}>❌ 전송 실패</div><div style={{ color: P.sub }}>{exportResult.error}</div></>)}
                 <button onClick={() => setExportOpen(false)} style={{ marginTop: 12, width: "100%", padding: "8px", borderRadius: 8, fontSize: 12, background: P.bg, color: P.sub, border: `1px solid ${P.border}`, cursor: "pointer" }}>닫기</button>
               </div>
             )}

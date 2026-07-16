@@ -7,11 +7,11 @@ import {
 } from "recharts";
 
 const P = {
-  bg: "#f5f7fa", card: "#ffffff", border: "#e2e8f0",
-  text: "#1a202c", sub: "#718096",
-  accent: "#ec4899", glow: "rgba(236,72,153,0.08)",
-  m: "#3b82f6", f: "#f59e0b",
-  app: "#8b5cf6", appGlow: "rgba(139,92,246,0.08)",
+  bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
+  text: "var(--text)", sub: "var(--sub)",
+  accent: "var(--accent)", glow: "var(--accent-glow)",
+  m: "var(--male)", f: "var(--female)",
+  app: "var(--accent-2)", appGlow: "var(--accent-2-glow)",
 };
 
 const DOW_LABEL: Record<string, string> = {
@@ -91,7 +91,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
   const hourData = useMemo(() =>
     (d?.hour_dist ?? []).map((h: any) => ({
       name: `${h.hour}시`, cnt: Number(h.cnt),
-      fill: (h.hour >= 11 && h.hour <= 14) || (h.hour >= 19 && h.hour <= 21) ? P.accent : "#cbd5e0"
+      fill: (h.hour >= 11 && h.hour <= 14) || (h.hour >= 19 && h.hour <= 21) ? P.accent : "var(--border-strong)"
     })), [d]);
 
   const ageData = useMemo(() =>

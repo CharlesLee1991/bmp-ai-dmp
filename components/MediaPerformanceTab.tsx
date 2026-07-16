@@ -23,7 +23,7 @@ type AudienceAdRow = {
   aud_converters: number; conv_events: number; points: number;
 };
 
-const P = { bg: "#fff", border: "#e5e9f0", sub: "#7b8794", text: "#1f2933", accent: "#0967d2", good: "#0ca678" };
+const P = { bg: "var(--card)", border: "var(--border)", sub: "var(--sub)", text: "var(--text)", accent: "var(--accent)", good: "var(--success)" };
 
 const fmt = (n: number) => n >= 100000000 ? `${(n / 100000000).toFixed(1)}억` : n >= 10000 ? `${(n / 10000).toFixed(1)}만` : n.toLocaleString();
 const won = (n: number) => n >= 100000000 ? `${(n / 100000000).toFixed(2)}억원` : `${(n / 10000).toFixed(0)}만원`;
@@ -102,7 +102,7 @@ export default function MediaPerformanceTab() {
         <div style={{ fontSize: 15, fontWeight: 700, color: P.text }}>📊 매체별 광고 성과</div>
         <div style={{ display: "flex", gap: 6 }}>
           {[7, 30, 90].map(d => (
-            <button key={d} onClick={() => setDays(d)} style={{ padding: "4px 12px", fontSize: 12, borderRadius: 14, cursor: "pointer", border: `1px solid ${days === d ? P.accent : P.border}`, background: days === d ? P.accent : "#fff", color: days === d ? "#fff" : P.sub }}>{d}일</button>
+            <button key={d} onClick={() => setDays(d)} style={{ padding: "4px 12px", fontSize: 12, borderRadius: 14, cursor: "pointer", border: `1px solid ${days === d ? P.accent : P.border}`, background: days === d ? P.accent : "var(--card)", color: days === d ? "var(--card)" : P.sub }}>{d}일</button>
           ))}
         </div>
         <div style={{ fontSize: 11, color: P.sub }}>원천: touchAd 광고 일별통계 × 매체 마스터 (실시간 누적)</div>
@@ -112,7 +112,7 @@ export default function MediaPerformanceTab() {
           <span style={{ fontSize: 11, color: P.sub }}>시각화</span>
           <div style={{ display: "flex", border: `1px solid ${P.border}`, borderRadius: 16, overflow: "hidden" }}>
             {([["current", "현재"], ["clean", "정제 2D"], ["gl3d", "🧊 3D"], ["bizviz", "✦ BizViz"]] as const).map(([v, lab]) => (
-              <button key={v} onClick={() => setViz(v)} style={{ padding: "4px 12px", fontSize: 12, cursor: "pointer", border: "none", background: viz === v ? (v === "bizviz" ? "#101318" : P.accent) : "#fff", color: viz === v ? "#fff" : P.sub, fontWeight: viz === v ? 700 : 400 }}>{lab}</button>
+              <button key={v} onClick={() => setViz(v)} style={{ padding: "4px 12px", fontSize: 12, cursor: "pointer", border: "none", background: viz === v ? (v === "bizviz" ? "#101318" : P.accent) : "var(--card)", color: viz === v ? "var(--card)" : P.sub, fontWeight: viz === v ? 700 : 400 }}>{lab}</button>
             ))}
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function MediaPerformanceTab() {
       <div style={{ border: `1px solid ${P.border}`, borderRadius: 10, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
           <thead>
-            <tr style={{ background: "#f7f9fc", color: P.sub, textAlign: "right" }}>
+            <tr style={{ background: "var(--bg-elevated)", color: P.sub, textAlign: "right" }}>
               <th style={{ padding: "9px 14px", textAlign: "left" }}>매체</th>
               <th style={{ padding: "9px 14px", textAlign: "left", width: "22%" }}>노출 비중</th>
               <th style={{ padding: "9px 14px" }}>노출</th>
@@ -174,13 +174,13 @@ export default function MediaPerformanceTab() {
           <tbody>
             {rows.filter(r => r.impressions > 0).map(r => (
               <tr key={r.platform_idx} onClick={() => setSel(r.platform_idx)}
-                style={{ borderTop: `1px solid ${P.border}`, cursor: "pointer", background: sel === r.platform_idx ? "#eef5fd" : "#fff" }}>
+                style={{ borderTop: `1px solid ${P.border}`, cursor: "pointer", background: sel === r.platform_idx ? "#eef5fd" : "var(--card)" }}>
                 <td style={{ padding: "8px 14px", fontWeight: 600, color: P.text }}>
                   {r.platform_name}
                   {creativeIdx.has(r.platform_idx) && <span title="소재 반응 데이터 있음 — 클릭 시 우측 폐루프에 이 매체의 반응 소재 표시" style={{ marginLeft: 6, fontSize: 11 }}>🔁</span>}
                 </td>
                 <td style={{ padding: "8px 14px" }}>
-                  <div style={{ height: 8, background: "#eef1f5", borderRadius: 4 }}>
+                  <div style={{ height: 8, background: "var(--bg-elevated)", borderRadius: 4 }}>
                     <div style={{ height: 8, width: `${(r.impressions / maxImp) * 100}%`, background: P.good, borderRadius: 4 }} />
                   </div>
                 </td>
@@ -201,7 +201,7 @@ export default function MediaPerformanceTab() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: P.text }}>🔁 오디언스 반응 소재 (폐루프)</div>
           <select value={audSel} onChange={e => setAudSel(e.target.value)}
-            style={{ padding: "6px 10px", fontSize: 12.5, borderRadius: 8, border: `1px solid ${P.border}`, color: P.text, background: "#fff" }}>
+            style={{ padding: "6px 10px", fontSize: 12.5, borderRadius: 8, border: `1px solid ${P.border}`, color: P.text, background: "var(--card)" }}>
             <option value="">오디언스 선택…</option>
             {audiences.map(a => (
               <option key={a.table} value={a.table}>{a.table} ({a.rows.toLocaleString()}명)</option>
@@ -222,7 +222,7 @@ export default function MediaPerformanceTab() {
         {adRows.length > 0 && (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
-              <tr style={{ background: "#f7f9fc", color: P.sub, textAlign: "right" }}>
+              <tr style={{ background: "var(--bg-elevated)", color: P.sub, textAlign: "right" }}>
                 <th style={{ padding: "8px 12px", textAlign: "left" }}>광고 소재 · 매체</th>
                 <th style={{ padding: "8px 12px" }}>전환자</th>
               </tr>

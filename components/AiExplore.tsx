@@ -52,7 +52,7 @@ export default function AiExplore() {
     <div style={{ margin: "12px 28px 0", padding: 18, borderRadius: 12, background: "linear-gradient(135deg, #ecfeff, #e0f2fe)", border: "1px solid #0ea5e933" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#075985" }}>🧪 AI 오디언스 탐색 (SQL · 승인게이트)</div>
-        <div style={{ fontSize: 10, color: "#64748b" }}>피처스토어 533만 ADID · 승인 전 실행 없음</div>
+        <div style={{ fontSize: 10, color: "var(--sub)" }}>피처스토어 533만 ADID · 승인 전 실행 없음</div>
       </div>
       <div style={{ fontSize: 11, color: "#0369a1", marginBottom: 10, lineHeight: 1.6 }}>
         ① 원하는 타겟을 문장으로 입력 → ② AI가 SQL로 변환 (검토용 표시) → ③ <b>인원 조회</b>로 규모 확인(선택) → ④ <b>승인</b>을 눌러야만 오디언스가 실제 생성됩니다 (30일 보관 · 거절 시 아무 일도 일어나지 않음)
@@ -71,25 +71,25 @@ export default function AiExplore() {
       {r?.request_id && (
         <div style={{ marginTop: 14 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8, fontSize: 12 }}>
-            <span style={{ fontWeight: 700, color: statusColor[r.status] || "#334155" }}>상태: {r.status}</span>
-            {r.est_gb != null && <span style={{ color: "#64748b" }}>예상 스캔 {r.est_gb}GB</span>}
+            <span style={{ fontWeight: 700, color: statusColor[r.status] || "var(--text)" }}>상태: {r.status}</span>
+            {r.est_gb != null && <span style={{ color: "var(--sub)" }}>예상 스캔 {r.est_gb}GB</span>}
             {r.est_rows != null && <span style={{ color: "#0369a1", fontWeight: 700 }}>👥 예상 {Number(r.est_rows).toLocaleString()}명</span>}
             {r.result_table && <span style={{ color: "#047857", fontWeight: 600 }}>→ dmp_data.{r.result_table}</span>}
           </div>
-          <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "#0f172a", color: "#e2e8f0", fontSize: 11, overflowX: "auto", maxHeight: 180 }}>{r.generated_sql || "(SQL 없음)"}</pre>
+          <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "var(--text)", color: "var(--border)", fontSize: 11, overflowX: "auto", maxHeight: 180 }}>{r.generated_sql || "(SQL 없음)"}</pre>
           {r.status === "pending" && (
             <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
               <button disabled={acting} onClick={async () => {
                 setActing(true);
                 try { const d = await call({ action: "preview", request_id: r.request_id }); setR({ ...r, est_rows: d.est_rows }); }
                 catch (e: any) { setErr(e.message); } finally { setActing(false); }
-              }} style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#fff", color: "#0369a1", border: "1px solid #7dd3fc" }}>
+              }} style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "var(--card)", color: "#0369a1", border: "1px solid #7dd3fc" }}>
                 {acting ? "조회 중..." : "👥 인원 조회"}</button>
               <button disabled={acting} onClick={() => act("approve")}
                 style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#059669", color: "#fff", border: "none" }}>
                 {acting ? "실행 중..." : "✓ 승인 · 오디언스 생성"}</button>
               <button disabled={acting} onClick={() => act("reject")}
-                style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#fff", color: "#b91c1c", border: "1px solid #fca5a5" }}>✕ 거절</button>
+                style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "var(--card)", color: "#b91c1c", border: "1px solid #fca5a5" }}>✕ 거절</button>
             </div>
           )}
         </div>

@@ -17,9 +17,9 @@ export type MediaRow = {
 export type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
 
 // 앱 라이트 팔레트 정합 (MediaPerformanceTab P와 동일 계열)
-const P = { bg: "#fff", border: "#e5e9f0", sub: "#7b8794", text: "#1f2933", accent: "#0967d2", good: "#0ca678" };
+const P = { bg: "var(--card)", border: "var(--border)", sub: "var(--sub)", text: "var(--text)", accent: "var(--accent)", good: "var(--success)" };
 // 시리즈 컬러 (앱 톤 — 채도 낮은 실무 팔레트)
-const SERIES = ["#0967d2", "#0ca678", "#7b61ff", "#e8a838", "#e0567a", "#3aa0c4"];
+const SERIES = ["var(--accent)", "var(--success)", "#7b61ff", "#e8a838", "#e0567a", "#3aa0c4"];
 
 const fmt = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : n.toLocaleString();
 const won = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(2)}억원` : `${(n / 1e4).toFixed(0)}만원`;
@@ -32,7 +32,7 @@ const sub: React.CSSProperties = { color: P.sub, fontWeight: 400, fontSize: 11, 
 function TT({ active, payload, label, fmtVal }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: "#fff", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
+    <div style={{ background: "var(--card)", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
       {label != null && <div style={{ fontWeight: 700, color: P.text, marginBottom: 4 }}>{label}</div>}
       {payload.map((p: any, i: number) => (
         <div key={i} style={{ color: p.color || P.text }}>{p.name}: <b>{fmtVal ? fmtVal(p.value) : p.value.toLocaleString()}</b></div>
@@ -75,7 +75,7 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
               <ZAxis type="number" dataKey="z" range={[40, 800]} name="노출" />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} content={({ active, payload }: any) => {
                 if (!active || !payload?.length) return null; const d = payload[0].payload;
-                return <div style={{ background: "#fff", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
+                return <div style={{ background: "var(--card)", border: `1px solid ${P.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
                   <div style={{ fontWeight: 700, color: P.text }}>{d.name}</div>
                   <div style={{ color: P.sub }}>광고비 {won(d.x)} · 전환율 {d.y.toFixed(2)}% · 노출 {fmt(d.z)}</div>
                 </div>;

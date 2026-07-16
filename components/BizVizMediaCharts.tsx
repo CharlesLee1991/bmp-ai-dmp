@@ -22,7 +22,7 @@ export type DailyRow = { date: string; impressions: number; clicks: number; conv
 
 // ── §1 정본 팔레트 ──
 const C = { base: "#101318", surface: "#161A20", line: "#232935", grid: "#1A1F27",
-            ink: "#DEE4EC", dim: "#8B94A3", sky: "#4FBEFF" };
+            ink: "var(--border)", dim: "var(--sub)", sky: "#4FBEFF" };
 // 차트 시리즈 6-hue (인접 hue 연속 금지 순서: sky→teal→purple→blue→amber→red)
 const HUES = ["#4FBEFF", "#3BD6B4", "#9B8AF5", "#6B9EF2", "#F2C74B", "#F2685A"];
 
