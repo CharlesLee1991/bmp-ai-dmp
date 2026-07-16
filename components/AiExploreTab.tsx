@@ -151,7 +151,7 @@ export default function AiExploreTab() {
           <input value={text} onChange={e => setText(e.target.value)}
             placeholder="예: 뷰티 신제품 캠페인에 맞는 2030 여성 활동자..."
             onKeyDown={e => { if (e.key === "Enter" && text.trim() && !loading) create(); }}
-            style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13, outline: "none", background: "rgba(255,255,255,.85)" }} />
+            style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13, outline: "none", background: "var(--card)" }} />
           <button disabled={!text.trim() || loading} onClick={() => create()}
             style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: loading ? "wait" : "pointer", background: "#0284c7", color: "#fff", border: "none", opacity: (!text.trim() || loading) ? .5 : 1, whiteSpace: "nowrap" }}>
             {loading ? "SQL 생성 중..." : "SQL 생성"}

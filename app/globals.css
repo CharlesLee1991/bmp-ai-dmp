@@ -213,6 +213,15 @@ input:focus,
 textarea:focus { border-color: var(--accent) !important; outline: none; }
 button:hover { opacity: 0.9; }
 
+/* 입력 placeholder(예시/가이드 문구) — geocare 이식: 더 흐리게 + 이탤릭.
+   색은 컴포넌트 유지(opacity로만 흐리게). 한글은 브라우저 합성 oblique. */
+::placeholder,
+input::placeholder,
+textarea::placeholder {
+  font-style: italic !important;
+  opacity: 0.5 !important;
+}
+
 /* 표준 §11.3 프로스트글래스 헤더 유틸 */
 .dmp-frost {
   background: var(--chrome-blur);
