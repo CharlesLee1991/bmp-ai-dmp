@@ -79,21 +79,28 @@ import { P, badge, tooltipStyle, tooltipCursor, cardStyle, SERIES } from "@/lib/
 
 ---
 
-## 3. 테마 시스템 (`lib/ThemeContext.tsx`) — CL 표준 §0.1·§11.4
+## 3. 테마 시스템 (`lib/ThemeContext.tsx`) — geocare 2영역 독립 (§0.1·§11.4)
 
-- 모드: **light / dark / system** 3택. `<html>.dark` 토글 + localStorage `dmp-theme-v1`.
-- 플래시 방지: `app/layout.tsx` `<head>` 인라인 스크립트가 하이드레이션 전 테마 선반영.
-- `ThemeProvider` 로 앱 전체를 감싼다(layout). `useTheme()` 로 `{ mode, resolved, setMode }`.
-- **테마 토글 UI = `<ThemeMenu />`** — 우상단 단일 버튼 → 미니 팝업(라이트/다크/시스템 세그먼트). 모든 화면 동일 형태. (헤더·로그인에 마운트)
-- DMP는 사이드바 없는 상단탭 구조 → **단일 통합 테마**. (토큰은 `--chrome-*` 분리 보유로 2영역 확장 가능.)
+- **2영역 독립**: **사이드바** ↔ **콘텐츠**를 각각 light/dark/system 로 따로 토글. (geocare.ai 이식)
+  - 콘텐츠 = `<html>.dark` 토글(콘텐츠 토큰 + body 포털).
+  - 사이드바 = `<html>.sidebar-dark` / `.sidebar-light` 토글(`--sidebar-*` 만 교체, 콘텐츠와 독립).
+- 기본값 = **메뉴(다크) / 콘텐츠(라이트)**. 지속성: localStorage `dmp-theme-v1` = `{sidebar, content}`.
+- 초기값은 lazy(`useState(() => readStored())`, SSR 가드) — 마운트 시 persist 이펙트가 덮어쓰지 않도록. 테마는 `<html>` 클래스(이펙트)로만 적용 → 하이드레이션 불일치 없음.
+- 플래시 방지: `app/layout.tsx` `<head>` 인라인 스크립트가 하이드레이션 전 두 영역 클래스 선반영.
+- `useAppTheme()` → `{ sidebar, content, resolvedSidebar, resolvedContent, setRegion, setAll }`.
+- **테마 토글 UI = `<ThemeMenu />`** — 우상단 버튼 → 미니 팝업 **3구획(전체 일괄 / 메뉴(사이드바) / 콘텐츠)**, 각 구획에 동일한 라이트/다크/시스템 세그먼트. (상단바·로그인에 마운트)
+- **사이드바 토큰**(`--sidebar-bg/fg/fg-dim/accent/accent-fg/border/hover`) = `lib/theme.ts`의 `SB.*`. `.dark`(콘텐츠)는 `--sidebar-*`를 건드리지 않는다.
 
 ---
 
-## 4. 앱 셸 (헤더 · 탭바) — CL 표준 §11.3
+## 4. 앱 셸 — 좌측 사이드바 + 상단바 (geocare AppSidebar/AppLayout 이식)
 
-- **스티키 프로스트글래스 크롬**: 헤더+탭바를 `<div className="dmp-frost" style={{ position:"sticky", top:0, zIndex:60 }}>` 로 감싼다. `.dmp-frost` = `--chrome-blur` 배경 + `backdrop-filter: blur(12px)`.
-- 헤더: 로고(그라디언트 심볼) + 타이틀 · 우측에 LIVE 상태 pill → `<ThemeMenu />` → 사용자 · 로그아웃. 높이 `60px`, 하단 `border-b`.
-- 탭바: **lucide 아이콘 + 라벨**, active = accent 언더라인(`borderBottom 2px var(--accent)`) + accent 텍스트. 가로 스크롤 허용.
+레이아웃 = `flex`( **`<DmpSidebar>`**(좌) + **메인 컬럼**(우) ). `components/DmpSidebar.tsx`.
+- **사이드바**(`--sidebar-*` 독립 토큰): 로고 상단(h60) → 세로 메뉴(lucide 아이콘 + 라벨) → 하단 계정 푸터(아바타·이름·역할·로그아웃). **접힘(아이콘 전용) 토글** + localStorage `dmp-sidebar-collapsed`(펼침 232 / 접힘 62px).
+- **선택 하이라이트(geocare식)**: active = `background: var(--sidebar-accent)` 채움 + `color: var(--sidebar-accent-fg)` + `fontWeight 600` (좌측바 아님). hover = `var(--sidebar-hover)`.
+- 메뉴 SSOT = `TABS`(`DmpSidebar.tsx`), 역할 필터(admin/advertiser).
+- **상단바**(메인 컬럼 최상단, `.dmp-frost` sticky): 현재 메뉴명(`TAB_LABEL[tab]`) + LIVE 상태 pill + `<ThemeMenu />`. 높이 56px, 하단 border.
+- 필터패널·콘텐츠·모달은 메인 컬럼 안. 필터패널은 **접기/펼치기 토글(좌상단, 기본 펼침)** + 카드 탭 **2컬럼 그리드**(성별/연령·지역·업종·Actions = 전폭 span, 나머지 2열).
 
 ---
 
@@ -138,7 +145,8 @@ style={{ background:"var(--badge-danger-bg)", color:"var(--badge-danger-fg)" }}
 - 툴팁: `<Tooltip contentStyle={tooltipStyle} itemStyle={{ color: P.text }} />` — 배경 없는 `contentStyle` 금지(기본 흰색 → 다크 깨짐).
 - 축/틱: `stroke="var(--sub)"`, `tick={{ fill: P.sub }}`. 그리드: `<CartesianGrid stroke="var(--border)" />`. cursor: `tooltipCursor`(=accent-glow).
 - 데이터 색은 `SERIES` 배열 또는 시맨틱 토큰(`var(--male)` 등).
-- **차트 시리즈 색 배열**(`SERIES`/`COLORS`/`CHART_COLORS`/`HUES`, `<Cell fill>`)은 데이터 인코딩 → 다크에서도 유지(변환 금지).
+- **중후·안정 톤**(사용자 지시): 차트 시리즈 = `--series-1..6`(저채도 하모니, 라이트/다크 자동). `--male`/`--female` 도 뮤트(스틸블루/웜샌드). `lib/theme.ts`의 `SERIES` + 컴포넌트 `COLORS`/`CHART_COLORS`가 이를 참조.
+- 컴포넌트 로컬 색 배열(recharts)은 `var(--series-N)` 토큰 사용(SVG는 var() 해석 O). echarts(canvas)·`CARD_COLORS`(카드사 브랜드색)·BizViz `HUES`(정본)는 예외로 hex 유지.
 
 **echarts (3D)**: 축·툴팁·환경색을 `var(--card)`·`var(--border)`·`P.sub` 로 지정. visualMap 히트맵 스케일은 데이터 인코딩이라 하드코딩 유지.
 

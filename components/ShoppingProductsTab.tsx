@@ -17,7 +17,7 @@ const P = {
   glow: "var(--accent-glow)",
   up: "var(--success)", down: "var(--danger)", flat: "var(--neutral)"
 };
-const CHART_COLORS = ["var(--accent)", "var(--male)", "var(--female)", "var(--accent-2)", "var(--accent)", "var(--success)", "#f97316", "#06b6d4", "#84cc16", "#a855f7", "#e11d48", "#14b8a6"];
+const CHART_COLORS = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)", "var(--series-5)", "var(--series-6)", "var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)", "var(--series-5)", "var(--series-6)"];
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 function fmtAmt(n: number): string {

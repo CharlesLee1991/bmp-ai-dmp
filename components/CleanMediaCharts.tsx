@@ -19,7 +19,7 @@ export type DailyRow = { date: string; impressions: number; clicks: number; conv
 // 앱 라이트 팔레트 정합 (MediaPerformanceTab P와 동일 계열)
 const P = { bg: "var(--card)", border: "var(--border)", sub: "var(--sub)", text: "var(--text)", accent: "var(--accent)", good: "var(--success)" };
 // 시리즈 컬러 (앱 톤 — 채도 낮은 실무 팔레트)
-const SERIES = ["var(--accent)", "var(--success)", "#7b61ff", "#e8a838", "#e0567a", "#3aa0c4"];
+const SERIES = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)", "var(--series-5)", "var(--series-6)"];
 
 const fmt = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : n.toLocaleString();
 const won = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(2)}억원` : `${(n / 1e4).toFixed(0)}만원`;

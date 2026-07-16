@@ -16,7 +16,7 @@ const P = {
   glow: "var(--accent-glow)"
 };
 
-const COLORS = ["var(--accent)", "var(--male)", "var(--female)", "var(--accent-2)", "var(--accent)", "var(--success)", "#eab308", "#60a5fa", "#f43f5e", "#6366f1", "#14b8a6", "#d946ef", "#ca8a04"];
+const COLORS = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)", "var(--series-5)", "var(--series-6)", "var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)", "var(--series-5)", "var(--series-6)", "var(--series-1)"];
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 

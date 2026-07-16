@@ -25,19 +25,14 @@ import MembershipSegment from "./MembershipSegment";
 import type { DmpUser } from "@/lib/auth";
 import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
+import { DmpSidebar, TAB_LABEL, type TabId } from "./DmpSidebar";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
   RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
-  SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle, type LucideIcon,
+  SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
+  Filter, ChevronDown,
 } from "lucide-react";
-
-/* 탭 아이콘 SSOT (CL 표준 §9 — 이모지 대신 lucide 라인 아이콘) */
-const TAB_ICON: Record<string, LucideIcon> = {
-  card: CreditCard, subway: TrainFront, bus: Bus, membership: Ticket,
-  aiexplore: FlaskConical, exports: ClipboardList, media: BarChart3,
-  spending: TrendingUp, cards: Landmark, shopping: ShoppingCart,
-};
 
 const SEX_OPTIONS = [
   { id: "M", label: "남성" },
@@ -317,6 +312,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [aiResult, setAiResult] = useState<any>(null);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [aiExploreOpen, setAiExploreOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(true);   // 필터 접기/펼치기 (기본 펼침)
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
@@ -606,19 +602,22 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
   return (
-    <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text }}>
+    <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text, display: "flex" }}>
 
-      {/* ─── STICKY CHROME (헤더 + 탭바) · CL 표준 §11.3 프로스트글래스 도킹 ─── */}
-      <div className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 60 }}>
-      {/* HEADER */}
-      <header style={{ height: 60, padding: "0 28px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${P.border}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 11, background: "linear-gradient(135deg, var(--male), var(--accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#fff", boxShadow: P.shadowSoft }}>D</div>
-          <div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: "-0.03em", color: P.text }}>DMP Audience Explorer</h1>
-            <p style={{ fontSize: 10.5, color: P.sub, margin: 0 }}>BizSpring · 13큐브 · 16세그먼트 키 · 멀티셀렉트</p>
-          </div>
-        </div>
+      {/* ─── LEFT SIDEBAR (geocare AppSidebar 패턴 이식) ─── */}
+      <DmpSidebar
+        tab={tab as TabId}
+        onSelect={(id) => { if (id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(id); }}
+        user={user}
+        onLogout={onLogout}
+      />
+
+      {/* ─── MAIN COLUMN ─── */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+
+      {/* TOP BAR (프로스트글래스 · 현재 메뉴 + 상태 + 테마) · CL 표준 §11.3 */}
+      <header className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 50, height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", borderBottom: `1px solid ${P.border}` }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: P.text, letterSpacing: "-0.02em" }}>{TAB_LABEL[tab as TabId]}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {isLoading && <span style={{ fontSize: 10, color: P.f, fontWeight: 600 }}>Loading...</span>}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: P.sub, padding: "4px 10px", borderRadius: 999, background: P.bgElevated, border: `1px solid ${P.borderSoft}` }}>
@@ -626,54 +625,40 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             {isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "..."}
           </span>
           <ThemeMenu />
-          <span style={{ width: 1, height: 20, background: P.border }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-              background: isAdmin ? "linear-gradient(135deg, var(--male), var(--accent))" : P.border,
-              fontSize: 11, fontWeight: 700, color: isAdmin ? "#fff" : P.sub
-            }}>{user.display_name[0]}</div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: P.text }}>{user.display_name}</div>
-              <div style={{ fontSize: 9, color: P.sub }}>{isAdmin ? "관리자" : "광고주"}</div>
-            </div>
-            <button onClick={onLogout} style={{
-              marginLeft: 4, padding: "5px 11px", borderRadius: 8, fontSize: 10, cursor: "pointer",
-              background: "transparent", border: `1px solid ${P.border}`, color: P.sub
-            }}>로그아웃</button>
-          </div>
         </div>
       </header>
 
-      {/* TAB */}
-      <div style={{ padding: "0 20px", display: "flex", gap: 2, borderBottom: `1px solid ${P.border}`, background: P.chrome, overflowX: "auto" }}>
-        {([
-          { id: "card" as const, label: "카드", roles: ["admin", "advertiser"] },
-          { id: "subway" as const, label: "지하철", roles: ["admin", "advertiser"] },
-          { id: "bus" as const, label: "버스", roles: ["admin", "advertiser"] },
-          { id: "membership" as const, label: "멤버십", roles: ["admin", "advertiser"] },
-          { id: "aiexplore" as const, label: "AI 탐색", roles: ["admin", "advertiser"] },
-          { id: "exports" as const, label: "전송 이력", roles: ["admin", "advertiser"] },
-          { id: "media" as const, label: "매체 성과", roles: ["admin"] },
-          { id: "spending" as const, label: "소비 트렌드", roles: ["admin"] },
-          { id: "cards" as const, label: "카드사 비교", roles: ["admin"] },
-          { id: "shopping" as const, label: "쇼핑상품", roles: ["admin"] },
-        ]).filter(t => t.roles.includes(user.role)).map(t => {
-          const Icon = TAB_ICON[t.id]; const active = tab === t.id;
-          return (
-            <button key={t.id} onClick={() => { if (t.id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(t.id); }} style={{ padding: "11px 15px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: active ? 700 : 500, cursor: "pointer", border: "none", borderBottom: `2px solid ${active ? P.accent : "transparent"}`, background: "transparent", color: active ? P.accent : P.sub, whiteSpace: "nowrap", transition: "color .15s, border-color .15s" }}>
-              {Icon && <Icon size={15} strokeWidth={active ? 2.4 : 1.9} />}
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-      </div>{/* /sticky chrome */}
+      {/* ─── FILTER PANEL (접기/펼치기 · 2컬럼) ─── */}
+      <div style={{ borderBottom: `1px solid ${P.border}` }}>
+        {/* 좌상단 접기/펼치기 토글 — 기본 펼침 */}
+        <button
+          onClick={() => setFilterOpen(o => !o)}
+          title={filterOpen ? "필터 접기" : "필터 펼치기"}
+          style={{
+            display: "flex", alignItems: "center", gap: 8, width: "100%",
+            padding: "11px 28px", background: filterOpen ? P.bgElevated : "transparent",
+            border: "none", borderBottom: filterOpen ? `1px solid ${P.border}` : "none",
+            cursor: "pointer", textAlign: "left", color: P.text,
+          }}
+        >
+          <ChevronDown size={16} strokeWidth={2.4} style={{ color: P.accent, transform: filterOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .16s" }} />
+          <Filter size={14} strokeWidth={2} style={{ color: P.accent }} />
+          <span style={{ fontSize: 12.5, fontWeight: 700 }}>필터</span>
+          <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 500 }}>{filterOpen ? "펼침" : "접힘"}</span>
+          {filterParts.length > 0 && (
+            <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "var(--badge-teal-bg)", color: "var(--badge-teal-fg)" }}>
+              {filterParts.length}개 적용
+            </span>
+          )}
+          {!filterOpen && filterParts.length > 0 && (
+            <span style={{ marginLeft: 4, fontSize: 10, color: P.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 520 }}>· {filterParts.join(" · ")}</span>
+          )}
+        </button>
 
-      {/* ─── FILTER PANEL ─── */}
-      <div style={{ padding: "14px 28px", borderBottom: `1px solid ${P.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+        {filterOpen && (
+        <div style={{ padding: "14px 28px", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px 28px", alignItems: "start" }}>
         {/* 성별 + 연령 */}
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+        <div style={{ gridColumn: "1 / -1", display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>성별</span>
             {SEX_OPTIONS.map(o => <ToggleChip key={o.id} label={o.label} active={sexes.includes(o.id)} onClick={() => setSexes(sexes.includes(o.id) ? sexes.filter(x => x !== o.id) : [...sexes, o.id])} />)}
@@ -686,7 +671,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
 
         {/* 시도 · 시군구 · 읍면동 (안주현 요청 반영) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>지역</span>
           {sidos.map(s => <Tag key={s} label={sidoShort(s)} onRemove={() => { setSidos(sidos.filter(x => x !== s)); setSigoongus([]); setEupmds([]); }} />)}
           <DropdownMulti options={SIDO_LIST.map(s => ({ value: s, label: s }))} selected={sidos} onChange={v => { setSidos(v); if (v.length !== 1) { setSigoongus([]); setEupmds([]); } }} placeholder="시도 추가" />
@@ -720,7 +705,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
 
         {/* 업종 — 카드 탭 전용 */}
-        {tab === "card" && <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        {tab === "card" && <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: P.sub, fontWeight: 700, letterSpacing: ".06em", width: 32 }}>업종</span>
           {majorCats.map(c => <Tag key={c} label={c} onRemove={() => { setMajorCats(majorCats.filter(x => x !== c)); const mids = categories.find(cat => cat.major === c)?.middles.map(m => m.middle) || []; setMiddleCats(middleCats.filter(x => !mids.includes(x))); setSubCats([]); }} />)}
           {middleCats.map(c => <Tag key={`m-${c}`} label={`↳ ${c}`} onRemove={() => { setMiddleCats(middleCats.filter(x => x !== c)); setSubCats([]); }} />)}
@@ -955,7 +940,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {anyFilter && <button onClick={reset} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)`, borderRadius: 16, padding: "4px 14px", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</button>}
             {filterParts.length > 0 && <span style={{ fontSize: 10, color: P.sub }}>{filterParts.join(" · ")}</span>}
@@ -969,6 +954,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             </div>
           )}
         </div>
+        </div>
+        )}
       </div>
 
       {aiExploreOpen && tab === "card" && <AiExplore />}
@@ -1413,6 +1400,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       <footer style={{ textAlign: "center", padding: "14px 0 20px", fontSize: 10, color: "rgba(107,122,153,.5)", borderTop: `1px solid ${P.border}` }}>
         {isLive ? `LIVE · Supabase RPC ${responseMs}ms` : "Static Fallback"} · BizSpring DMP · 13큐브 · 15키
       </footer>
+      </div>{/* /main column */}
     </div>
   );
 }

@@ -44,9 +44,18 @@
   --danger-fg:     #ffffff;
   --warning:       #f59e0b;
   --neutral:       #94a3b8;
-  --male:          #3b82f6;   /* 남성 */
-  --female:        #f59e0b;   /* 여성 */
-  --unknown:       #a0aec0;
+  /* 데이터 인코딩 — 중후·안정 톤(채도 낮춘 뮤트) */
+  --male:          #4f6d9e;   /* 남성 (뮤트 스틸블루) */
+  --female:        #b08a54;   /* 여성 (뮤트 웜샌드) */
+  --unknown:       #9aa4b2;
+
+  /* 차트 시리즈 — 중후하고 안정된 6색(저채도·중명도 하모니) */
+  --series-1:      #3d6b8a;   /* 딥 스틸블루 */
+  --series-2:      #5f8a70;   /* 뮤트 세이지 */
+  --series-3:      #9c7a4a;   /* 뮤트 오커 */
+  --series-4:      #8a5f78;   /* 더스티 플럼 */
+  --series-5:      #4e8388;   /* 뮤트 틸 */
+  --series-6:      #6d6f96;   /* 뮤트 인디고그레이 */
 
   /* 칩(필터 선택) — 표준 §0 chip 토큰 */
   --chip:          #e4f0ff;
@@ -72,8 +81,38 @@
   --shadow-lg:     0 12px 34px rgba(16,24,40,0.14);
   --scrollbar:     #cbd5e1;
 
+  /* ── 사이드바 독립 테마 토큰 (기본=다크, geocare §0.1 이식) ──
+     콘텐츠(.dark)와 무관하게 .sidebar-light / .sidebar-dark 로만 전환된다. */
+  --sidebar-bg:        hsl(222 18% 16%);
+  --sidebar-fg:        hsl(210 16% 84%);
+  --sidebar-fg-dim:    hsl(210 16% 84% / 0.55);
+  --sidebar-accent:    hsl(222 16% 24%);
+  --sidebar-accent-fg: hsl(180 40% 74%);
+  --sidebar-border:    hsl(222 14% 26%);
+  --sidebar-hover:     hsl(222 16% 23% / 0.55);
+
   --radius:        10px;
   color-scheme: light;
+}
+
+/* ══════════════════ 사이드바 독립 테마 (콘텐츠와 별도 토글) ══════════════════ */
+.sidebar-light {
+  --sidebar-bg:        #ffffff;
+  --sidebar-fg:        #33415c;
+  --sidebar-fg-dim:    rgba(51,65,92,0.5);
+  --sidebar-accent:    #e7eef7;
+  --sidebar-accent-fg: #0f766e;
+  --sidebar-border:    #e4e8ef;
+  --sidebar-hover:     rgba(231,238,247,0.65);
+}
+.sidebar-dark {
+  --sidebar-bg:        hsl(222 18% 16%);
+  --sidebar-fg:        hsl(210 16% 84%);
+  --sidebar-fg-dim:    hsl(210 16% 84% / 0.55);
+  --sidebar-accent:    hsl(222 16% 24%);
+  --sidebar-accent-fg: hsl(180 40% 74%);
+  --sidebar-border:    hsl(222 14% 26%);
+  --sidebar-hover:     hsl(222 16% 23% / 0.55);
 }
 
 /* ══════════════════ 다크 테마 (표준 §0.1 elevation) ══════════════════ */
@@ -110,9 +149,18 @@
   --danger-fg:     #1a0b0b;
   --warning:       #fbbf24;
   --neutral:       #64748b;
-  --male:          #60a5fa;
-  --female:        #fbbf24;
-  --unknown:       #64748b;
+  /* 데이터 인코딩 — 다크에선 살짝 밝게(중후 톤 유지) */
+  --male:          #7fa0d0;
+  --female:        #d8b483;
+  --unknown:       #7a8598;
+
+  /* 차트 시리즈 (다크 — 중후 톤, 대비 확보 위해 소폭 명도↑) */
+  --series-1:      #6b9ec4;
+  --series-2:      #86b995;
+  --series-3:      #cba770;
+  --series-4:      #bd8fac;
+  --series-5:      #7dc0c4;
+  --series-6:      #a29ec9;
 
   --chip:          rgba(45,212,191,0.16);
   --chip-fg:       #7ee7d8;
