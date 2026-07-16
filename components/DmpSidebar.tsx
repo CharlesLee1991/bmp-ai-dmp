@@ -42,23 +42,14 @@ const COLLAPSED = 62;
 const STORAGE_KEY = "dmp-sidebar-collapsed";
 
 export function DmpSidebar({
-  tab, onSelect, user, onLogout,
+  tab, onSelect, user, onLogout, collapsed,
 }: {
   tab: TabId;
   onSelect: (id: TabId) => void;
   user: DmpUser;
   onLogout: () => void;
+  collapsed: boolean;   // 상단바 토글이 제어(controlled)
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-  useEffect(() => {
-    try { setCollapsed(localStorage.getItem(STORAGE_KEY) === "1"); } catch {}
-  }, []);
-  const toggle = () => setCollapsed(c => {
-    const n = !c;
-    try { localStorage.setItem(STORAGE_KEY, n ? "1" : "0"); } catch {}
-    return n;
-  });
-
   const isAdmin = user.role === "admin";
   const items = TABS.filter(t => t.roles.includes(user.role));
   const w = collapsed ? COLLAPSED : EXPANDED;
@@ -95,29 +86,6 @@ export function DmpSidebar({
           )}
         </div>
       </div>
-
-      {/* 접기/펼치기 — 로고 우측에 튀어나온 switch pill (슬라이딩 노브) */}
-      <button
-        onClick={toggle}
-        title={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
-        aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
-        style={{
-          position: "absolute", top: 19, right: -17, zIndex: 46,
-          width: 44, height: 22, padding: 0, borderRadius: 999, cursor: "pointer",
-          background: collapsed ? SB.accent : "var(--accent)",
-          border: `1px solid ${collapsed ? SB.border : "var(--accent-strong)"}`,
-          boxShadow: P.shadowMd, transition: "background .16s",
-        }}
-      >
-        <span style={{
-          position: "absolute", top: 2, left: collapsed ? 2 : 23, width: 16, height: 16,
-          borderRadius: "50%", background: "#fff", boxShadow: P.shadowSoft,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: collapsed ? SB.fgDim : "var(--accent)", transition: "left .16s",
-        }}>
-          {collapsed ? <ChevronRight size={11} strokeWidth={2.6} /> : <ChevronLeft size={11} strokeWidth={2.6} />}
-        </span>
-      </button>
 
       {/* ── 메뉴 ── */}
       <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: collapsed ? "6px 8px" : "8px 10px", display: "flex", flexDirection: "column", gap: 3 }}>

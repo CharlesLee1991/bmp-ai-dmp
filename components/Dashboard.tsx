@@ -31,7 +31,7 @@ import {
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
   RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
   SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
-  Filter, ChevronDown, ChevronRight,
+  Filter, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 
 const SYSTEM_NAME = "런컴";   // 고객(시스템명) — 브레드크럼 중간 세그먼트
@@ -316,6 +316,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [aiExploreOpen, setAiExploreOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(true);   // 필터 접기/펼치기 (기본 펼침)
   const [bcOpen, setBcOpen] = useState(false);           // 브레드크럼 메뉴 드롭다운
+  const [sbCollapsed, setSbCollapsed] = useState(false); // 사이드바 접힘 (상단바 토글이 제어)
+  useEffect(() => { try { setSbCollapsed(localStorage.getItem("dmp-sidebar-collapsed") === "1"); } catch {} }, []);
+  const toggleSidebar = () => setSbCollapsed(c => { const n = !c; try { localStorage.setItem("dmp-sidebar-collapsed", n ? "1" : "0"); } catch {} return n; });
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
@@ -621,6 +624,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         onSelect={(id) => { if (id !== "card") { setMajorCats([]); setMiddleCats([]); setSubCats([]); } setTab(id); }}
         user={user}
         onLogout={onLogout}
+        collapsed={sbCollapsed}
       />
 
       {/* ─── MAIN COLUMN ─── */}
@@ -628,8 +632,22 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {/* TOP BAR — 브레드크럼(DMP Explorer > 고객 > 아이콘+메뉴명+드롭다운) · 하단 그림자 (geocare §11.3) */}
       <header className="dmp-frost" style={{ position: "sticky", top: 0, zIndex: 50, height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", borderBottom: `1px solid ${P.border}`, boxShadow: P.shadowMd }}>
-        {/* 브레드크럼 */}
+        {/* 사이드바 접기/펼치기 (geocare식 상단바 좌측 트리거) + 브레드크럼 */}
         <nav style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: P.sub, minWidth: 0 }}>
+          <button
+            onClick={toggleSidebar}
+            title={sbCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
+            aria-label={sbCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              width: 30, height: 30, borderRadius: 8, marginRight: 6, cursor: "pointer",
+              background: "transparent", border: `1px solid ${P.border}`, color: P.sub, flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = P.bgElevated; e.currentTarget.style.color = P.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = P.sub; }}
+          >
+            {sbCollapsed ? <PanelLeftOpen size={16} strokeWidth={2} /> : <PanelLeftClose size={16} strokeWidth={2} />}
+          </button>
           <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>DMP Explorer</span>
           <ChevronRight size={13} strokeWidth={2} style={{ opacity: .45, flexShrink: 0 }} />
           <span style={{ whiteSpace: "nowrap" }}>{SYSTEM_NAME}</span>
