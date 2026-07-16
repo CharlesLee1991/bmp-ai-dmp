@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@radix-ui/react-tooltip": "^1.2.12",
     "@supabase/ssr": "^0.5",
     "@supabase/supabase-js": "^2",
     "echarts": "^6.1.0",

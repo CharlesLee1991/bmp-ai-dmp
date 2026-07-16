@@ -7,20 +7,21 @@
    - 접힘(아이콘 전용) 토글 · localStorage "dmp-sidebar-collapsed".
    ══════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { P, SB } from "@/lib/theme";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
-  BarChart3, TrendingUp, Landmark, ShoppingCart,
+  BarChart3, TrendingUp, Landmark, ShoppingCart, Settings2,
   ChevronLeft, ChevronRight, LogOut, type LucideIcon,
 } from "lucide-react";
 import type { DmpUser } from "@/lib/auth";
 
 export type TabId =
   | "card" | "subway" | "bus" | "membership" | "aiexplore"
-  | "exports" | "media" | "spending" | "cards" | "shopping";
+  | "exports" | "media" | "spending" | "cards" | "shopping"
+  | "sysmap";
 
-export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[] }[] = [
+export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]; group?: string }[] = [
   { id: "card", label: "카드", icon: CreditCard, roles: ["admin", "advertiser"] },
   { id: "subway", label: "지하철", icon: TrainFront, roles: ["admin", "advertiser"] },
   { id: "bus", label: "버스", icon: Bus, roles: ["admin", "advertiser"] },
@@ -31,7 +32,10 @@ export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]
   { id: "spending", label: "소비 트렌드", icon: TrendingUp, roles: ["admin"] },
   { id: "cards", label: "카드사 비교", icon: Landmark, roles: ["admin"] },
   { id: "shopping", label: "쇼핑상품", icon: ShoppingCart, roles: ["admin"] },
+  { id: "sysmap", label: "분류 맵핑 관리", icon: Settings2, roles: ["admin"], group: "시스템관리" },
 ];
+
+const DEFAULT_GROUP = "메뉴";
 
 export const TAB_LABEL: Record<TabId, string> = TABS.reduce(
   (a, t) => ((a[t.id] = t.label), a), {} as Record<TabId, string>,
@@ -61,6 +65,17 @@ export function DmpSidebar({
 
   const isAdmin = user.role === "admin";
   const items = TABS.filter(t => t.roles.includes(user.role));
+  // 그룹 순서 유지하며 묶기 (group 미지정 = "메뉴")
+  const groups = useMemo(() => {
+    const order: string[] = [];
+    const byGroup: Record<string, typeof items> = {};
+    for (const it of items) {
+      const g = it.group || DEFAULT_GROUP;
+      if (!byGroup[g]) { byGroup[g] = []; order.push(g); }
+      byGroup[g].push(it);
+    }
+    return order.map(group => ({ group, list: byGroup[group] }));
+  }, [items]);
   const w = collapsed ? COLLAPSED : EXPANDED;
 
   return (
@@ -119,36 +134,42 @@ export function DmpSidebar({
         </span>
       </button>
 
-      {/* ── 메뉴 ── */}
+      {/* ── 메뉴 (그룹별) ── */}
       <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: collapsed ? "6px 8px" : "8px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
-        {!collapsed && (
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: SB.fgDim, letterSpacing: ".08em", padding: "6px 8px 4px" }}>메뉴</div>
-        )}
-        {items.map(({ id, label, icon: Icon }) => {
-          const active = tab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => onSelect(id)}
-              title={collapsed ? label : undefined}
-              style={{
-                display: "flex", alignItems: "center", gap: 11,
-                justifyContent: collapsed ? "center" : "flex-start",
-                width: "100%", padding: collapsed ? "9px 0" : "8px 11px",
-                borderRadius: 9, cursor: "pointer", border: "none", textAlign: "left",
-                fontSize: 13, fontWeight: active ? 600 : 500, whiteSpace: "nowrap",
-                background: active ? SB.accent : "transparent",
-                color: active ? SB.accentFg : SB.fg,
-                transition: "background .13s, color .13s",
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = SB.hover; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
-            >
-              <Icon size={17} strokeWidth={active ? 2.3 : 1.9} style={{ flexShrink: 0 }} />
-              {!collapsed && label}
-            </button>
-          );
-        })}
+        {groups.map(({ group, list }, gi) => (
+          <div key={group} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {!collapsed ? (
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: SB.fgDim, letterSpacing: ".08em", padding: gi === 0 ? "6px 8px 4px" : "12px 8px 4px" }}>{group}</div>
+            ) : gi > 0 ? (
+              <div style={{ height: 1, background: SB.border, margin: "7px 6px" }} />
+            ) : null}
+            {list.map(({ id, label, icon: Icon }) => {
+              const active = tab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => onSelect(id)}
+                  title={collapsed ? label : undefined}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 11,
+                    justifyContent: collapsed ? "center" : "flex-start",
+                    width: "100%", padding: collapsed ? "9px 0" : "8px 11px",
+                    borderRadius: 9, cursor: "pointer", border: "none", textAlign: "left",
+                    fontSize: 13, fontWeight: active ? 600 : 500, whiteSpace: "nowrap",
+                    background: active ? SB.accent : "transparent",
+                    color: active ? SB.accentFg : SB.fg,
+                    transition: "background .13s, color .13s",
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = SB.hover; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <Icon size={17} strokeWidth={active ? 2.3 : 1.9} style={{ flexShrink: 0 }} />
+                  {!collapsed && label}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* ── 계정 푸터 ── */}
