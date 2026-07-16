@@ -390,6 +390,21 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   );
   const subOptions: { subcategory: string; sub_code: number }[] = subData?.success ? subData.data : [];
 
+  // 업종코드 → DB 정본 라벨(de_dmp_category_code) 전체 맵. 하드코딩(PARTNER_MAP=강제지정분류) 라벨의
+  // 툴팁에서 "DB상 라벨"을 함께 노출해 비교하기 위한 용도. 전체 소분류 1회 조회 후 캐시.
+  const { data: allSubData } = useSWR(
+    "/api/segment-options/subcategory",
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 600000 }
+  );
+  const dbLabelMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    if (allSubData?.success) {
+      for (const r of allSubData.data as { subcategory: string; sub_code: number }[]) m[String(r.sub_code)] = r.subcategory;
+    }
+    return m;
+  }, [allSubData]);
+
   /* dashboard API */
   function buildUrl() {
     const p = new URLSearchParams();
@@ -1160,10 +1175,17 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px", borderBottom: `2px solid ${P.accent}`, paddingBottom: 8 }}><Package size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />업종 소분류 TOP 12</h3>
             {industryData.map((it, i) => {
               const w = industryData[0] ? it.users / industryData[0].users * 100 : 0;
-              const name = PARTNER_MAP[it.code] || it.code;
+              const forced = PARTNER_MAP[it.code];        // 강제지정분류(하드코딩) 라벨
+              const dbLabel = dbLabelMap[it.code];         // DB 정본(de_dmp_category_code) 라벨
+              const isForced = !!forced;                   // 하드코딩 맵에서 온 라벨인가
+              const name = forced || dbLabel || it.code;   // 필터 클릭 기준값(* 미포함)
+              const display = isForced ? `${name}*` : name; // 강제지정분류는 라벨 뒤 * 표기
+              const title = isForced
+                ? `강제지정분류\n코드번호: ${it.code}\nDB상 라벨: ${dbLabel || "—"}\n강제 라벨: ${forced}`
+                : `코드번호: ${it.code}\nDB상 라벨: ${dbLabel || "—"}`;
               return (
-                <div key={i} onClick={() => { if (!middleCats.includes(name) && !majorCats.includes(name)) { setMiddleCats(prev => [...prev, name]); }}} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer", borderRadius: 4, padding: "1px 0", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                  <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                <div key={i} title={title} onClick={() => { if (!middleCats.includes(name) && !majorCats.includes(name)) { setMiddleCats(prev => [...prev, name]); }}} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer", borderRadius: 4, padding: "1px 0", transition: "background .15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <span style={{ fontSize: 10, color: P.sub, width: 76, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{display}</span>
                   <div style={{ flex: 1, height: 20, background: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 4, width: `${w}%`, background: `linear-gradient(90deg, color-mix(in srgb, var(--accent) 53%, transparent), color-mix(in srgb, var(--accent) 7%, transparent))`, transition: "width .5s" }} />
                   </div>
