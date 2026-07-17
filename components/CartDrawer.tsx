@@ -14,8 +14,9 @@ import { fmt } from "@/lib/data";
 import { Tip } from "./Tip";
 import {
   useCart, removeFromCart, clearCart, saveBundle, deleteBundle, loadBundle, markSubmitted,
-  type CartItem,
+  allLabels, allTags, type CartItem,
 } from "@/lib/cart";
+import { BundleMetaFields, LabelChip, TagChips, type MetaValue } from "./BundleMetaFields";
 import {
   ShoppingCart, X, Trash2, Rocket, FlaskConical, Save, FolderOpen,
   SlidersHorizontal, UserRound, AlertTriangle, PackageOpen,
@@ -43,19 +44,22 @@ type SubmitState = { phase: "form" | "sending" | "done"; env?: "dev" | "prod"; p
 export default function CartDrawer({ open, onClose, userId }: { open: boolean; onClose: () => void; userId?: number }) {
   const { cart, saved } = useCart(userId);
   const [name, setName] = useState("");
+  const [meta, setMeta] = useState<MetaValue>({ label: "", tags: [], memo: "" });
+  const [metaOpen, setMetaOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sub, setSub] = useState<SubmitState>({ phase: "form" });
   const [saveMsg, setSaveMsg] = useState("");
 
   const sumMax = cart.reduce((a, i) => a + (i.estimated || 0), 0);
   const savedBundles = saved.filter(r => r.status === "saved");
+  const bundleMeta = () => ({ label: meta.label, tags: meta.tags, memo: meta.memo });
 
   const doSave = async () => {
     const n = name.trim();
     if (!n || !cart.length) return;
-    const ok = await saveBundle(n);
+    const ok = await saveBundle(n, bundleMeta());
     setSaveMsg(ok ? `"${n}" 저장됨` : "저장 실패 — 다시 시도해주세요");
-    if (ok) setName("");
+    if (ok) { setName(""); setMeta({ label: "", tags: [], memo: "" }); setMetaOpen(false); }
     setTimeout(() => setSaveMsg(""), 2500);
   };
 
@@ -98,7 +102,7 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
       }
       setSub({ phase: "sending", env, progress: i + 1, total: items.length, results: [...results] });
     }
-    if (results.some(r => r.ok)) await markSubmitted(n, items);
+    if (results.some(r => r.ok)) { await markSubmitted(n, items, bundleMeta()); setMeta({ label: "", tags: [], memo: "" }); setName(""); setMetaOpen(false); }
     setSub({ phase: "done", env, results, total: items.length, progress: items.length });
   };
 
@@ -207,6 +211,23 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
           <div style={{ fontSize: 10, color: P.sub2, marginBottom: 10 }}>중복 제거(1묶음=1타겟) 통합 송출은 EF v21에서 지원 예정 — 현재는 조각별 개별 타겟으로 송출됩니다.</div>
           <input value={name} onChange={e => setName(e.target.value)} placeholder="묶음 이름 (런컴 세그먼트명)"
             style={{ width: "100%", padding: "8px 11px", fontSize: 12.5, borderRadius: 8, border: `1px solid ${P.border}`, background: P.card, color: P.text, outline: "none", marginBottom: 8 }} />
+
+          {/* 분류 라벨 · 태그 · 메모 (접이식) */}
+          <button onClick={() => setMetaOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "5px 2px", background: "none", border: "none", cursor: "pointer", color: P.sub, fontSize: 11, fontWeight: 700, marginBottom: metaOpen ? 8 : 4 }}>
+            <span style={{ transform: metaOpen ? "rotate(90deg)" : "none", transition: "transform .13s" }}>›</span>
+            분류 라벨 · 태그 · 메모
+            {!metaOpen && (meta.label || meta.tags.length > 0) && (
+              <span style={{ marginLeft: 4, display: "inline-flex", gap: 4, alignItems: "center" }}>
+                <LabelChip label={meta.label} /><TagChips tags={meta.tags.slice(0, 3)} />
+              </span>
+            )}
+          </button>
+          {metaOpen && (
+            <div style={{ marginBottom: 10 }}>
+              <BundleMetaFields value={meta} onChange={setMeta} labelSuggestions={allLabels()} tagSuggestions={allTags()} compact />
+            </div>
+          )}
+
           {saveMsg && <div style={{ fontSize: 11, color: P.accent, marginBottom: 6 }}>{saveMsg}</div>}
           <div style={{ display: "flex", gap: 8 }}>
             <button disabled={!name.trim() || !cart.length} onClick={doSave}

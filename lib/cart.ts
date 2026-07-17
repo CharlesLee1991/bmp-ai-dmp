@@ -24,12 +24,31 @@ export interface CartItem {
   addedAt: string;
 }
 
-export interface CartRow {
+export interface BundleMeta {
+  label?: string | null;   // 분류 라벨 (그룹핑 기준)
+  tags?: string[];         // 속성 태그 (≤10, 필터 기준)
+  memo?: string | null;    // 메모
+}
+
+export interface CartRow extends BundleMeta {
   id: string;
   name: string | null;
   status: "cart" | "saved" | "submitted";
   items: CartItem[];
   updated_at?: string;
+}
+
+export const MAX_TAGS = 10;
+/* 태그 정규화: 공백 trim · 빈값/중복 제거 · 최대 10개 · 각 20자 */
+export function normalizeTags(tags: string[] | undefined): string[] {
+  if (!Array.isArray(tags)) return [];
+  const out: string[] = [];
+  for (const t of tags) {
+    const v = String(t).trim().slice(0, 20);
+    if (v && !out.includes(v)) out.push(v);
+    if (out.length >= MAX_TAGS) break;
+  }
+  return out;
 }
 
 interface CartState {
@@ -100,9 +119,12 @@ export function clearCart() {
 }
 
 /* 묶음 저장 — 활성 카트 사본을 saved 행으로 (카트는 유지) */
-export async function saveBundle(name: string): Promise<boolean> {
+export async function saveBundle(name: string, meta: BundleMeta = {}): Promise<boolean> {
   if (!S.cart.length) return false;
-  const row: CartRow = { id: "ct_" + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 80), status: "saved", items: S.cart };
+  const row: CartRow = {
+    id: "ct_" + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 80), status: "saved", items: S.cart,
+    label: meta.label?.trim().slice(0, 40) || null, tags: normalizeTags(meta.tags), memo: meta.memo?.slice(0, 500) || null,
+  };
   S.saved = [row, ...S.saved];
   emit();
   try {
@@ -114,8 +136,11 @@ export async function saveBundle(name: string): Promise<boolean> {
 }
 
 /* 송출 완료 기록 — submitted 행 생성 + 활성 카트 비움 */
-export async function markSubmitted(name: string, items: CartItem[]) {
-  const row: CartRow = { id: "ct_" + Math.random().toString(36).slice(2, 9), name, status: "submitted", items };
+export async function markSubmitted(name: string, items: CartItem[], meta: BundleMeta = {}) {
+  const row: CartRow = {
+    id: "ct_" + Math.random().toString(36).slice(2, 9), name, status: "submitted", items,
+    label: meta.label?.trim().slice(0, 40) || null, tags: normalizeTags(meta.tags), memo: meta.memo?.slice(0, 500) || null,
+  };
   S.saved = [row, ...S.saved];
   clearCart();
   try {
@@ -123,6 +148,33 @@ export async function markSubmitted(name: string, items: CartItem[]) {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row),
     });
   } catch {}
+}
+
+/* 메타(라벨·태그·메모) 수정 — 저장/송출 묶음 편집 */
+export async function updateBundleMeta(id: string, meta: BundleMeta & { name?: string }) {
+  const row = S.saved.find(r => r.id === id);
+  if (!row) return;
+  if (meta.name !== undefined) row.name = meta.name.trim().slice(0, 80) || row.name;
+  if (meta.label !== undefined) row.label = meta.label?.trim().slice(0, 40) || null;
+  if (meta.tags !== undefined) row.tags = normalizeTags(meta.tags);
+  if (meta.memo !== undefined) row.memo = meta.memo?.slice(0, 500) || null;
+  S.saved = [...S.saved];
+  emit();
+  try {
+    await fetch("/api/carts", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row),
+    });
+  } catch {}
+}
+
+/* 저장된 모든 라벨(그룹핑 자동완성용) */
+export function allLabels(): string[] {
+  return Array.from(new Set(S.saved.map(r => r.label).filter(Boolean) as string[])).sort();
+}
+export function allTags(): string[] {
+  const s = new Set<string>();
+  S.saved.forEach(r => (r.tags || []).forEach(t => s.add(t)));
+  return Array.from(s).sort();
 }
 
 export async function deleteBundle(id: string) {

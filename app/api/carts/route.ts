@@ -46,6 +46,10 @@ export async function POST(req: NextRequest) {
     if (!c?.id || typeof c.id !== "string") {
       return NextResponse.json({ success: false, error: "id required" }, { status: 400 });
     }
+    // 태그 정규화 — 최대 10개, 각 20자, 중복/빈값 제거
+    const tags = Array.isArray(c.tags)
+      ? Array.from(new Set(c.tags.map((t: any) => String(t).trim().slice(0, 20)).filter(Boolean))).slice(0, 10)
+      : [];
     const row = {
       id: c.id,
       user_id: user.id,
@@ -53,6 +57,9 @@ export async function POST(req: NextRequest) {
       status: ["cart", "saved", "submitted"].includes(c.status) ? c.status : "cart",
       items: Array.isArray(c.items) ? c.items.slice(0, 20) : [],
       combine: "union",
+      label: c.label ? String(c.label).slice(0, 40) : null,
+      tags,
+      memo: c.memo ? String(c.memo).slice(0, 500) : null,
       updated_at: new Date().toISOString(),
     };
     const res = await fetch(

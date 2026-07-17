@@ -24,6 +24,7 @@ import TransitSegment from "./TransitSegment";
 import MembershipSegment from "./MembershipSegment";
 import SystemMappingTab from "./SystemMappingTab";
 import CartDrawer, { CartButton } from "./CartDrawer";
+import TargetAudienceTab from "./TargetAudienceTab";
 import { addToCart } from "@/lib/cart";
 import { Tip, ForcedLabelTipBody } from "./Tip";
 import { useOverrides } from "@/lib/labelOverrides";
@@ -1569,6 +1570,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           onApply={applyPersonas}
         />
       )}
+      {tab === "targets" && <TargetAudienceTab userId={user.id} />}
 
       {/* ── 오디언스 카트 드로어 + 담기 토스트 ── */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} userId={user.id} />
