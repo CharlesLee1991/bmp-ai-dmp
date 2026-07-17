@@ -10,13 +10,13 @@
 import { P, SB } from "@/lib/theme";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
-  BarChart3, TrendingUp, Landmark, ShoppingCart, Settings2,
+  BarChart3, TrendingUp, Landmark, ShoppingCart, Settings2, UserCog,
   LogOut, type LucideIcon,
 } from "lucide-react";
 import type { DmpUser } from "@/lib/auth";
 
 export type TabId =
-  | "card" | "subway" | "bus" | "membership" | "aiexplore"
+  | "card" | "subway" | "bus" | "membership" | "aiexplore" | "persona"
   | "exports" | "media" | "spending" | "cards" | "shopping"
   | "sysmap";
 
@@ -36,6 +36,7 @@ export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]
   { id: "bus", label: "버스", icon: Bus, roles: ["admin", "advertiser"], group: "audience" },
   { id: "membership", label: "멤버십", icon: Ticket, roles: ["admin", "advertiser"], group: "audience" },
   { id: "aiexplore", label: "AI 탐색", icon: FlaskConical, roles: ["admin", "advertiser"], group: "audience" },
+  { id: "persona", label: "페르소나", icon: UserCog, roles: ["admin", "advertiser"], group: "audience" },
   { id: "media", label: "매체 성과", icon: BarChart3, roles: ["admin"], group: "report" },
   { id: "spending", label: "소비 트렌드", icon: TrendingUp, roles: ["admin"], group: "report" },
   { id: "cards", label: "카드사 비교", icon: Landmark, roles: ["admin"], group: "report" },

@@ -25,6 +25,8 @@ export interface Persona {
   lifestyle?: string;        // AI 라이프스타일 기술 (자연어)
   estimated?: number;        // 예상 모수
   createdAt: string;
+  userId?: number;           // 생성자 id (정책: 생성·관리 주체 상호 표기)
+  userName?: string;         // 생성자 표시명
 }
 
 export const EMPTY_FILTERS: PersonaFilters = {

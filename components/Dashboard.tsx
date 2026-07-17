@@ -29,8 +29,8 @@ import type { DmpUser } from "@/lib/auth";
 import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
 import { DmpSidebar, TABS, TAB_LABEL, type TabId } from "./DmpSidebar";
-import { PersonaBuilder } from "./PersonaBuilder";
-import { type Persona, savePersonas, mergePersonaFilters, syncPersonas, persistPersonaServer, deletePersonaServer } from "@/lib/persona";
+import PersonaStudio from "./PersonaStudio";
+import { type Persona, savePersonas, mergePersonaFilters, syncPersonas, deletePersonaServer } from "@/lib/persona";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
@@ -332,7 +332,6 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   /* ── 페르소나 (저장된 필터세트) ── */
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [personaIds, setPersonaIds] = useState<string[]>([]);   // 다중 선택
-  const [builderOpen, setBuilderOpen] = useState(false);
   useEffect(() => { syncPersonas().then(setPersonas); }, []);   // 서버 우선 + 로컬 폴백/이관
   // 선택 변경 → 합집합 필터를 화면 필터 상태에 적용 (해제 시 해당 필터 초기화)
   // list 인자: setState 직후 호출 시 stale closure 방지용 최신 목록 전달
@@ -352,12 +351,6 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     setPersonas(next); savePersonas(next);
     void deletePersonaServer(id);   // 서버 동기 삭제 (fire-and-forget)
     if (personaIds.includes(id)) applyPersonas(personaIds.filter(x => x !== id), next);
-  };
-  const handlePersonaSave = (p: Persona) => {
-    const next = [...personas, p];
-    setPersonas(next); savePersonas(next); setBuilderOpen(false);
-    void persistPersonaServer(p);   // 서버 저장 (fire-and-forget, 로컬 미러 유지)
-    applyPersonas([...personaIds, p.id], next);   // 저장 즉시 선택·적용 (최신 목록 전달)
   };
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
@@ -770,7 +763,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           {personas.map(p => {
             const active = personaIds.includes(p.id);
             return (
-              <span key={p.id} title={`${p.filterSummary}${p.estimated ? ` · ≈${fmt(p.estimated)}명` : ""}${p.lifestyle ? `\n${p.lifestyle}` : ""}`}
+              <span key={p.id} title={`${p.filterSummary}${p.estimated ? ` · ≈${fmt(p.estimated)}명` : ""} · 만든이: ${p.userName || "?"}${p.lifestyle ? `\n${p.lifestyle}` : ""}`}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 6px 3px 10px", borderRadius: 999,
                   fontSize: 11, fontWeight: active ? 700 : 500, cursor: "pointer", userSelect: "none",
@@ -787,7 +780,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               </span>
             );
           })}
-          <button onClick={() => setBuilderOpen(true)} style={{
+          <button onClick={() => setTab("persona")} style={{
             display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 11px", borderRadius: 999,
             fontSize: 11, fontWeight: 600, cursor: "pointer", background: "transparent",
             border: `1px dashed ${P.accent}`, color: P.accent,
@@ -1123,16 +1116,6 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
         )}
       </div>
-      )}
-
-      {/* 페르소나 빌더 모달 */}
-      {builderOpen && (
-        <PersonaBuilder
-          onSave={handlePersonaSave}
-          onClose={() => setBuilderOpen(false)}
-          existingCount={personas.length}
-          fmt={fmt}
-        />
       )}
 
       {aiExploreOpen && tab === "card" && <AiExplore />}
@@ -1516,6 +1499,15 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       {(tab === "subway" || tab === "bus") && <TransitSegment tab={tab} sidos={sidos} sexes={sexes} ages={ages} ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "membership" && <MembershipSegment sidos={sidos} sexes={sexes} ages={ages} />}
       {tab === "sysmap" && <SystemMappingTab />}
+      {tab === "persona" && (
+        <PersonaStudio
+          user={user}
+          personas={personas}
+          personaIds={personaIds}
+          onPersonasChange={(list) => { setPersonas(list); savePersonas(list); }}
+          onApply={applyPersonas}
+        />
+      )}
 
       {/* EXPORT MODAL */}
       {exportOpen && (

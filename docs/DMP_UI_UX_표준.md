@@ -106,7 +106,8 @@ import { P, badge, tooltipStyle, tooltipCursor, cardStyle, SERIES } from "@/lib/
 1. **타겟 정의(페르소나)** — 브레드크럼 하단 최상단 고정. **저장된 페르소나 칩(다중 선택)** + 결합 필터 정의(`filterParts`) + 예상 모수를 전 화면 pin.
    - **페르소나** = 별명 + 데모그래픽/데이터소스별 필터속성 결합(필터세트). `lib/persona.ts`.
    - **저장소(v2)**: Supabase `de_dmp_personas`(RLS 활성 + anon 정책, 접근은 `/api/personas` 라우트의 dmp_token 인증 뒤) — 서버 우선, localStorage(`dmp-personas-v1`)는 캐시·오프라인 폴백 + 최초 1회 로컬→서버 이관. 광고주=본인 것만, 관리자=전체(exports 규칙과 동일).
-   - **페르소나 빌더**(`components/PersonaBuilder.tsx`): 자연어 기술 → AI 필터정의(기존 `/api/campaign-target` 재사용, 3안 추천) → 모수·선택률 바(`/api/segment-preview`) + AI 라이프스타일 자연어 기술(`/api/ai-recommend`) → **저장 = 필터세트 저장**.
+   - **페르소나 스튜디오**(`components/PersonaStudio.tsx`) — 사이드바 정식 메뉴("오디언스 · 추출 > 페르소나"). **좌측=튜닝**(별명 + 자연어→AI 3안 + 필드별 수동 칩 편집 + 저장 목록 관리) / **우측=잠재고객 특성 라이브 프리뷰**(모수·선택률 바, 연령×성별 분포, 지역·업종 TOP — `/api/segment-preview`·`/api/dashboard` 재사용, 필터 변경 400ms 디바운스 갱신) + AI 라이프스타일 기술. **저장 = 필터세트 저장**, "저장 후 화면에 적용" 지원. 타겟 정의 바의 "페르소나 빌더" 버튼은 이 메뉴로 이동.
+   - **생성자 표기 정책(시스템 전반)**: 사용자 생성물은 **생성자(user_name)를 상호 표기**한다 — 페르소나(목록·칩 툴팁 "만든이"), 전송 이력(user_name), 분류 라벨 오버라이드(updated_by). 수정/삭제는 **본인(또는 admin)만**, 목록 조회는 전원 공유. 신규 생성물 테이블은 `user_id`+`user_name` 컬럼을 표준으로 포함.
    - **다중 선택 = 필터 합집합(union)** 을 공통 데모그래픽 + 카드 화면필터 상태에 즉시 적용 → 어떤 화면을 다녀도 해당 페르소나 정의로 브라우징. 칩 × = 삭제. (setState 직후 적용은 최신 목록 인자로 전달 — stale closure 방지.)
 2. **공통 데모그래픽 필터(도킹)** — 성별·연령·지역. `position:sticky; top:56` 로 타겟정의 바로 아래 고정, 전 화면 지속. **소비 화면(`DEMO_TABS`=카드·지하철·버스·멤버십·소비트렌드)에서만 활성**, 그 외(AI탐색·전송이력·매체·카드사·쇼핑)는 `opacity+grayscale+pointer-events:none`로 **비활성 표기 + "자체 필터 사용" 안내**.
 3. **화면 필터(화면별)** — 데이터 종류별 필터. 카드 탭은 Dashboard 내 **접기/펼치기 2컬럼 패널**(업종/금액/매체/통신/단말/소비/결제/ADID/기간), 그 외 탭은 각 컴포넌트 내부(교통유형·승하차 / 적립앱·요일 등).
