@@ -32,13 +32,13 @@ import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
 import { DmpSidebar, TABS, TAB_LABEL, GROUP_LABEL, type TabId } from "./DmpSidebar";
 import PersonaStudio from "./PersonaStudio";
-import { type Persona, savePersonas, mergePersonaFilters, syncPersonas, deletePersonaServer } from "@/lib/persona";
+import { type Persona, type PersonaFilters, savePersonas, mergePersonaFilters, syncPersonas, deletePersonaServer, segmentsToFilters } from "@/lib/persona";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
   RotateCcw, RefreshCw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
   SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
-  Filter, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Users,
+  Filter, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Users, MousePointerClick,
 } from "lucide-react";
 
 const SYSTEM_NAME = "RUNCOMM";   // 고객(시스템명) — 브레드크럼 중간 세그먼트
@@ -358,6 +358,14 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     setAmountFilters(m.amountFilters); setCardCompanies(m.cardCompanies); setTelecoms(m.telecoms);
   };
   const togglePersona = (id: string) => applyPersonas(personaIds.includes(id) ? personaIds.filter(x => x !== id) : [...personaIds, id]);
+  // AI 타겟 도우미 추천 → 화면 필터로 적용 (모달 닫고 카드 탭으로)
+  const applyRecFilters = (m: PersonaFilters) => {
+    setPersonaIds([]);
+    setSexes(m.sexes); setAges(m.ages); setSidos(m.sidos);
+    setSigoongus([]); setEupmds([]);
+    setMajorCats(m.majorCats); setMiddleCats([]); setSubCats([]);
+    setAmountFilters(m.amountFilters); setCardCompanies(m.cardCompanies); setTelecoms(m.telecoms);
+  };
   const removePersona = (id: string) => {
     const next = personas.filter(p => p.id !== id);
     setPersonas(next); savePersonas(next);
@@ -396,6 +404,19 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [exportResult, setExportResult] = useState<any>(null);
   const [exportSource, setExportSource] = useState<"filter" | "audience">("filter");
   const [audienceTable, setAudienceTable] = useState("response_cat_a_audience");
+  // 퀵 AI 오디언스로 실제 생성된 테이블 목록 (전송 모달 AI 소스에 병합)
+  const [aiTables, setAiTables] = useState<{ table: string; label: string }[]>([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/ai-explore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "list" }) });
+        const d = await res.json();
+        if (alive) setAiTables((d.requests || []).filter((h: any) => h.result_table).map((h: any) => ({ table: h.result_table, label: `${(h.query_text || h.result_table).slice(0, 28)} (${h.est_rows ? fmt(Number(h.est_rows)) + "명" : "?"})` })));
+      } catch { /* noop */ }
+    })();
+    return () => { alive = false; };
+  }, []);
   const [shopCats, setShopCats] = useState<string[]>([]);
 
   /* categories */
@@ -574,6 +595,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     if (cardCompanies.length) dropped.push("카드사");
     if (telecoms.length) dropped.push("통신사");
     if (mobileBrands.length) dropped.push("단말브랜드");
+    // 교통·멤버십 화면 고유 조건은 ADID 추출(EF) 미지원 → 담기는 성별·연령·지역만 반영(정직 표기)
+    if (tab === "subway" || tab === "bus") dropped.push("역·노선(탐색 전용)");
+    if (tab === "membership") dropped.push("가맹점·적립앱·요일·금액(탐색 전용)");
     addToCart({
       type: "filter",
       label: (name && name.trim()) ? name.trim().slice(0, 80) : `현재 조건 (${TAB_LABEL[tab as TabId]})`,
@@ -1350,7 +1374,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                       {campaignResult.analysis && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, padding: "10px 14px", background: P.cardAlt, borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
                       <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`, gap: 10 }}>
                         {(campaignResult.recommendations || []).map((rec: any, i: number) => (
-                          <div key={i} style={{ background: P.cardAlt, borderRadius: 10, padding: 14, border: `1px solid ${P.border}` }}>
+                          <div key={i} style={{ background: P.cardAlt, borderRadius: 10, padding: 14, border: `1px solid ${P.border}`, display: "flex", flexDirection: "column" }}>
                             <div style={{ fontSize: 13, fontWeight: 700, color: P.app, marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i]} {rec.label}</div>
                             <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 8 }}>{rec.description}</div>
                             <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 10px", background: "var(--badge-violet-bg)", borderRadius: 6, marginBottom: 8 }}>
@@ -1359,7 +1383,12 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                             <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? P.app : "var(--sub-2)" }}>
                               {rec.estimated_audience > 0 ? fmt(rec.estimated_audience) : "—"}<span style={{ fontSize: 11, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span>
                             </div>
-                            <div style={{ fontSize: 9, color: "var(--sub-2)", marginTop: 2 }}>실시간 세그먼트 프리뷰 기반</div>
+                            <div style={{ fontSize: 9, color: "var(--sub-2)", marginTop: 2, marginBottom: 10 }}>실시간 세그먼트 프리뷰 기반</div>
+                            <button onClick={() => { if (rec.segments) { applyRecFilters(segmentsToFilters(rec.segments)); setAssistOpen(false); setTab("card"); toastCart(`"${rec.label}" 조건을 화면에 적용했습니다`); } }}
+                              disabled={!rec.segments}
+                              style={{ marginTop: "auto", padding: "7px 0", borderRadius: 8, fontSize: 11.5, fontWeight: 700, cursor: rec.segments ? "pointer" : "not-allowed", border: "none", background: rec.segments ? P.app : P.border, color: "#fff", opacity: rec.segments ? 1 : 0.6, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                              <MousePointerClick size={12} strokeWidth={2.4} />이 조건으로 탐색
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -1388,6 +1417,11 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 style={{ width: "100%", padding: "9px 12px", fontSize: 13, borderRadius: 9, border: `1px solid ${P.border}`, background: P.bg, color: P.text, outline: "none", boxSizing: "border-box" }} />
               <div style={{ fontSize: 10.5, color: P.sub, marginTop: 8, lineHeight: 1.5, padding: "8px 11px", background: P.cardAlt, borderRadius: 8 }}>
                 <span style={{ fontWeight: 700, color: P.text }}>담기는 조건</span> · {filterParts.join(" · ") || "전체 오디언스"}{segEstimate ? ` · ≈${fmt(segEstimate.estimated_audience)}명` : ""}
+                {(tab === "subway" || tab === "bus" || tab === "membership") && (
+                  <div style={{ marginTop: 4, color: "var(--badge-warning-fg)" }}>
+                    ⚠ 이 화면의 {tab === "membership" ? "가맹점·적립앱·요일·금액구간" : "역·노선"} 등 세부 조건은 <b>탐색 전용</b>입니다 — 담기·송출은 성별·연령·지역 기준으로만 반영됩니다.
+                  </div>
+                )}
                 <div style={{ marginTop: 4, color: P.sub2 }}>분류 라벨·태그·메모는 <b>생성된 오디언스</b> 화면에서 저장 시 지정합니다.</div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
@@ -1645,7 +1679,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {tab === "spending" && <SpendingTab sido={sidos.length ? sidos[0] : "전체"} sex={sexes.length ? sexes[0] : "all"} age={ages.length ? ages[0] : "all"} ymFrom={ymFrom} ymTo={ymTo} />}
       {tab === "cards" && <CardComparisonTab ymFrom={ymFrom} ymTo={ymTo} />}
-      {tab === "aiexplore" && <AiExploreTab />}
+      {tab === "aiexplore" && <AiExploreTab onGoToTargets={() => setTab("targets")} />}
       {tab === "exports" && <ExportHistoryTab userRole={user.role} />}
       {tab === "media" && <MediaPerformanceTab />}
       {tab === "shopping" && <ShoppingProductsTab />}
@@ -1659,12 +1693,14 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           personaIds={personaIds}
           onPersonasChange={(list) => { setPersonas(list); savePersonas(list); }}
           onApply={applyPersonas}
+          onGoExplore={() => setTab("card")}
+          onAddToCart={addPersonaToCart}
         />
       )}
       {tab === "targets" && <TargetAudienceTab user={user} />}
 
       {/* ── 오디언스 카트 드로어 + 담기 토스트 ── */}
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} userId={user.id} />
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} userId={user.id} onGoToTargets={() => { setCartOpen(false); setTab("targets"); }} />
       {cartToast && (
         <div style={{ position: "fixed", bottom: 26, right: 26, zIndex: 320, background: P.card, border: `1px solid ${P.border}`, borderLeft: `3px solid ${P.accent}`, borderRadius: 10, boxShadow: P.shadowLg, padding: "10px 16px", fontSize: 12.5, fontWeight: 600, color: P.text, display: "flex", alignItems: "center", gap: 8 }}>
           <ShoppingCart size={14} strokeWidth={2.2} style={{ color: P.accent }} />
@@ -1688,9 +1724,16 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 <div style={{ fontSize: 12, color: P.sub, marginBottom: 6 }}>AI 오디언스 선택</div>
                 <select value={audienceTable} onChange={e => setAudienceTable(e.target.value)} disabled={exporting}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, color: P.text, fontSize: 13, outline: "none", boxSizing: "border-box", marginBottom: 16, opacity: exporting ? 0.5 : 1, cursor: exporting ? "not-allowed" : "pointer" }}>
-                  <option value="response_cat_a_audience">반응예측 cat_A (30만 · lift 6.55×)</option>
-                  <option value="lookalike_shop_v2_audience">룩어라이크 쇼핑 v2 (50만 · lift 4.08×)</option>
-                  <option value="lookalike_shop_v1_audience">룩어라이크 쇼핑 v1 (50만 · 구버전)</option>
+                  {aiTables.length > 0 && (
+                    <optgroup label="내가 생성한 오디언스 (퀵 AI)">
+                      {aiTables.map(t => <option key={t.table} value={t.table}>{t.label}</option>)}
+                    </optgroup>
+                  )}
+                  <optgroup label="기본 제공 (AI 모델)">
+                    <option value="response_cat_a_audience">반응예측 cat_A (30만 · lift 6.55×)</option>
+                    <option value="lookalike_shop_v2_audience">룩어라이크 쇼핑 v2 (50만 · lift 4.08×)</option>
+                    <option value="lookalike_shop_v1_audience">룩어라이크 쇼핑 v1 (50만 · 구버전)</option>
+                  </optgroup>
                 </select>
               </>
             )}

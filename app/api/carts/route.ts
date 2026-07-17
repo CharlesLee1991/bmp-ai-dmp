@@ -84,6 +84,8 @@ export async function POST(req: NextRequest) {
       label: c.label ? String(c.label).slice(0, 40) : null,
       tags,
       memo: c.memo ? String(c.memo).slice(0, 500) : null,
+      ...(c.last_sent_at !== undefined ? { last_sent_at: c.last_sent_at } : {}),
+      ...(typeof c.send_count === "number" ? { send_count: c.send_count } : {}),
       updated_at: new Date().toISOString(),
     };
     const res = await fetch(

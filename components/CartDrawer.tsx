@@ -41,7 +41,7 @@ export function CartButton({ userId, onClick }: { userId?: number; onClick: () =
 
 type SubmitState = { phase: "form" | "sending" | "done"; env?: "dev" | "prod"; progress?: number; total?: number; results?: { label: string; ok: boolean; count?: number; error?: string }[] };
 
-export default function CartDrawer({ open, onClose, userId }: { open: boolean; onClose: () => void; userId?: number }) {
+export default function CartDrawer({ open, onClose, userId, onGoToTargets }: { open: boolean; onClose: () => void; userId?: number; onGoToTargets?: () => void }) {
   const { cart, saved } = useCart(userId);
   const [name, setName] = useState("");
   const [meta, setMeta] = useState<MetaValue>({ label: "", tags: [], memo: "" });
@@ -49,6 +49,7 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sub, setSub] = useState<SubmitState>({ phase: "form" });
   const [saveMsg, setSaveMsg] = useState("");
+  const [savedOk, setSavedOk] = useState(false);
 
   const sumMax = cart.reduce((a, i) => a + (i.estimated || 0), 0);
   const savedBundles = saved.filter(r => r.status === "saved");
@@ -59,8 +60,9 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
     if (!n || !cart.length) return;
     const ok = await saveBundle(n, bundleMeta());
     setSaveMsg(ok ? `"${n}" 저장됨` : "저장 실패 — 다시 시도해주세요");
+    setSavedOk(ok);
     if (ok) { setName(""); setMeta({ label: "", tags: [], memo: "" }); setMetaOpen(false); }
-    setTimeout(() => setSaveMsg(""), 2500);
+    setTimeout(() => { setSaveMsg(""); setSavedOk(false); }, 6000);
   };
 
   /* 경로 A 송출: 조각별 EF 호출 → 이력 기록 → submitted 묶음 */
@@ -143,7 +145,10 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
                 </div>
               ))}
               {sub.phase === "done" && (
-                <button onClick={() => setSub({ phase: "form" })} style={ghostBtn({ marginTop: 8, width: "100%" })}>확인</button>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <button onClick={() => setSub({ phase: "form" })} style={ghostBtn({ flex: 1 })}>확인</button>
+                  {onGoToTargets && <button onClick={() => { onGoToTargets(); onClose(); }} style={{ flex: 1, padding: "5px 9px", borderRadius: 7, fontSize: 10.5, fontWeight: 700, cursor: "pointer", border: "none", background: P.accent, color: "#fff" }}>생성된 오디언스 →</button>}
+                </div>
               )}
             </div>
           )}
@@ -232,7 +237,14 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
             </div>
           )}
 
-          {saveMsg && <div style={{ fontSize: 11, color: P.accent, marginBottom: 6 }}>{saveMsg}</div>}
+          {saveMsg && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, color: P.accent, fontWeight: 600 }}>{saveMsg}</span>
+              {savedOk && onGoToTargets && (
+                <button onClick={() => { onGoToTargets(); onClose(); }} style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 10px", borderRadius: 999, border: `1px solid ${P.accent}`, background: P.glow, color: P.accent, cursor: "pointer" }}>생성된 오디언스로 이동 →</button>
+              )}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8 }}>
             {/* 메인 = 타겟으로 저장(생성된 오디언스 보관). 송출은 거기서 언제든. */}
             <Tip content={"'생성된 오디언스' 메뉴에 타겟으로 보관됩니다.\n라벨·태그·메모로 관리하고 언제든 송출할 수 있어요."} side="top">

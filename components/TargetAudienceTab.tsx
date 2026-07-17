@@ -14,7 +14,7 @@ import { P, badge, cardStyle } from "@/lib/theme";
 import { fmt } from "@/lib/data";
 import {
   useCart, deleteBundle, loadBundle, updateBundleMeta, duplicateBundle, mergeBundles,
-  addToCart, runcommSubmit, allLabels, allTags,
+  addToCart, runcommSubmit, markBundleSent, allLabels, allTags,
   type CartRow, type CartItem, type SubmitResult,
 } from "@/lib/cart";
 import { BundleMetaFields, LabelChip, TagChips, type MetaValue } from "./BundleMetaFields";
@@ -42,6 +42,8 @@ interface URow {
   creator: string;
   date: string;
   items: CartItem[];       // 송출 단위(cart=조각들, ai=단일 bq)
+  sendCount: number;
+  lastSent: string | null;
   raw?: CartRow;
 }
 
@@ -72,13 +74,15 @@ export default function TargetAudienceTab({ user }: { user: DmpUser }) {
         key: "c_" + r.id, source: "cart", id: r.id, name: r.name || "(이름 없음)",
         label: r.label ?? null, tags: r.tags || [], memo: r.memo ?? null, status: r.status,
         estimated: (r.items || []).reduce((a, i) => a + (i.estimated || 0), 0),
-        creator: r.user_name || "—", date: (r.updated_at || "").slice(0, 10), items: r.items || [], raw: r,
+        creator: r.user_name || "—", date: (r.updated_at || "").slice(0, 10), items: r.items || [],
+        sendCount: r.send_count || 0, lastSent: r.last_sent_at || null, raw: r,
       }));
     const ai: URow[] = aiRows.map(h => ({
       key: "a_" + h.id, source: "ai", id: String(h.id), name: h.query_text || h.result_table || "AI 오디언스",
       label: null, tags: [], memo: null, status: "생성됨",
       estimated: Number(h.est_rows || 0),
       creator: h.created_by || h.user_name || "AI 생성", date: (h.created_at || "").slice(0, 10),
+      sendCount: 0, lastSent: null,
       items: [{ id: "ci_" + h.id, type: "ai_table", label: h.query_text || h.result_table, summary: h.result_table, sourceTab: "ai", filters: {}, bqTable: h.result_table, estimated: Number(h.est_rows || 0), addedAt: "" }],
     }));
     return [...cartRows, ...ai];
@@ -129,12 +133,13 @@ export default function TargetAudienceTab({ user }: { user: DmpUser }) {
   const saveEdit = async () => { if (editing) { await updateBundleMeta(editing, editVal); setEditing(null); } };
 
   /* ── 송출 모달 ── */
-  const [send, setSend] = useState<{ items: CartItem[]; name: string } | null>(null);
+  const [send, setSend] = useState<{ items: CartItem[]; name: string; bundleId?: string } | null>(null);
   const [sendState, setSendState] = useState<{ phase: "form" | "sending" | "done"; env?: string; done?: number; total?: number; results?: SubmitResult[] }>({ phase: "form" });
   const runSend = async (env: "dev" | "prod") => {
     if (!send) return;
     setSendState({ phase: "sending", env, done: 0, total: send.items.length, results: [] });
     const results = await runcommSubmit(send.items, send.name.trim() || "타겟", env, (d, t, rs) => setSendState({ phase: "sending", env, done: d, total: t, results: rs }));
+    if (send.bundleId && results.some(r => r.ok)) await markBundleSent(send.bundleId);  // 상태 유지, 송출 기록만
     setSendState({ phase: "done", env, done: send.items.length, total: send.items.length, results });
   };
 
@@ -263,11 +268,13 @@ export default function TargetAudienceTab({ user }: { user: DmpUser }) {
                       <span style={{ fontSize: 13.5, fontWeight: 800, color: P.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 360 }} title={r.name}>{r.name}</span>
                       {r.label && <LabelChip label={r.label} />}
                       <span style={{ ...badge(r.status === "submitted" ? "success" : r.status === "생성됨" ? "sky" : "neutral"), fontSize: 9, fontWeight: 700, padding: "1px 7px", borderRadius: 5 }}>{r.status === "submitted" ? "송출됨" : r.status === "생성됨" ? "생성됨" : "저장됨"}</span>
+                      {r.sendCount > 0 && <span style={{ ...badge("success"), fontSize: 9, fontWeight: 700, padding: "1px 7px", borderRadius: 5 }}>송출 {r.sendCount}회</span>}
                     </div>
                     <div style={{ fontSize: 11, color: P.sub, marginTop: 4, display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <span>{r.source === "cart" ? `${r.items.length}조각` : "BQ 테이블"} · 예상 ~{fmt(r.estimated)}명</span>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><UserRound size={10} strokeWidth={2} />{r.creator}</span>
                       <span>{r.date}</span>
+                      {r.lastSent && <span style={{ color: P.accent }}>· 최근 송출 {r.lastSent.slice(0, 10)}</span>}
                     </div>
                     {r.tags.length > 0 && <div style={{ marginTop: 7 }}><TagChips tags={r.tags} onClick={t => setTagFilter(f => f.includes(t) ? f : [...f, t])} /></div>}
                     {r.memo && (
@@ -279,7 +286,7 @@ export default function TargetAudienceTab({ user }: { user: DmpUser }) {
                   </div>
                   {/* 액션 */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, padding: "12px 14px", borderLeft: `1px solid ${P.border}`, background: P.bgElevated, justifyContent: "center", minWidth: 132 }}>
-                    <button onClick={() => { setSend({ items: r.items, name: r.name }); setSendState({ phase: "form" }); }} style={{ ...actBtn(), background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none" }}>
+                    <button onClick={() => { setSend({ items: r.items, name: r.name, bundleId: r.source === "cart" ? r.id : undefined }); setSendState({ phase: "form" }); }} style={{ ...actBtn(), background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none" }}>
                       <Rocket size={11} strokeWidth={2.2} style={{ verticalAlign: "-1px", marginRight: 4 }} />송출
                     </button>
                     {r.source === "cart" ? (
