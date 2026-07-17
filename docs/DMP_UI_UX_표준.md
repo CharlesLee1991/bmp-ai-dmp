@@ -100,7 +100,9 @@ import { P, badge, tooltipStyle, tooltipCursor, cardStyle, SERIES } from "@/lib/
 - **선택 하이라이트(geocare식)**: active = `background: var(--sidebar-accent)` 채움 + `color: var(--sidebar-accent-fg)` + `fontWeight 600` (좌측바 아님). hover = `var(--sidebar-hover)`.
 - **접기/펼치기 = switch pill**: 로고 우측에 **튀어나온 스위치 필(슬라이딩 노브 + 방향 chevron)**. `position:absolute; right:-17` 로 사이드바 경계 밖으로 돌출 → 항상 눈에 띔. localStorage `dmp-sidebar-collapsed`(펼침 232 / 접힘 62px).
 - **상단바**(메인 컬럼 최상단, `.dmp-frost` sticky, **하단 `box-shadow: var(--shadow-md)`**): **브레드크럼** `DMP Explorer > {고객/시스템명} > [메뉴아이콘] 메뉴명 ▾`. 마지막 세그먼트는 **드롭다운**(메뉴 아이콘 + 라벨, 클릭 시 바로 이동). 우측 = LIVE pill + `<ThemeMenu />`. 높이 56px.
-- **사이드바 메뉴 그룹화**(`GROUP_ORDER`/`GROUP_LABEL`): ① 오디언스·추출(카드·지하철·버스·멤버십·AI탐색) ② 분석 리포트·조회(매체성과·소비트렌드·카드사비교·쇼핑상품) ③ 관리(전송이력). 그룹 라벨 헤더 + 접힘 시 구분선. 권한별 빈 그룹 자동 숨김.
+- **사이드바 메뉴 그룹화**(`GROUP_ORDER`/`GROUP_LABEL`) — **오디언스 추출 업무 흐름 순**:
+  **1 · 타겟 정의**(페르소나) → **2 · 오디언스 탐색**(카드·지하철·버스·멤버십) → **3 · 추출·전송**(AI 탐색·전송 이력) → **4 · 성과·인사이트**(매체 성과·소비 트렌드·카드사 비교·쇼핑상품) → **시스템 관리**(분류 맵핑 관리).
+  그룹 라벨 헤더 + 접힘 시 구분선. 권한별 빈 그룹 자동 숨김. 신규 메뉴는 이 흐름 단계에 맞춰 배치.
 
 ### 4.1 필터 3계층 (사용자 지시)
 1. **타겟 정의(페르소나)** — 브레드크럼 하단 최상단 고정. **저장된 페르소나 칩(다중 선택)** + 결합 필터 정의(`filterParts`) + 예상 모수를 전 화면 pin.
