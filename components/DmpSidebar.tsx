@@ -20,29 +20,38 @@ export type TabId =
   | "exports" | "media" | "spending" | "cards" | "shopping"
   | "sysmap";
 
-export type MenuGroup = "audience" | "report" | "manage";
+export type MenuGroup = "define" | "explore" | "extract" | "insight" | "system";
 
-// 메뉴 그룹: ① 오디언스·추출(런컴 전송) ② 분석 리포트·조회 ③ 관리(운영·시스템)
-export const GROUP_ORDER: MenuGroup[] = ["audience", "report", "manage"];
+// 메뉴 그룹 — 오디언스 추출 업무 흐름 순:
+// 1 타겟 정의(페르소나) → 2 오디언스 탐색(데이터소스별) → 3 추출·전송(생성+이력)
+// → 4 성과·인사이트(폐루프+시장) / 시스템 관리(흐름 밖 운영)
+export const GROUP_ORDER: MenuGroup[] = ["define", "explore", "extract", "insight", "system"];
 export const GROUP_LABEL: Record<MenuGroup, string> = {
-  audience: "오디언스 · 추출",
-  report: "분석 리포트 · 조회",
-  manage: "관리",
+  define: "1 · 타겟 정의",
+  explore: "2 · 오디언스 탐색",
+  extract: "3 · 추출 · 전송",
+  insight: "4 · 성과 · 인사이트",
+  system: "시스템 관리",
 };
 
 export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]; group: MenuGroup }[] = [
-  { id: "card", label: "카드", icon: CreditCard, roles: ["admin", "advertiser"], group: "audience" },
-  { id: "subway", label: "지하철", icon: TrainFront, roles: ["admin", "advertiser"], group: "audience" },
-  { id: "bus", label: "버스", icon: Bus, roles: ["admin", "advertiser"], group: "audience" },
-  { id: "membership", label: "멤버십", icon: Ticket, roles: ["admin", "advertiser"], group: "audience" },
-  { id: "aiexplore", label: "AI 탐색", icon: FlaskConical, roles: ["admin", "advertiser"], group: "audience" },
-  { id: "persona", label: "페르소나", icon: UserCog, roles: ["admin", "advertiser"], group: "audience" },
-  { id: "media", label: "매체 성과", icon: BarChart3, roles: ["admin"], group: "report" },
-  { id: "spending", label: "소비 트렌드", icon: TrendingUp, roles: ["admin"], group: "report" },
-  { id: "cards", label: "카드사 비교", icon: Landmark, roles: ["admin"], group: "report" },
-  { id: "shopping", label: "쇼핑상품", icon: ShoppingCart, roles: ["admin"], group: "report" },
-  { id: "exports", label: "전송 이력", icon: ClipboardList, roles: ["admin", "advertiser"], group: "manage" },
-  { id: "sysmap", label: "분류 맵핑 관리", icon: Settings2, roles: ["admin"], group: "manage" },
+  // 1 · 타겟 정의 — 흐름의 시작: 누구를 노릴지
+  { id: "persona", label: "페르소나", icon: UserCog, roles: ["admin", "advertiser"], group: "define" },
+  // 2 · 오디언스 탐색 — 데이터소스별 브라우징·필터 정제
+  { id: "card", label: "카드", icon: CreditCard, roles: ["admin", "advertiser"], group: "explore" },
+  { id: "subway", label: "지하철", icon: TrainFront, roles: ["admin", "advertiser"], group: "explore" },
+  { id: "bus", label: "버스", icon: Bus, roles: ["admin", "advertiser"], group: "explore" },
+  { id: "membership", label: "멤버십", icon: Ticket, roles: ["admin", "advertiser"], group: "explore" },
+  // 3 · 추출 · 전송 — AI 오디언스 생성(승인 게이트) + 전송 결과 관리
+  { id: "aiexplore", label: "AI 탐색", icon: FlaskConical, roles: ["admin", "advertiser"], group: "extract" },
+  { id: "exports", label: "전송 이력", icon: ClipboardList, roles: ["admin", "advertiser"], group: "extract" },
+  // 4 · 성과 · 인사이트 — 폐루프 성과 + 시장 인사이트
+  { id: "media", label: "매체 성과", icon: BarChart3, roles: ["admin"], group: "insight" },
+  { id: "spending", label: "소비 트렌드", icon: TrendingUp, roles: ["admin"], group: "insight" },
+  { id: "cards", label: "카드사 비교", icon: Landmark, roles: ["admin"], group: "insight" },
+  { id: "shopping", label: "쇼핑상품", icon: ShoppingCart, roles: ["admin"], group: "insight" },
+  // 시스템 관리 — 업무 흐름 밖 운영
+  { id: "sysmap", label: "분류 맵핑 관리", icon: Settings2, roles: ["admin"], group: "system" },
 ];
 
 export const TAB_LABEL: Record<TabId, string> = TABS.reduce(
