@@ -313,13 +313,20 @@ export default function PersonaStudio({
           </div>
           {aiAnalysis && <div style={{ fontSize: 11, color: P.sub, lineHeight: 1.55, padding: "7px 11px", background: P.bgElevated, borderRadius: 8, marginBottom: 8 }}>{aiAnalysis}</div>}
           {aiRecs.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
-              {aiRecs.map((r, i) => (
-                <button key={i} onClick={() => setF(segmentsToFilters(r.segments))} title={r.description}
-                  style={{ ...badge("violet"), padding: "4px 11px", borderRadius: 999, fontSize: 10.5, fontWeight: 600, cursor: "pointer", border: "none" }}>
-                  {r.label} {r.estimated_audience > 0 && `· ${fmt(r.estimated_audience)}`}
-                </button>
-              ))}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10.5, color: P.sub, lineHeight: 1.5, marginBottom: 6, display: "flex", alignItems: "flex-start", gap: 5 }}>
+                <MousePointerClick size={12} strokeWidth={2.2} style={{ color: "var(--badge-violet-fg)", flexShrink: 0, marginTop: 1 }} />
+                <span>라벨칩을 클릭하면 <b style={{ color: P.text }}>페르소나 별명에 반영</b>되고 해당 필터가 적용됩니다. 이후 <b style={{ color: P.text }}>아래 필터를 직접 조정</b>해도 됩니다.</span>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {aiRecs.map((r, i) => (
+                  <button key={i} onClick={() => { setF(segmentsToFilters(r.segments)); setName(r.label); }}
+                    title={`${r.description || ""}\n클릭 시 별명 "${r.label}" 반영 + 필터 적용`}
+                    style={{ ...badge("violet"), padding: "4px 11px", borderRadius: 999, fontSize: 10.5, fontWeight: 600, cursor: "pointer", border: "none" }}>
+                    {r.label} {r.estimated_audience > 0 && `· ${fmt(r.estimated_audience)}`}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
