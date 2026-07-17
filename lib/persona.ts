@@ -50,6 +50,48 @@ export function newPersonaId(): string {
   return "ps_" + Math.random().toString(36).slice(2, 9);
 }
 
+/* ── 서버 동기화 (de_dmp_personas · /api/personas) — 실패 시 localStorage 폴백 ── */
+
+export async function fetchPersonasServer(): Promise<Persona[] | null> {
+  try {
+    const res = await fetch("/api/personas", { cache: "no-store" });
+    const d = await res.json();
+    if (!d?.success || !Array.isArray(d.data)) return null;
+    return d.data as Persona[];
+  } catch { return null; }
+}
+
+export async function persistPersonaServer(p: Persona): Promise<boolean> {
+  try {
+    const res = await fetch("/api/personas", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p),
+    });
+    const d = await res.json();
+    return !!d?.success;
+  } catch { return false; }
+}
+
+export async function deletePersonaServer(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/personas?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const d = await res.json();
+    return !!d?.success;
+  } catch { return false; }
+}
+
+/* 초기 로드: 서버 우선 + 로컬 캐시 미러 + 로컬 전용분 1회 마이그레이션.
+   서버 실패 시 localStorage 폴백(오프라인/구버전 호환). */
+export async function syncPersonas(): Promise<Persona[]> {
+  const server = await fetchPersonasServer();
+  const local = loadPersonas();
+  if (server === null) return local;
+  const missing = local.filter(l => !server.some(s => s.id === l.id));
+  for (const m of missing) { void persistPersonaServer(m); }   // 로컬 → 서버 이관 (fire-and-forget)
+  const merged = [...server, ...missing];
+  savePersonas(merged);   // 로컬 캐시 미러
+  return merged;
+}
+
 export function pickTone(index: number): string {
   return TONES[index % TONES.length];
 }
