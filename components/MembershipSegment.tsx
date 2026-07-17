@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
-import { Ticket, Smartphone, Store, Clock, Wallet, Users, Medal, Circle } from "lucide-react";
+import { Ticket, Smartphone, Store, Clock, Wallet, Users, Medal, Circle, Search, X } from "lucide-react";
 
 const P = {
   bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
@@ -54,6 +54,8 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
   const [dow, setDow] = useState("");
   const [selPartner, setSelPartner] = useState<string>("");
   const [selApp, setSelApp] = useState<string>("");
+  const [partnerPickerOpen, setPartnerPickerOpen] = useState(false);   // 전체 가맹점 검색 팝업
+  const [partnerQuery, setPartnerQuery] = useState("");
 
   // ── 적립앱 데이터 ──
   const platformKey = `/api/membership#platform|${selApp}`;
@@ -120,11 +122,11 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
 
   return (
     <div style={{ padding: "24px 28px 40px", background: P.bg, minHeight: 600 }}>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: P.text, marginBottom: 3 }}>
-          <Ticket size={16} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 6, color: P.accent }} /> 멤버십 사용 행태
-        </div>
-        <div style={{ fontSize: 12, color: P.sub }}>NH멤버십 적립·사용 데이터 기반 오디언스 분석 · 오늘 17:00 이후 집계 반영</div>
+      {/* 2차 필터 라벨 — 상단 콘텐츠 헤더(제목·설명)와 중복 제거, 화면 내 상세 필터임을 명시 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: "var(--badge-teal-fg)", background: "var(--badge-teal-bg)", padding: "2px 7px", borderRadius: 6 }}>2차 필터</span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: P.text }}>멤버십 이용 상세</span>
+        <span style={{ fontSize: 10.5, color: P.sub }}>1차 모수를 좁히는 멤버십 전용 조건 (적립앱·금액구간·이용요일·가맹점) · 오늘 17:00 이후 집계 반영</span>
       </div>
 
       {/* ── 적립앱 섹션 ── */}
@@ -200,15 +202,22 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
       {/* 가맹점 TOP 15 */}
       {partnerTop.length > 0 && (
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: P.sub }}><Store size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4, color: P.sub }} /> 가맹점 필터 (이용량 TOP {partnerTop.length})</div>
-            {selPartner && (
-              <button onClick={() => setSelPartner("")}
-                style={{ fontSize: 10, color: P.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
-                × 선택 해제
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: P.text }}><Store size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4, color: P.accent }} /> 가맹점 필터 <span style={{ fontWeight: 500, color: P.sub }}>· 이용량 상위 {partnerTop.length}곳</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={() => setPartnerPickerOpen(true)}
+                style={{ fontSize: 10.5, color: P.accent, background: P.glow, border: `1px solid ${P.accent}`, borderRadius: 8, padding: "4px 11px", cursor: "pointer", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <Search size={12} strokeWidth={2.2} /> 전체 가맹점 검색
               </button>
-            )}
+              {selPartner && (
+                <button onClick={() => setSelPartner("")}
+                  style={{ fontSize: 10, color: P.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                  × 선택 해제
+                </button>
+              )}
+            </div>
           </div>
+          <div style={{ fontSize: 10, color: P.sub, marginBottom: 10 }}>빠른 선택으로 이용량 상위 가맹점을 고르거나, <b style={{ color: P.text }}>전체 검색</b>에서 이름으로 찾아 선택하세요. (1곳 선택 시 해당 가맹점 기준으로 아래 지표가 갱신됩니다.)</div>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
             {partnerTop.map((p) => {
               const active = selPartner === p.partner_cd;
@@ -230,6 +239,45 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
         </div>
       )}
 
+      {/* 전체 가맹점 검색 팝업 — 이름으로 찾아 선택 (단일 선택) */}
+      {partnerPickerOpen && (
+        <div onClick={() => setPartnerPickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 120, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "8vh 20px 40px" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "min(560px, 100%)", maxHeight: "76vh", display: "flex", flexDirection: "column", background: P.card, borderRadius: 16, border: `1px solid ${P.border}`, boxShadow: "var(--shadow-lg)", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${P.border}` }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: P.text }}><Store size={15} strokeWidth={2.1} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />가맹점 검색 · 선택</div>
+              <button onClick={() => setPartnerPickerOpen(false)} style={{ display: "inline-flex", width: 28, height: 28, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "transparent", border: `1px solid ${P.border}`, color: P.sub, cursor: "pointer" }}><X size={15} strokeWidth={2.2} /></button>
+            </div>
+            <div style={{ padding: "12px 18px 8px" }}>
+              <div style={{ position: "relative" }}>
+                <Search size={14} strokeWidth={2} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: P.sub }} />
+                <input autoFocus value={partnerQuery} onChange={e => setPartnerQuery(e.target.value)} placeholder="가맹점 이름 검색…"
+                  style={{ width: "100%", padding: "9px 12px 9px 32px", borderRadius: 9, border: `1px solid ${P.border}`, fontSize: 13, outline: "none", background: P.bg, color: P.text, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ fontSize: 10, color: P.sub, marginTop: 6 }}>이용량 상위 {partnerTop.length}곳 중 검색 · 전체 가맹점 로드는 추후 확장 예정</div>
+            </div>
+            <div style={{ overflowY: "auto", padding: "4px 10px 12px", flex: 1 }}>
+              {partnerTop
+                .filter(p => { const q = partnerQuery.trim(); return !q || (p.partner_name || p.partner_cd).includes(q); })
+                .map(p => {
+                  const active = selPartner === p.partner_cd;
+                  return (
+                    <button key={p.partner_cd} onClick={() => { setSelPartner(active ? "" : p.partner_cd); setPartnerPickerOpen(false); }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "10px 12px", borderRadius: 9, cursor: "pointer", border: "none", background: active ? P.glow : "transparent", textAlign: "left", marginBottom: 2 }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = "var(--bg-elevated)"; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+                      <span style={{ fontSize: 13, fontWeight: active ? 800 : 600, color: active ? P.accent : P.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 380 }}>{p.partner_name || p.partner_cd}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: P.sub, flexShrink: 0 }}>{fmt(Number(p.cnt))}명</span>
+                    </button>
+                  );
+                })}
+              {partnerTop.filter(p => { const q = partnerQuery.trim(); return !q || (p.partner_name || p.partner_cd).includes(q); }).length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", fontSize: 12, color: P.sub }}>검색 결과가 없습니다.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {isLoading && <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 13 }}>분석 중…</div>}
 
       {!isLoading && noData && (
@@ -245,7 +293,7 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
           {/* KPI 4개 */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
             {[
-              { label: "총 오디언스", value: fmt(total) + "명", sub: selPartner ? "선택 가맹점 기준" : "전체 멤버십" },
+              { label: "멤버십 이용자", value: fmt(total) + "명", sub: selPartner ? "선택 가맹점 기준" : "멤버십 데이터 · 현재 필터" },
               { label: "남녀 비율", value: `${mPct}:${fPct}`, sub: `남성 ${fmt(male)} · 여성 ${fmt(female)}` },
               { label: "피크 이용시간", value: peakHour ? `${peakHour}시` : "–",
                 sub: peakHour ? (Number(peakHour) >= 11 && Number(peakHour) <= 14 ? "점심 시간대" : "저녁 시간대") : "" },
@@ -257,6 +305,9 @@ export default function MembershipSegment({ sidos = [], sexes = [], ages = [] }:
                 <div style={{ fontSize: 10, color: P.sub }}>{sub}</div>
               </div>
             ))}
+          </div>
+          <div style={{ fontSize: 10.5, color: P.sub, lineHeight: 1.5, margin: "-8px 0 18px" }}>
+            <b style={{ color: P.text }}>멤버십 이용자</b>는 멤버십 데이터 기준 현재 필터 모수입니다. 상단 <b style={{ color: P.accent }}>1차 타겟 모수</b>(전 데이터소스 통합 추정치)와 정의가 달라 수치가 다를 수 있습니다.
           </div>
 
           {/* 시간대별 + 금액 구간 */}

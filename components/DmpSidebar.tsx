@@ -17,8 +17,8 @@ import type { DmpUser } from "@/lib/auth";
 
 export type TabId =
   | "card" | "subway" | "bus" | "membership" | "aiexplore" | "persona"
-  | "exports" | "media" | "spending" | "cards" | "shopping"
-  | "sysmap" | "targets";
+  | "targets" | "exports" | "media" | "spending" | "cards" | "shopping"
+  | "sysmap";
 
 export type MenuGroup = "define" | "explore" | "extract" | "insight" | "system";
 
@@ -42,8 +42,8 @@ export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]
   { id: "subway", label: "지하철", icon: TrainFront, roles: ["admin", "advertiser"], group: "explore" },
   { id: "bus", label: "버스", icon: Bus, roles: ["admin", "advertiser"], group: "explore" },
   { id: "membership", label: "멤버십", icon: Ticket, roles: ["admin", "advertiser"], group: "explore" },
-  // 3 · 추출 · 전송 — AI 오디언스 생성(승인 게이트) + 타겟 묶음 관리 + 전송 이력
-  { id: "aiexplore", label: "AI 탐색", icon: FlaskConical, roles: ["admin", "advertiser"], group: "extract" },
+  // 3 · 추출 · 전송 — 퀵 AI 생성(승인 게이트) → 타겟 오디언스(보관/카트) → 전송 이력
+  { id: "aiexplore", label: "퀵 AI 오디언스", icon: FlaskConical, roles: ["admin", "advertiser"], group: "extract" },
   { id: "targets", label: "타겟 오디언스", icon: Boxes, roles: ["admin", "advertiser"], group: "extract" },
   { id: "exports", label: "전송 이력", icon: ClipboardList, roles: ["admin", "advertiser"], group: "extract" },
   // 4 · 성과 · 인사이트 — 폐루프 성과 + 시장 인사이트
