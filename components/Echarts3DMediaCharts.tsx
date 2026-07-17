@@ -15,10 +15,14 @@ export type MediaRow = {
 };
 export type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
 
-const P = { border: "var(--border)", sub: "var(--sub)", text: "var(--text)", accent: "var(--accent)" };
-const panel: React.CSSProperties = { border: `1px solid ${P.border}`, borderRadius: 10, overflow: "hidden", background: "var(--card)" };
-const head: React.CSSProperties = { padding: "12px 16px", fontSize: 13, fontWeight: 700, color: P.text, borderBottom: `1px solid ${P.border}` };
-const sub: React.CSSProperties = { color: P.sub, fontWeight: 400, fontSize: 11, marginLeft: 8 };
+/* ECharts-GL(WebGL 캔버스)은 CSS var()를 해석하지 못한다 → 3D 장면 배경은 항상 어둡고,
+   var() 라벨/범례는 기본 검정으로 렌더되어 안 보였다. BizViz와 동일한 '브랜드 격리 다크'
+   도크트린으로 고정 hex(밝은 글자·어두운 배경)를 사용해 라이트/다크 무관하게 가독성 확보. */
+const C = { bg: "#0f1420", surface: "#161c28", line: "#2a3446", grid: "#1c2432", ink: "#e2e8f0", dim: "#9aa7bd", accent: "#38bdf8", hot: "#f2685a" };
+const P = { border: C.line, sub: C.dim, text: C.ink, accent: C.accent };
+const panel: React.CSSProperties = { border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden", background: C.surface };
+const head: React.CSSProperties = { padding: "12px 16px", fontSize: 13, fontWeight: 700, color: C.ink, borderBottom: `1px solid ${C.line}` };
+const sub: React.CSSProperties = { color: C.dim, fontWeight: 400, fontSize: 11, marginLeft: 8 };
 
 const fmt = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : String(Math.round(n));
 const won = (n: number) => n >= 1e8 ? `${(n / 1e8).toFixed(2)}억원` : `${(n / 1e4).toFixed(0)}만원`;
@@ -68,13 +72,13 @@ function Bar3D({ series }: { series: { name: string; rows: DailyRow[] }[] }) {
   const option = dates.length ? {
     tooltip: {
       formatter: (p: any) => `${names[p.value[1]]}<br/>${dates[p.value[0]]}<br/><b>노출 ${fmt(p.value[2])}</b>`,
-      backgroundColor: "var(--card)", borderColor: P.border, borderWidth: 1,
+      backgroundColor: C.surface, borderColor: P.border, borderWidth: 1,
       textStyle: { color: P.text, fontSize: 12 },
     },
     visualMap: {
       max: maxV, show: true, right: 8, top: "center", calculable: true,
       textStyle: { color: P.sub, fontSize: 10 }, formatter: (v: number) => fmt(v),
-      inRange: { color: ["#e3f0ff", "#9ec5f2", "#4a90e2", "var(--accent)", "#0b3d91"] },
+      inRange: { color: ["#e3f0ff", "#9ec5f2", "#4a90e2", "#2f80ed", "#0b3d91"] },
     },
     xAxis3D: { type: "category", data: dates, name: "날짜", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9, interval: Math.max(0, Math.floor(dates.length / 8)) } },
     yAxis3D: { type: "category", data: names, name: "매체", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9 } },
@@ -83,10 +87,10 @@ function Bar3D({ series }: { series: { name: string; rows: DailyRow[] }[] }) {
       boxWidth: 150, boxDepth: 78, boxHeight: 62,
       viewControl: { autoRotate: false, distance: 210, alpha: 22, beta: 32 },
       light: { main: { intensity: 1.15, shadow: true, alpha: 40, beta: 30 }, ambient: { intensity: 0.42 } },
-      axisLine: { lineStyle: { color: "var(--border-strong)" } },
-      splitLine: { lineStyle: { color: "var(--bg-elevated)" } },
+      axisLine: { lineStyle: { color: C.line } },
+      splitLine: { lineStyle: { color: C.grid } },
       axisPointer: { lineStyle: { color: P.accent } },
-      environment: "var(--card)",
+      environment: C.bg,
     },
     series: [{ type: "bar3D", data, shading: "lambert", barSize: 4.2, itemStyle: { opacity: 0.94 }, emphasis: { label: { show: false }, itemStyle: { color: "#f2685a" } } }],
   } : null;
@@ -104,12 +108,12 @@ function Scatter3D({ rows }: { rows: MediaRow[] }) {
   const option = pts.length ? {
     tooltip: {
       formatter: (p: any) => `<b>${p.data.name}</b><br/>광고비 ${won(p.value[0])}<br/>전환율 ${p.value[1].toFixed(2)}%<br/>노출 ${fmt(p.value[2])}`,
-      backgroundColor: "var(--card)", borderColor: P.border, borderWidth: 1, textStyle: { color: P.text, fontSize: 12 },
+      backgroundColor: C.surface, borderColor: P.border, borderWidth: 1, textStyle: { color: P.text, fontSize: 12 },
     },
     visualMap: {
       max: maxImp, dimension: 2, show: true, right: 8, top: "center", calculable: true,
       textStyle: { color: P.sub, fontSize: 10 }, formatter: (v: number) => fmt(v),
-      inRange: { color: ["#b9e4d0", "#3bd6b4", "#4a90e2", "var(--accent)", "#7b61ff"] },
+      inRange: { color: ["#b9e4d0", "#3bd6b4", "#4a90e2", "#5aa2f0", "#7b61ff"] },
     },
     xAxis3D: { type: "value", name: "광고비", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9, formatter: (v: number) => won(v) } },
     yAxis3D: { type: "value", name: "전환율(%)", nameTextStyle: { color: P.sub, fontSize: 11 }, axisLabel: { color: P.sub, fontSize: 9 } },
@@ -118,15 +122,15 @@ function Scatter3D({ rows }: { rows: MediaRow[] }) {
       boxWidth: 110, boxDepth: 110, boxHeight: 78,
       viewControl: { autoRotate: false, distance: 200, alpha: 20, beta: 38 },
       light: { main: { intensity: 1.1, alpha: 35, beta: 30 }, ambient: { intensity: 0.45 } },
-      axisLine: { lineStyle: { color: "var(--border-strong)" } },
-      splitLine: { lineStyle: { color: "var(--bg-elevated)" } },
-      environment: "var(--card)",
+      axisLine: { lineStyle: { color: C.line } },
+      splitLine: { lineStyle: { color: C.grid } },
+      environment: C.bg,
     },
     series: [{
       type: "scatter3D", symbolSize: 14,
       data: pts.map(p => ({ value: p.v, name: p.name })),
       itemStyle: { opacity: 0.86, borderWidth: 0.6, borderColor: "rgba(0,0,0,.18)" },
-      emphasis: { itemStyle: { color: "#f2685a" }, label: { show: true, formatter: (p: any) => p.data.name, textStyle: { color: P.text, fontSize: 11, backgroundColor: "var(--card)", padding: 4, borderRadius: 4 } } },
+      emphasis: { itemStyle: { color: "#f2685a" }, label: { show: true, formatter: (p: any) => p.data.name, textStyle: { color: P.text, fontSize: 11, backgroundColor: C.surface, padding: 4, borderRadius: 4 } } },
     }],
   } : null;
   const el = useChart(option, [rows.length], 400);
@@ -165,7 +169,7 @@ export default function Echarts3DMediaCharts({ rows, days }: { rows: MediaRow[];
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={panel}>
         <div style={head}>
-          <Box size={15} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />시간 × 매체 × 노출 — 3D 지형
+          <Box size={15} style={{ verticalAlign: "-2px", marginRight: 6, color: C.accent }} />시간 × 매체 × 노출 — 3D 지형
           <span style={sub}>x = 날짜 · y = 매체 TOP8 · z = 노출 · 색 = 노출 강도 (3축 전부 실데이터)</span>
         </div>
         {loading && !series.length ? <Empty msg="매체별 일별 시계열 조달 중…" h={400} /> : <Bar3D series={series} />}
@@ -173,7 +177,7 @@ export default function Echarts3DMediaCharts({ rows, days }: { rows: MediaRow[];
       </div>
       <div style={panel}>
         <div style={head}>
-          <Globe size={15} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />광고비 × 전환율 × 노출 — 3D 효율 공간
+          <Globe size={15} style={{ verticalAlign: "-2px", marginRight: 6, color: C.accent }} />광고비 × 전환율 × 노출 — 3D 효율 공간
           <span style={sub}>x = 광고비 · y = 전환율 · z = 노출 · 색 = 노출 강도 (3축 전부 실데이터)</span>
         </div>
         {rows.length ? <Scatter3D rows={rows} /> : <Empty msg="데이터 로딩 중…" h={400} />}
