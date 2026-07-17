@@ -4,7 +4,7 @@
    시스템관리 > 분류 맵핑 관리
    - 업종 소분류: 강제지정분류(하드코딩/오버라이드) ↔ DB 정본(de_dmp_category_code) 대조·편집.
    - 기타 매핑 메타데이터(연령·요일·금액·카드사·시도·쇼핑색상) 조회 관리.
-   - 편집은 브라우저 localStorage 오버라이드(서버 미반영). DB 영속은 후속(쓰기 RPC/PO 승인).
+   - 편집은 DB 영속(de_dmp_label_overrides · admin 전용 API 경유). 정본 테이블 불변.
    ══════════════════════════════════════════════════════════════════ */
 
 import { useState, useMemo } from "react";
@@ -99,11 +99,11 @@ export default function SystemMappingTab() {
       </div>
 
       {/* 안내 배너 */}
-      <div style={{ ...cardStyle, display: "flex", gap: 9, alignItems: "flex-start", padding: "10px 13px", marginBottom: 18, background: "var(--badge-warning-bg)", borderColor: "transparent" }}>
-        <Info size={15} strokeWidth={2} style={{ color: "var(--badge-warning-fg)", flexShrink: 0, marginTop: 1 }} />
-        <div style={{ fontSize: 11.5, color: "var(--badge-warning-fg)", lineHeight: 1.55 }}>
-          현재 편집은 <b>이 브라우저(localStorage)에만 저장</b>되어 즉시 화면에 반영됩니다. 서버·타 기기에는 반영되지 않습니다.
-          DB 영속(정본 편집)은 쓰기 RPC/권한 신설과 PO 승인 후 동일 인터페이스로 연결 예정입니다.
+      <div style={{ ...cardStyle, display: "flex", gap: 9, alignItems: "flex-start", padding: "10px 13px", marginBottom: 18, background: "var(--badge-teal-bg)", borderColor: "transparent" }}>
+        <Info size={15} strokeWidth={2} style={{ color: "var(--badge-teal-fg)", flexShrink: 0, marginTop: 1 }} />
+        <div style={{ fontSize: 11.5, color: "var(--badge-teal-fg)", lineHeight: 1.55 }}>
+          편집은 <b>DB(de_dmp_label_overrides)에 영속</b>되어 모든 사용자·기기에 즉시 반영됩니다(admin 전용).
+          정본 테이블(de_dmp_category_code)은 변경하지 않으며, 오버라이드 해제 시 정본 라벨로 복귀합니다.
         </div>
       </div>
 
@@ -121,7 +121,7 @@ export default function SystemMappingTab() {
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {overrideCount > 0 && (
-              <button onClick={() => { if (confirm(`로컬 오버라이드 ${overrideCount}건을 모두 초기화할까요?`)) clearOverrides(NS); }}
+              <button onClick={() => { if (confirm(`오버라이드 ${overrideCount}건을 모두 초기화할까요? (모든 사용자에게 반영)`)) clearOverrides(NS); }}
                 style={ghostBtn()}>
                 <RotateCcw size={12} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4 }} />오버라이드 초기화 ({overrideCount})
               </button>
@@ -190,7 +190,7 @@ export default function SystemMappingTab() {
                             <Pencil size={11} strokeWidth={2} style={{ verticalAlign: "-1px", marginRight: 3 }} />{r.isForced ? "수정" : "지정"}
                           </button>
                           {r.isOverride && (
-                            <button onClick={() => removeOverride(NS, r.code)} style={ghostBtn()} title="로컬 오버라이드 해제(하드코딩/DB 기본값으로)">
+                            <button onClick={() => removeOverride(NS, r.code)} style={ghostBtn()} title="오버라이드 해제(하드코딩/DB 기본값으로)">
                               <RotateCcw size={11} strokeWidth={2} />
                             </button>
                           )}
@@ -251,13 +251,13 @@ function sourceBadge(r: Row) {
   if (r.status === "diff")
     return (
       <Tip content={<ForcedLabelTipBody code={r.code} dbLabel={r.db} forcedLabel={r.forced} />}>
-        <span style={{ ...badge("danger"), fontSize: 9.5, fontWeight: 700, padding: "2px 7px", borderRadius: 6, cursor: "default" }}>강제≠DB{r.isOverride ? " (로컬)" : ""}</span>
+        <span style={{ ...badge("danger"), fontSize: 9.5, fontWeight: 700, padding: "2px 7px", borderRadius: 6, cursor: "default" }}>강제≠DB{r.isOverride ? " (편집됨)" : ""}</span>
       </Tip>
     );
   if (r.isForced)
     return (
       <Tip content={<ForcedLabelTipBody code={r.code} dbLabel={r.db} forcedLabel={r.forced} />}>
-        <span style={{ ...badge("warning"), fontSize: 9.5, fontWeight: 700, padding: "2px 7px", borderRadius: 6, cursor: "default" }}>강제지정분류{r.isOverride ? " (로컬)" : ""}</span>
+        <span style={{ ...badge("warning"), fontSize: 9.5, fontWeight: 700, padding: "2px 7px", borderRadius: 6, cursor: "default" }}>강제지정분류{r.isOverride ? " (편집됨)" : ""}</span>
       </Tip>
     );
   if (r.status === "db-only")

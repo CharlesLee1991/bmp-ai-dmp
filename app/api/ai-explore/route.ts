@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
     // action: create(기본) | approve | reject | status
     const { action = "create", query, request_id } = body;
     let url = `${WORKER}/dmp/segment/explore`;
-    let init: RequestInit = { method: "POST", headers: { "Content-Type": "application/json" } };
+    const authHeaders = { "Content-Type": "application/json", "X-API-Key": process.env.DMP_MCP_API_KEY || "" };
+    let init: RequestInit = { method: "POST", headers: authHeaders };
     if (action === "create") {
       if (!query) return NextResponse.json({ error: "query required" }, { status: 400 });
       init.body = JSON.stringify({ query });
@@ -20,11 +21,11 @@ export async function POST(req: NextRequest) {
       if (!request_id) return NextResponse.json({ error: "request_id required" }, { status: 400 });
       url += `/${encodeURIComponent(request_id)}/${action}`;
     } else if (action === "list") {
-      init = { method: "GET" };
+      init = { method: "GET", headers: authHeaders };
     } else if (action === "status") {
       if (!request_id) return NextResponse.json({ error: "request_id required" }, { status: 400 });
       url += `/${encodeURIComponent(request_id)}`;
-      init = { method: "GET" };
+      init = { method: "GET", headers: authHeaders };
     } else {
       return NextResponse.json({ error: "unknown action" }, { status: 400 });
     }
