@@ -201,7 +201,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
                   <span style={{
                     width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 9, fontWeight: 700, flexShrink: 0,
-                    background: i < 3 ? P.accent : "rgba(0,0,0,.06)", color: i < 3 ? "var(--card)" : P.sub
+                    background: i < 3 ? P.accent : "var(--bg-elevated)", color: i < 3 ? "#fff" : P.sub
                   }}>{i + 1}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
@@ -214,7 +214,7 @@ export default function SpendingTab({ sido, sex, age, ymFrom, ymTo }: Props) {
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ flex: 1, height: 4, background: "rgba(0,0,0,.04)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ flex: 1, height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
                         <div style={{ height: "100%", background: COLORS[i % COLORS.length], borderRadius: 2, width: `${pct}%`, transition: "width .4s", opacity: .65 }} />
                       </div>
                       <span style={{ fontSize: 9, color: P.sub, flexShrink: 0 }}>{fmtAmt(item.total_amt)}</span>
