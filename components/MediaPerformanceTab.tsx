@@ -3,10 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart3, Repeat } from "lucide-react";
 
-// BizViz 코스믹 시각화 (신규 버전) — 코드분할: three.js는 선택 시에만 로드
-const BizVizMediaCharts = dynamic(() => import("./BizVizMediaCharts"), { ssr: false });
+// 코드분할: 무거운 시각화 모듈은 선택 시에만 로드
 const CleanMediaCharts = dynamic(() => import("./CleanMediaCharts"), { ssr: false });
-const Echarts3DMediaCharts = dynamic(() => import("./Echarts3DMediaCharts"), { ssr: false });
+// 3D 탐색기 — 기존 gl3d(ECharts-GL) + BizViz(three.js) 병합, 탭 기반 3-축 탐색 + 전체창
+const Media3DExplorer = dynamic(() => import("./Media3DExplorer"), { ssr: false });
 
 // 📊 매체 성과 탭 (T-DMP-ACTIVATION Track B)
 // 매체(platform 105종)별 노출/클릭/전환/광고비 + 전체 일별 추이.
@@ -30,7 +30,7 @@ const fmt = (n: number) => n >= 100000000 ? `${(n / 100000000).toFixed(1)}억` :
 const won = (n: number) => n >= 100000000 ? `${(n / 100000000).toFixed(2)}억원` : `${(n / 10000).toFixed(0)}만원`;
 
 export default function MediaPerformanceTab() {
-  const [viz, setViz] = useState<"current" | "clean" | "gl3d" | "bizviz">("current");  // 시각화 버전 토글 (4단)
+  const [viz, setViz] = useState<"current" | "clean" | "explore3d">("current");  // 시각화 토글 (현재 / 정제 2D / 3D 탐색기)
   const [days, setDays] = useState(30);
   const [rows, setRows] = useState<MediaRow[]>([]);
   const [daily, setDaily] = useState<DailyRow[]>([]);
@@ -112,8 +112,8 @@ export default function MediaPerformanceTab() {
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 11, color: P.sub }}>시각화</span>
           <div style={{ display: "flex", border: `1px solid ${P.border}`, borderRadius: 16, overflow: "hidden" }}>
-            {([["current", "현재"], ["clean", "정제 2D"], ["gl3d", "3D"], ["bizviz", "✦ BizViz"]] as const).map(([v, lab]) => (
-              <button key={v} onClick={() => setViz(v)} style={{ padding: "4px 12px", fontSize: 12, cursor: "pointer", border: "none", background: viz === v ? (v === "bizviz" ? "#101318" : P.accent) : "var(--card)", color: viz === v ? "var(--card)" : P.sub, fontWeight: viz === v ? 700 : 400 }}>{lab}</button>
+            {([["current", "현재"], ["clean", "정제 2D"], ["explore3d", "3D 탐색"]] as const).map(([v, lab]) => (
+              <button key={v} onClick={() => setViz(v)} style={{ padding: "4px 12px", fontSize: 12, cursor: "pointer", border: "none", background: viz === v ? P.accent : "var(--card)", color: viz === v ? "var(--card)" : P.sub, fontWeight: viz === v ? 700 : 400 }}>{lab}</button>
             ))}
           </div>
         </div>
@@ -135,11 +135,9 @@ export default function MediaPerformanceTab() {
         ))}
       </div>
 
-      {/* 시각화: 현재 = 미니 바차트 / 정제 2D = recharts / BizViz = 코스믹 3D */}
-      {viz === "bizviz" ? (
-        <BizVizMediaCharts rows={rows} daily={daily} />
-      ) : viz === "gl3d" ? (
-        <Echarts3DMediaCharts rows={rows} days={days} />
+      {/* 시각화: 현재 = 미니 바차트 / 정제 2D = recharts / 3D 탐색 = 탭 기반 3-축 탐색기 */}
+      {viz === "explore3d" ? (
+        <Media3DExplorer rows={rows} days={days} />
       ) : viz === "clean" ? (
         <CleanMediaCharts rows={rows} daily={daily} />
       ) : (
