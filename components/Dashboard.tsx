@@ -24,6 +24,7 @@ import MembershipSegment from "./MembershipSegment";
 import SystemMappingTab from "./SystemMappingTab";
 import CartDrawer, { CartButton } from "./CartDrawer";
 import TargetAudienceTab from "./TargetAudienceTab";
+import HomeDashboard from "./HomeDashboard";
 import { addToCart } from "@/lib/cart";
 import { Tip, ForcedLabelTipBody } from "./Tip";
 import { useOverrides } from "@/lib/labelOverrides";
@@ -375,7 +376,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [campaignText, setCampaignText] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignResult, setCampaignResult] = useState<any>(null);
-  const [tab, setTab] = useState<TabId>("card");
+  const [tab, setTab] = useState<TabId>("home");
   const isAdmin = user.role === "admin";
   const demoActive = DEMO_TABS.includes(tab);   // 공통 데모그래픽 필터 활성 화면 여부
   const exploreTab = EXPLORE_TABS.includes(tab);   // 오디언스 탐색 4화면 여부 (헤더·액션 통일)
@@ -1698,6 +1699,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         />
       )}
       {tab === "targets" && <TargetAudienceTab user={user} />}
+      {tab === "home" && <HomeDashboard user={user} onNavigate={setTab} />}
 
       {/* ── 오디언스 카트 드로어 + 담기 토스트 ── */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} userId={user.id} onGoToTargets={() => { setCartOpen(false); setTab("targets"); }} />

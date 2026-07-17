@@ -11,22 +11,23 @@ import { P, SB } from "@/lib/theme";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Settings2, UserCog, Boxes,
-  LogOut, type LucideIcon,
+  LayoutDashboard, LogOut, type LucideIcon,
 } from "lucide-react";
 import type { DmpUser } from "@/lib/auth";
 
 export type TabId =
-  | "card" | "subway" | "bus" | "membership" | "aiexplore" | "persona"
+  | "home" | "card" | "subway" | "bus" | "membership" | "aiexplore" | "persona"
   | "targets" | "exports" | "media" | "spending" | "cards" | "shopping"
   | "sysmap";
 
-export type MenuGroup = "define" | "explore" | "extract" | "insight" | "system";
+export type MenuGroup = "home" | "define" | "explore" | "extract" | "insight" | "system";
 
-// 메뉴 그룹 — 오디언스 추출 업무 흐름 순:
+// 메뉴 그룹 — 대시보드(개요) → 오디언스 추출 업무 흐름 순:
 // 1 타겟 정의(페르소나) → 2 오디언스 탐색(데이터소스별) → 3 추출·전송(생성+이력)
 // → 4 성과·인사이트(폐루프+시장) / 시스템 관리(흐름 밖 운영)
-export const GROUP_ORDER: MenuGroup[] = ["define", "explore", "extract", "insight", "system"];
+export const GROUP_ORDER: MenuGroup[] = ["home", "define", "explore", "extract", "insight", "system"];
 export const GROUP_LABEL: Record<MenuGroup, string> = {
+  home: "개요",
   define: "1 · 타겟 정의",
   explore: "2 · 오디언스 탐색",
   extract: "3 · 추출 · 전송",
@@ -35,6 +36,8 @@ export const GROUP_LABEL: Record<MenuGroup, string> = {
 };
 
 export const TABS: { id: TabId; label: string; icon: LucideIcon; roles: string[]; group: MenuGroup }[] = [
+  // 개요 — 운영 상태·가이드·시작하기
+  { id: "home", label: "대시보드", icon: LayoutDashboard, roles: ["admin", "advertiser"], group: "home" },
   // 1 · 타겟 정의 — 흐름의 시작: 누구를 노릴지
   { id: "persona", label: "페르소나", icon: UserCog, roles: ["admin", "advertiser"], group: "define" },
   // 2 · 오디언스 탐색 — 데이터소스별 브라우징·필터 정제
