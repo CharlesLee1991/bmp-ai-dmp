@@ -104,7 +104,8 @@ import { P, badge, tooltipStyle, tooltipCursor, cardStyle, SERIES } from "@/lib/
 
 ### 4.1 필터 3계층 (사용자 지시)
 1. **타겟 정의(페르소나)** — 브레드크럼 하단 최상단 고정. **저장된 페르소나 칩(다중 선택)** + 결합 필터 정의(`filterParts`) + 예상 모수를 전 화면 pin.
-   - **페르소나** = 별명 + 데모그래픽/데이터소스별 필터속성 결합(필터세트). `lib/persona.ts` (localStorage `dmp-personas-v1`, 프론트 v1).
+   - **페르소나** = 별명 + 데모그래픽/데이터소스별 필터속성 결합(필터세트). `lib/persona.ts`.
+   - **저장소(v2)**: Supabase `de_dmp_personas`(RLS 활성 + anon 정책, 접근은 `/api/personas` 라우트의 dmp_token 인증 뒤) — 서버 우선, localStorage(`dmp-personas-v1`)는 캐시·오프라인 폴백 + 최초 1회 로컬→서버 이관. 광고주=본인 것만, 관리자=전체(exports 규칙과 동일).
    - **페르소나 빌더**(`components/PersonaBuilder.tsx`): 자연어 기술 → AI 필터정의(기존 `/api/campaign-target` 재사용, 3안 추천) → 모수·선택률 바(`/api/segment-preview`) + AI 라이프스타일 자연어 기술(`/api/ai-recommend`) → **저장 = 필터세트 저장**.
    - **다중 선택 = 필터 합집합(union)** 을 공통 데모그래픽 + 카드 화면필터 상태에 즉시 적용 → 어떤 화면을 다녀도 해당 페르소나 정의로 브라우징. 칩 × = 삭제. (setState 직후 적용은 최신 목록 인자로 전달 — stale closure 방지.)
 2. **공통 데모그래픽 필터(도킹)** — 성별·연령·지역. `position:sticky; top:56` 로 타겟정의 바로 아래 고정, 전 화면 지속. **소비 화면(`DEMO_TABS`=카드·지하철·버스·멤버십·소비트렌드)에서만 활성**, 그 외(AI탐색·전송이력·매체·카드사·쇼핑)는 `opacity+grayscale+pointer-events:none`로 **비활성 표기 + "자체 필터 사용" 안내**.

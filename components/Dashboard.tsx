@@ -30,7 +30,7 @@ import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
 import { DmpSidebar, TABS, TAB_LABEL, type TabId } from "./DmpSidebar";
 import { PersonaBuilder } from "./PersonaBuilder";
-import { type Persona, loadPersonas, savePersonas, mergePersonaFilters } from "@/lib/persona";
+import { type Persona, savePersonas, mergePersonaFilters, syncPersonas, persistPersonaServer, deletePersonaServer } from "@/lib/persona";
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
@@ -333,7 +333,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [personaIds, setPersonaIds] = useState<string[]>([]);   // 다중 선택
   const [builderOpen, setBuilderOpen] = useState(false);
-  useEffect(() => { setPersonas(loadPersonas()); }, []);
+  useEffect(() => { syncPersonas().then(setPersonas); }, []);   // 서버 우선 + 로컬 폴백/이관
   // 선택 변경 → 합집합 필터를 화면 필터 상태에 적용 (해제 시 해당 필터 초기화)
   // list 인자: setState 직후 호출 시 stale closure 방지용 최신 목록 전달
   const applyPersonas = (ids: string[], list?: Persona[]) => {
@@ -350,11 +350,13 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const removePersona = (id: string) => {
     const next = personas.filter(p => p.id !== id);
     setPersonas(next); savePersonas(next);
+    void deletePersonaServer(id);   // 서버 동기 삭제 (fire-and-forget)
     if (personaIds.includes(id)) applyPersonas(personaIds.filter(x => x !== id), next);
   };
   const handlePersonaSave = (p: Persona) => {
     const next = [...personas, p];
     setPersonas(next); savePersonas(next); setBuilderOpen(false);
+    void persistPersonaServer(p);   // 서버 저장 (fire-and-forget, 로컬 미러 유지)
     applyPersonas([...personaIds, p.id], next);   // 저장 즉시 선택·적용 (최신 목록 전달)
   };
   const [campaignText, setCampaignText] = useState("");
