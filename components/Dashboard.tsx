@@ -23,6 +23,8 @@ import BehaviorPlaceholder from "./BehaviorPlaceholder";
 import TransitSegment from "./TransitSegment";
 import MembershipSegment from "./MembershipSegment";
 import SystemMappingTab from "./SystemMappingTab";
+import CartDrawer, { CartButton } from "./CartDrawer";
+import { addToCart } from "@/lib/cart";
 import { Tip, ForcedLabelTipBody } from "./Tip";
 import { useOverrides } from "@/lib/labelOverrides";
 import type { DmpUser } from "@/lib/auth";
@@ -529,6 +531,71 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const adOs: { os: string; users: number; imps: number; clicks: number }[] = adEngData?.os || [];
 
   /* export */
+  // EF(dmp-target-export) 전송용 평탄 필터 — 현재 화면 필터 상태 스냅샷 (전송·카트 담기 공용)
+  const buildEfFilters = (): Record<string, string> => {
+    const filters: Record<string, string> = {};
+    if (sexes.length) filters.sex = sexes.join(",");
+    if (ages.length) filters.age_group = ages.join(",");
+    if (sidos.length) filters.region = sidos.join(",");
+    if (sigoongus.length) filters.city = sigoongus.join(",");
+    if (eupmds.length) filters.district = eupmds.join(",");
+    if (subCats.length) filters.subcategory = subCats.join(",");
+    else if (middleCats.length) filters.middle_category = middleCats.join(",");
+    else if (majorCats.length) filters.major_category = majorCats.join(",");
+    if (shopCats.length) filters.shop_category = shopCats.join(",");
+    if (uploadSession) filters.upload_session = uploadSession;
+    if (audCats.length) filters.cat1 = audCats.join(",");
+    if (apprlValueC && tab === "card") filters.apprl = JSON.stringify({ metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValueC), ...(apprlOper === "between" ? { value2: Number(apprlValue2C || apprlValueC) } : {}) });
+    return filters;
+  };
+
+  /* ── 오디언스 카트: 담기 액션 ── */
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cartToast, setCartToast] = useState("");
+  const toastCart = (msg: string) => { setCartToast(msg); setTimeout(() => setCartToast(""), 2200); };
+
+  // ① 현재 화면 필터 조건 담기 (카드 탭 — EF 추출 가능 조건만)
+  const addCurrentToCart = () => {
+    const filters = buildEfFilters();
+    if (!Object.keys(filters).length) { toastCart("담을 필터 조건이 없습니다"); return; }
+    const dropped: string[] = [];
+    if (amountFilters.length) dropped.push("금액구간");
+    if (cardCompanies.length) dropped.push("카드사");
+    if (telecoms.length) dropped.push("통신사");
+    if (mobileBrands.length) dropped.push("단말브랜드");
+    addToCart({
+      type: "filter",
+      label: `현재 조건 (${TAB_LABEL[tab as TabId]})`,
+      summary: filterParts.join(" · ") || "조건 없음",
+      sourceTab: tab,
+      filters,
+      estimated: segEstimate?.estimated_audience ?? null,
+      dropped: dropped.length ? dropped : undefined,
+    });
+    toastCart("카트에 담았습니다");
+  };
+
+  // ② 페르소나 담기 — 담는 시점 필터를 EF 스키마로 동결 (참조 + 사본)
+  const addPersonaToCart = (p: Persona) => {
+    const f = p.filters;
+    const filters: Record<string, string> = {};
+    if (f.sexes?.length) filters.sex = f.sexes.join(",");
+    if (f.ages?.length) filters.age_group = f.ages.join(",");
+    if (f.sidos?.length) filters.region = f.sidos.join(",");
+    if (f.majorCats?.length) filters.major_category = f.majorCats.join(",");
+    if (!Object.keys(filters).length) { toastCart("EF 추출 가능한 조건이 없는 페르소나입니다"); return; }
+    const dropped: string[] = [];
+    if (f.amountFilters?.length) dropped.push("금액구간");
+    if (f.cardCompanies?.length) dropped.push("카드사");
+    if (f.telecoms?.length) dropped.push("통신사");
+    addToCart({
+      type: "persona", label: p.name, summary: p.filterSummary, sourceTab: tab,
+      filters, personaId: p.id, estimated: p.estimated ?? null,
+      dropped: dropped.length ? dropped : undefined,
+    });
+    toastCart(`"${p.name}" 페르소나를 담았습니다`);
+  };
+
   const handleExport = async (env: "dev" | "prod") => {
     const datePart = new Date().toISOString().slice(2,10).replace(/-/g,"");
     const name = exportName.trim() || (exportSource === "audience"
@@ -548,19 +615,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       return;
     }
     try {
-      const filters: Record<string, string> = {};
-      if (sexes.length) filters.sex = sexes.join(",");
-      if (ages.length) filters.age_group = ages.join(",");
-      if (sidos.length) filters.region = sidos.join(",");
-      if (sigoongus.length) filters.city = sigoongus.join(",");
-      if (eupmds.length) filters.district = eupmds.join(",");
-      if (subCats.length) filters.subcategory = subCats.join(",");
-      else if (middleCats.length) filters.middle_category = middleCats.join(",");
-      else if (majorCats.length) filters.major_category = majorCats.join(",");
-      if (shopCats.length) filters.shop_category = shopCats.join(",");
-      if (uploadSession) filters.upload_session = uploadSession;
-      if (audCats.length) filters.cat1 = audCats.join(",");
-      if (apprlValueC && tab === "card") filters.apprl = JSON.stringify({ metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValueC), ...(apprlOper === "between" ? { value2: Number(apprlValue2C || apprlValueC) } : {}) });
+      const filters = buildEfFilters();
       const resp = await fetch(DMP_EXPORT_FN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPA_ANON_KEY}` },
@@ -748,6 +803,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: isLive ? P.green : error ? "var(--danger)" : P.sub, boxShadow: isLive ? `0 0 8px ${P.green}` : "none" }} />
             {isLive ? `LIVE · ${responseMs ?? "?"}ms` : error ? "Fallback" : "..."}
           </span>
+          <CartButton userId={user.id} onClick={() => setCartOpen(true)} />
           <ThemeMenu />
         </div>
       </header>
@@ -775,6 +831,10 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 onClick={() => togglePersona(p.id)}
               >
                 {p.name}
+                <span onClick={e => { e.stopPropagation(); addPersonaToCart(p); }} title="카트에 담기"
+                  style={{ display: "inline-flex", width: 15, height: 15, alignItems: "center", justifyContent: "center", borderRadius: "50%", opacity: .6 }}>
+                  <ShoppingCart size={10} strokeWidth={2.4} />
+                </span>
                 <span onClick={e => { e.stopPropagation(); removePersona(p.id); }} title="페르소나 삭제"
                   style={{ display: "inline-flex", width: 15, height: 15, alignItems: "center", justifyContent: "center", borderRadius: "50%", fontSize: 11, lineHeight: 1, opacity: .55 }}>×</span>
               </span>
@@ -1109,6 +1169,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
               {/* CL 표준 §1 버튼 톤: 옵션 = outline / 필수(전송) = 단일 solid primary */}
               <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: campaignOpen ? P.appGlow : "transparent", color: campaignOpen ? P.app : P.sub, border: `1px solid ${campaignOpen ? "var(--accent-2)" : P.border}` }}><Target size={14} strokeWidth={2} /> 캠페인 타겟 찾기</button>
               <button onClick={() => setAiExploreOpen(!aiExploreOpen)} style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: aiExploreOpen ? P.glow : "transparent", color: aiExploreOpen ? P.accent : P.sub, border: `1px solid ${aiExploreOpen ? P.accent : P.border}` }}><FlaskConical size={14} strokeWidth={2} /> AI 오디언스 탐색</button>
+              <button onClick={addCurrentToCart} title="현재 필터 조건을 오디언스 카트에 담습니다" style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: P.card, color: P.accent, border: `1px solid ${P.accent}` }}><ShoppingCart size={13} strokeWidth={2.2} /> 현재 조건 담기</button>
               <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none", boxShadow: P.shadowSoft }}><Send size={14} strokeWidth={2.2} /> 런컴 타겟 전송</button>
             </div>
           )}
@@ -1507,6 +1568,16 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           onPersonasChange={(list) => { setPersonas(list); savePersonas(list); }}
           onApply={applyPersonas}
         />
+      )}
+
+      {/* ── 오디언스 카트 드로어 + 담기 토스트 ── */}
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} userId={user.id} />
+      {cartToast && (
+        <div style={{ position: "fixed", bottom: 26, right: 26, zIndex: 320, background: P.card, border: `1px solid ${P.border}`, borderLeft: `3px solid ${P.accent}`, borderRadius: 10, boxShadow: P.shadowLg, padding: "10px 16px", fontSize: 12.5, fontWeight: 600, color: P.text, display: "flex", alignItems: "center", gap: 8 }}>
+          <ShoppingCart size={14} strokeWidth={2.2} style={{ color: P.accent }} />
+          {cartToast}
+          <button onClick={() => { setCartToast(""); setCartOpen(true); }} style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", color: P.accent, fontSize: 12, fontWeight: 700 }}>카트 보기</button>
+        </div>
       )}
 
       {/* EXPORT MODAL */}
