@@ -8,7 +8,7 @@
    - 렌더러: ECharts(2D graph/scatter/bar) + ECharts-GL(3D). 색은 고정 hex(브랜드 격리 다크).
    ══════════════════════════════════════════════════════════════════ */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Maximize2, Minimize2, Box, Target, Filter, GitCompareArrows, Share2, Grid3x3, CircleDot, BarChart2, Sparkles, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { Maximize2, Minimize2, Box, Target, Filter, GitCompareArrows, Share2, Grid3x3, BarChart2, Sparkles, RefreshCw, Eye, EyeOff, PanelRightClose, PanelRightOpen, SlidersHorizontal, X } from "lucide-react";
 
 export type MediaRow = { platform_name: string; platform_idx: number; impressions: number; clicks: number; conversions: number; ad_spend: number; ctr_pct: number };
 export type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
@@ -25,6 +25,21 @@ const mmdd = (d: string) => d.length === 8 ? `${d.slice(4, 6)}/${d.slice(6, 8)}`
 const cvr = (r: MediaRow) => r.impressions > 0 ? (r.conversions / r.impressions) * 100 : 0;
 const ctr = (r: MediaRow) => r.impressions > 0 ? (r.clicks / r.impressions) * 100 : 0;
 const cpa = (r: MediaRow) => r.conversions > 0 ? r.ad_spend / r.conversions : 0;
+
+// IQR(1.5×) 극단값 판정 — 현재 분석의 축(지표) 중 어느 하나라도 경계 밖이면 극단 매체
+function iqrBounds(vals: number[]) {
+  const s = [...vals].filter(Number.isFinite).sort((a, b) => a - b); const n = s.length;
+  if (n < 4) return { lo: -Infinity, hi: Infinity };
+  const q = (p: number) => { const i = (n - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+  const q1 = q(0.25), q3 = q(0.75), iqr = q3 - q1;
+  return { lo: q1 - 1.5 * iqr, hi: q3 + 1.5 * iqr };
+}
+function outlierSet(rows: MediaRow[], metrics: ((r: MediaRow) => number)[]): Set<number> {
+  const bounds = metrics.map(m => iqrBounds(rows.map(m)));
+  const out = new Set<number>();
+  rows.forEach(r => { if (metrics.some((m, i) => { const v = m(r); return v < bounds[i].lo || v > bounds[i].hi; })) out.add(r.platform_idx); });
+  return out;
+}
 
 let glPromise: Promise<any> | null = null;
 function loadECharts(): Promise<any> {
@@ -65,19 +80,18 @@ const AX = {
   conv: { name: "전환수", fmt, get: (r: MediaRow) => r.conversions } as Axis,
   clicks: { name: "클릭", fmt, get: (r: MediaRow) => r.clicks } as Axis,
 };
-type Form = "scatter3d" | "bubble" | "histogram" | "network";
+type Form = "scatter3d" | "bar3d" | "network";
 type Analysis = { key: string; title: string; icon: any; desc: string; kind: "axis" | "time" | "network"; x?: Axis; y?: Axis; z?: Axis; forms: Form[] };
 const ANALYSES: Analysis[] = [
-  { key: "eff", title: "효율 공간 분석", icon: Target, kind: "axis", x: AX.spend, y: AX.cvr, z: AX.imp, forms: ["scatter3d", "bubble", "histogram"], desc: "광고비 대비 전환율·노출 — 저비용·고전환·고노출이 이상적" },
-  { key: "acq", title: "획득 효율 분석", icon: Filter, kind: "axis", x: AX.cpa, y: AX.ctr, z: AX.conv, forms: ["scatter3d", "bubble", "histogram"], desc: "획득비용(CPA)·클릭률(CTR)·전환 규모 — 저CPA·고CTR·고전환이 우위" },
-  { key: "funnel", title: "퍼널 3축 분석", icon: GitCompareArrows, kind: "axis", x: AX.imp, y: AX.clicks, z: AX.conv, forms: ["scatter3d", "bubble", "histogram"], desc: "노출→클릭→전환 퍼널 균형 — 대각선에 가까울수록 균형적" },
+  { key: "eff", title: "효율 공간 분석", icon: Target, kind: "axis", x: AX.spend, y: AX.cvr, z: AX.imp, forms: ["scatter3d", "bar3d"], desc: "광고비 대비 전환율·노출 — 저비용·고전환·고노출이 이상적" },
+  { key: "acq", title: "획득 효율 분석", icon: Filter, kind: "axis", x: AX.cpa, y: AX.ctr, z: AX.conv, forms: ["scatter3d", "bar3d"], desc: "획득비용(CPA)·클릭률(CTR)·전환 규모 — 저CPA·고CTR·고전환이 우위" },
+  { key: "funnel", title: "퍼널 3축 분석", icon: GitCompareArrows, kind: "axis", x: AX.imp, y: AX.clicks, z: AX.conv, forms: ["scatter3d", "bar3d"], desc: "노출→클릭→전환 퍼널 균형 — 대각선에 가까울수록 균형적" },
   { key: "time", title: "시계열 지형 분석", icon: Box, kind: "time", forms: ["scatter3d"], desc: "시간×매체×노출 입체 지형 — 특정 매체가 특정일에 터진 봉우리" },
   { key: "network", title: "매체 상관 관계망", icon: Share2, kind: "network", forms: ["network"], desc: "성과 프로파일 유사도로 매체를 연결 — 가까운 매체는 성향이 닮은 매체" },
 ];
 const FORM_META: Record<Form, { label: string; icon: any }> = {
-  scatter3d: { label: "3D 입체분포", icon: Grid3x3 },
-  bubble: { label: "버블", icon: CircleDot },
-  histogram: { label: "히스토그램", icon: BarChart2 },
+  scatter3d: { label: "3D 산점", icon: Grid3x3 },
+  bar3d: { label: "3D 막대", icon: BarChart2 },
   network: { label: "관계형", icon: Share2 },
 };
 
@@ -127,33 +141,21 @@ function scatter3dOption(rows: MediaRow[], a: Analysis) {
     series: [{ type: "scatter3D", symbolSize: 14, data: pts, itemStyle: { opacity: 0.86 }, emphasis: { itemStyle: { color: C.hot }, label: { show: true, formatter: (p: any) => p.data.name, textStyle: { color: C.ink, backgroundColor: C.surface, padding: 4, borderRadius: 4 } } } }],
   };
 }
-function bubbleOption(rows: MediaRow[], a: Analysis) {
+// 3D 막대 — 매체를 x·y 평면에 배치하고 z를 막대 높이로 (같은 3축, 다른 표현)
+function bar3dAxisOption(rows: MediaRow[], a: Analysis) {
   const pts = rows.map(r => ({ value: [a.x!.get(r), a.y!.get(r), a.z!.get(r)], name: r.platform_name })).filter(p => p.value.every(Number.isFinite));
   if (!pts.length) return null;
   const maxZ = Math.max(1, ...pts.map(p => p.value[2]));
-  const maxCvr = Math.max(1e-6, ...rows.map(cvr));
+  const spanX = Math.max(1, ...pts.map(p => p.value[0]));
+  const spanY = Math.max(1, ...pts.map(p => p.value[1]));
   return {
-    grid: { left: 64, right: 24, top: 24, bottom: 48 },
-    tooltip: { formatter: (p: any) => `<b>${p.data.name}</b><br/>${a.x!.name} ${a.x!.fmt(p.value[0])}<br/>${a.y!.name} ${a.y!.fmt(p.value[1])}<br/>${a.z!.name} ${a.z!.fmt(p.value[2])}`, backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink } },
-    xAxis: { type: "value", name: a.x!.name, nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 10, formatter: a.x!.fmt }, axisLine: { lineStyle: { color: C.line } }, splitLine: { lineStyle: { color: C.grid } } },
-    yAxis: { type: "value", name: a.y!.name, nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 10, formatter: a.y!.fmt }, axisLine: { lineStyle: { color: C.line } }, splitLine: { lineStyle: { color: C.grid } } },
-    series: [{ type: "scatter", data: pts.map((p, i) => ({ ...p, symbolSize: 8 + Math.sqrt(p.value[2] / maxZ) * 46, itemStyle: { color: heat(cvr(rows[i]), maxCvr), opacity: 0.72, borderColor: "rgba(255,255,255,.15)" } })),
-      label: { show: true, formatter: (p: any) => shortName(p.data.name, 6), color: C.dim, fontSize: 9, position: "top" } }],
-  };
-}
-function histogramOption(rows: MediaRow[], a: Analysis) {
-  const metric = a.z!; const vals = rows.map(metric.get).filter(Number.isFinite);
-  if (!vals.length) return null;
-  const mn = Math.min(...vals), mx = Math.max(...vals); const bins = 8; const w = (mx - mn) / bins || 1;
-  const counts = Array(bins).fill(0); const labels: string[] = [];
-  for (let b = 0; b < bins; b++) labels.push(`${metric.fmt(mn + b * w)}`);
-  vals.forEach(v => { let b = Math.floor((v - mn) / w); if (b >= bins) b = bins - 1; if (b < 0) b = 0; counts[b]++; });
-  return {
-    grid: { left: 48, right: 24, top: 24, bottom: 56 },
-    tooltip: { trigger: "axis", backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink }, formatter: (ps: any) => `${metric.name} 구간 ${ps[0].axisValue}~<br/><b>${ps[0].data}개 매체</b>` },
-    xAxis: { type: "category", data: labels, name: metric.name, nameLocation: "middle", nameGap: 34, nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, rotate: 30 }, axisLine: { lineStyle: { color: C.line } } },
-    yAxis: { type: "value", name: "매체 수", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 10 }, splitLine: { lineStyle: { color: C.grid } } },
-    series: [{ type: "bar", data: counts, itemStyle: { color: C.accent, borderRadius: [4, 4, 0, 0] }, barWidth: "62%" }],
+    tooltip: { formatter: (p: any) => `<b>${p.data.name}</b><br/>${a.x!.name} ${a.x!.fmt(p.value[0])}<br/>${a.y!.name} ${a.y!.fmt(p.value[1])}<br/>${a.z!.name} ${a.z!.fmt(p.value[2])}`, backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink, fontSize: 12 } },
+    visualMap: { max: maxZ, dimension: 2, show: true, right: 8, top: "center", calculable: true, textStyle: { color: C.dim, fontSize: 10 }, formatter: (v: number) => fmt(v), inRange: { color: HEAT } },
+    xAxis3D: { type: "value", name: a.x!.name, max: spanX, nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, formatter: a.x!.fmt } },
+    yAxis3D: { type: "value", name: a.y!.name, max: spanY, nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, formatter: a.y!.fmt } },
+    zAxis3D: { type: "value", name: a.z!.name, nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, formatter: a.z!.fmt } },
+    grid3D: { boxWidth: 108, boxDepth: 108, boxHeight: 84, viewControl: { distance: 210, alpha: 22, beta: 40 }, light: { main: { intensity: 1.15, shadow: true, alpha: 40, beta: 30 }, ambient: { intensity: 0.42 } }, axisLine: { lineStyle: { color: C.line } }, splitLine: { lineStyle: { color: C.grid } }, environment: C.bg },
+    series: [{ type: "bar3D", data: pts, shading: "lambert", barSize: 6, bevelSize: 0.2, itemStyle: { opacity: 0.92 }, emphasis: { itemStyle: { color: C.hot }, label: { show: true, formatter: (p: any) => p.data.name, textStyle: { color: C.ink, backgroundColor: C.surface, padding: 4, borderRadius: 4 } } } }],
   };
 }
 function networkOption(rows: MediaRow[]) {
@@ -181,8 +183,7 @@ function ChartArea({ rows, series, analysis, form, height, onPick }: { rows: Med
       series: [{ type: "bar3D", data, shading: "lambert", barSize: 4.2, itemStyle: { opacity: 0.94 }, emphasis: { itemStyle: { color: C.hot } } }],
     } : null;
   } else if (analysis.kind === "network") option = networkOption(rows);
-  else if (form === "bubble") option = bubbleOption(rows, analysis);
-  else if (form === "histogram") option = histogramOption(rows, analysis);
+  else if (form === "bar3d") option = bar3dAxisOption(rows, analysis);
   else option = scatter3dOption(rows, analysis);
 
   const el = useChart(option, [analysis.key, form, height, rows.length, JSON.stringify(rows.map(r => r.platform_idx)), series.length], height, onPick);
@@ -197,20 +198,31 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
   const [selected, setSelected] = useState<number | null>(null);
   const [series, setSeries] = useState<{ name: string; rows: DailyRow[] }[]>([]);
   const [tLoading, setTLoading] = useState(false);
-  const [ai, setAi] = useState<{ summary?: string; insights?: string[] } | null>(null);
+  const [ai, setAi] = useState<{ summary?: string; insights?: string[]; recs?: { label?: string; reason?: string }[] } | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [excludeOutliers, setExcludeOutliers] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);      // 우측 패널 숨김/보임
+  const [itemsPop, setItemsPop] = useState(false);        // 항목 온/오프 미니 팝업
 
   const analysis = ANALYSES.find(a => a.key === aKey)!;
   useEffect(() => { if (!analysis.forms.includes(form)) setForm(analysis.forms[0]); }, [aKey]); // eslint-disable-line
 
   const allActive = useMemo(() => rows.filter(r => r.impressions > 0), [rows]);
   const shownRows = useMemo(() => allActive.filter(r => !disabled.has(r.platform_idx)).slice(0, 60), [allActive, disabled]);
+  // 현재 분석 축(지표) 기준 극단 매체 판정 → 토글 시 차트 표현에서 제외 (원본 불변)
+  const outliers = useMemo(() => {
+    const m = analysis.kind === "axis" ? [analysis.x!.get, analysis.y!.get, analysis.z!.get]
+      : analysis.kind === "time" ? [(r: MediaRow) => r.impressions]
+      : [ctr, cvr, (r: MediaRow) => r.ad_spend, (r: MediaRow) => r.impressions];
+    return outlierSet(shownRows, m);
+  }, [shownRows, aKey]); // eslint-disable-line
+  const chartRows = useMemo(() => excludeOutliers ? shownRows.filter(r => !outliers.has(r.platform_idx)) : shownRows, [shownRows, excludeOutliers, outliers]);
   const selRow = selected != null ? rows.find(r => r.platform_idx === selected) : null;
   const nameToIdx = useMemo(() => { const m: Record<string, number> = {}; allActive.forEach(r => m[r.platform_name] = r.platform_idx); return m; }, [allActive]);
 
   useEffect(() => {
     if (analysis.kind !== "time") return;
-    const top = [...shownRows].sort((a, b) => b.impressions - a.impressions).slice(0, 8);
+    const top = [...chartRows].sort((a, b) => b.impressions - a.impressions).slice(0, 8);
     if (!top.length) { setSeries([]); return; }
     let alive = true; setTLoading(true);
     Promise.all(top.map(t => fetch(`/api/media?view=daily&days=${days}&platform_idx=${t.platform_idx}`).then(r => r.json())
@@ -218,21 +230,21 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
       .then(res => { if (!alive) return; const ok = res.filter(s => s.rows.length > 0); const len = Math.max(0, ...ok.map(s => s.rows.length)); setSeries(ok.filter(s => s.rows.length === len)); })
       .finally(() => alive && setTLoading(false));
     return () => { alive = false; };
-  }, [aKey, days, JSON.stringify(shownRows.map(r => r.platform_idx))]); // eslint-disable-line
+  }, [aKey, days, JSON.stringify(chartRows.map(r => r.platform_idx))]); // eslint-disable-line
 
   useEffect(() => { if (!fullscreen) return; const h = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false); }; window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h); }, [fullscreen]);
 
   const genAI = async () => {
     setAiLoading(true);
     try {
-      const top = [...shownRows].sort((a, b) => b.impressions - a.impressions).slice(0, 12);
+      const top = [...chartRows].sort((a, b) => b.impressions - a.impressions).slice(0, 12);
       const body = {
-        filters: `[매체 성과 · ${analysis.title}] 기간 ${days}일 · 표시 매체 ${shownRows.length}개 · 뷰 ${FORM_META[form].label}`,
+        filters: `[매체 성과 · ${analysis.title}] 기간 ${days}일 · 표시 매체 ${chartRows.length}개 · 뷰 ${FORM_META[form].label}. 3~5줄로 상황·인사이트·제안을 간결히.`,
         categories: top.map(r => `${r.platform_name}: 노출 ${fmt(r.impressions)} · 전환 ${fmt(r.conversions)} · CVR ${pctS(cvr(r))} · CTR ${pctS(ctr(r))} · CPA ${won(cpa(r))} · 광고비 ${won(r.ad_spend)}`).join("\n"),
       };
       const res = await fetch("/api/ai-recommend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const d = await res.json();
-      if (d.success && d.analysis) setAi({ summary: d.analysis.summary, insights: d.analysis.insights });
+      if (d.success && d.analysis) setAi({ summary: d.analysis.summary, insights: d.analysis.insights, recs: d.analysis.recommendations });
       else setAi({ summary: "AI 해설 생성 실패: " + (d.error || "알 수 없는 오류") });
     } catch (e: any) { setAi({ summary: "AI 해설 에러: " + e.message }); }
     finally { setAiLoading(false); }
@@ -256,7 +268,7 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
             </div>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {/* 뷰 형태 토글 */}
+            {/* 뷰 형태 토글 (3D 방식 전환) */}
             {analysis.forms.length > 1 && (
               <div style={{ display: "flex", border: `1px solid ${C.line}`, borderRadius: 8, overflow: "hidden" }}>
                 {analysis.forms.map(f => { const M = FORM_META[f]; const on = form === f; return (
@@ -264,10 +276,19 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
                 ); })}
               </div>
             )}
+            {/* 극단값 제외 토글 */}
+            {analysis.kind !== "time" && (
+              <button onClick={() => setExcludeOutliers(v => !v)} title="IQR 1.5× 기준 극단 매체를 차트 표현에서 일시 제외 (원본 불변)" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: `1px solid ${excludeOutliers ? C.accent : C.line}`, borderRadius: 8, padding: "4px 9px", cursor: "pointer" }}>
+                <span style={{ fontSize: 11, fontWeight: excludeOutliers ? 700 : 500, color: excludeOutliers ? "#bfe6ff" : C.dim, whiteSpace: "nowrap" }}>극단값 제외{outliers.size > 0 ? ` (${outliers.size})` : ""}</span>
+                <span style={{ position: "relative", width: 30, height: 16, borderRadius: 999, background: excludeOutliers ? C.accent : C.line, flexShrink: 0 }}><span style={{ position: "absolute", top: 2, left: excludeOutliers ? 16 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left .15s" }} /></span>
+              </button>
+            )}
             {/* 기간 */}
             <div style={{ display: "flex", border: `1px solid ${C.line}`, borderRadius: 8, overflow: "hidden" }}>
               {[7, 30, 90].map(d => <button key={d} onClick={() => onDays?.(d)} style={{ padding: "5px 10px", fontSize: 11, cursor: "pointer", border: "none", background: days === d ? "rgba(56,189,248,0.16)" : "transparent", color: days === d ? "#bfe6ff" : C.dim, fontWeight: days === d ? 700 : 500 }}>{d}일</button>)}
             </div>
+            {/* 패널 토글 */}
+            <button onClick={() => setPanelOpen(p => !p)} title={panelOpen ? "분석 패널 숨기기" : "분석 패널 보기"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 28, borderRadius: 8, cursor: "pointer", border: `1px solid ${panelOpen ? C.accent : C.line}`, background: panelOpen ? "rgba(56,189,248,0.16)" : "transparent", color: panelOpen ? "#bfe6ff" : C.dim }}>{panelOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
             <button onClick={() => setFullscreen(f => !f)} title={fullscreen ? "복귀 (Esc)" : "전체창"} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${C.accent}`, background: "rgba(56,189,248,0.16)", color: "#bfe6ff" }}>{fullscreen ? <><Minimize2 size={12} /> 복귀</> : <><Maximize2 size={12} /> 전체창</>}</button>
           </div>
         </div>
@@ -279,50 +300,81 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
         </div>
       </div>
 
-      {/* 본문: 차트 | 우측 패널 */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 236px", flex: 1, minHeight: 0 }}>
-        <div style={{ minWidth: 0, borderRight: `1px solid ${C.line}` }}>
+      {/* 본문: 차트 | (선택) 우측 패널 */}
+      <div style={{ display: "grid", gridTemplateColumns: panelOpen ? "minmax(0,1fr) 250px" : "minmax(0,1fr)", flex: 1, minHeight: 0 }}>
+        <div style={{ minWidth: 0, borderRight: panelOpen ? `1px solid ${C.line}` : "none" }}>
           {analysis.kind === "time" && tLoading && !series.length ? <Empty msg="매체별 일별 시계열 조달 중…" h={chartHeight} />
-            : <ChartArea key={`${aKey}-${form}-${fullscreen}`} rows={shownRows} series={series} analysis={analysis} form={form} height={chartHeight} onPick={(n) => nameToIdx[n] != null && setSelected(nameToIdx[n])} />}
+            : <ChartArea key={`${aKey}-${form}-${fullscreen}-${excludeOutliers}`} rows={chartRows} series={series} analysis={analysis} form={form} height={chartHeight} onPick={(n) => nameToIdx[n] != null && setSelected(nameToIdx[n])} />}
         </div>
-        {/* 우측 패널: 항목 온/오프 + 선택 상세 */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, background: C.panel }}>
-          <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.line}`, fontSize: 11, fontWeight: 700, color: C.dim, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>매체 항목 · {shownRows.length}/{allActive.length}</span>
-            {disabled.size > 0 && <button onClick={() => setDisabled(new Set())} style={{ fontSize: 10, color: C.accent, background: "none", border: "none", cursor: "pointer" }}>전체 켜기</button>}
-          </div>
-          <div style={{ overflowY: "auto", flex: 1, minHeight: 90 }}>
-            {allActive.slice(0, 60).map(r => { const off = disabled.has(r.platform_idx); const on = selected === r.platform_idx; return (
-              <div key={r.platform_idx} onClick={() => setSelected(r.platform_idx)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 12px", cursor: "pointer", background: on ? "rgba(56,189,248,0.12)" : "transparent", opacity: off ? 0.4 : 1, borderBottom: `1px solid ${C.grid}` }}>
-                <button onClick={(e) => { e.stopPropagation(); toggleItem(r.platform_idx); }} title={off ? "표시 켜기" : "표시 끄기"} style={{ display: "inline-flex", background: "none", border: "none", cursor: "pointer", color: off ? C.faint : C.accent, padding: 0 }}>{off ? <EyeOff size={13} /> : <Eye size={13} />}</button>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: heat(cvr(r), maxCvr), flexShrink: 0 }} />
-                <span style={{ fontSize: 11.5, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.platform_name}</span>
-                <span style={{ fontSize: 10, color: C.faint }}>{fmt(r.impressions)}</span>
-              </div>
-            ); })}
-          </div>
-          {/* 선택 상세 */}
-          <div style={{ borderTop: `1px solid ${C.line}`, padding: "10px 12px", minHeight: 118 }}>
-            {selRow ? (<>
-              <div style={{ fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 6 }}>{selRow.platform_name}</div>
-              {([["노출", fmt(selRow.impressions)], ["클릭", fmt(selRow.clicks)], ["전환", fmt(selRow.conversions)], ["광고비", won(selRow.ad_spend)], ["CTR", pctS(ctr(selRow))], ["CVR", pctS(cvr(selRow))], ["CPA", won(cpa(selRow))]] as [string, string][]).map(([k, v]) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}><span style={{ color: C.faint }}>{k}</span><span style={{ color: C.ink, fontWeight: 600 }}>{v}</span></div>
-              ))}
-            </>) : <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>차트의 점·노드 또는 위 목록을 클릭하면 해당 매체 상세가 표시됩니다.</div>}
-          </div>
-        </div>
-      </div>
 
-      {/* 하단: AI 인사이트 (자연어 서술) */}
-      <div style={{ borderTop: `1px solid ${C.line}`, padding: "10px 16px", background: C.bg }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: ai ? 8 : 0 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: C.ink, display: "inline-flex", alignItems: "center", gap: 6 }}><Sparkles size={14} strokeWidth={2.1} style={{ color: C.accent }} />AI 인사이트 <span style={{ fontSize: 10.5, color: C.faint, fontWeight: 400 }}>현재 분석·표시 매체 기준 자연어 해설</span></span>
-          <button onClick={genAI} disabled={aiLoading} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "#fff", background: aiLoading ? C.line : "linear-gradient(135deg,#2f80ed,#38bdf8)", border: "none", borderRadius: 8, padding: "6px 14px", cursor: aiLoading ? "wait" : "pointer" }}>{aiLoading ? <RefreshCw size={12} className="dmp-spin" /> : <Sparkles size={12} />}{ai ? "해설 업데이트" : "AI 해설 생성"}</button>
-        </div>
-        {ai && (
-          <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.6 }}>
-            {ai.summary && <div style={{ padding: "8px 12px", background: C.surface, borderRadius: 8, marginBottom: ai.insights?.length ? 8 : 0 }}>{ai.summary}</div>}
-            {ai.insights?.map((s, i) => <div key={i} style={{ color: C.dim, padding: "3px 0 3px 12px", borderLeft: `2px solid ${C.accent}`, marginBottom: 4 }}>{s}</div>)}
+        {/* 우측 분석 패널 */}
+        {panelOpen && (
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0, background: C.panel }}>
+            <div style={{ padding: "9px 12px", borderBottom: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: C.ink }}>분석 패널</span>
+              <button onClick={() => setPanelOpen(false)} title="숨기기" style={{ display: "inline-flex", background: "none", border: "none", cursor: "pointer", color: C.dim }}><PanelRightClose size={15} /></button>
+            </div>
+
+            {/* 항목 온/오프 — 요약 + 미니팝업 */}
+            <div style={{ position: "relative", padding: "10px 12px", borderBottom: `1px solid ${C.line}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 11, color: C.dim }}>표시 매체 <b style={{ color: C.ink }}>{chartRows.length}</b> / {allActive.length}{excludeOutliers && outliers.size > 0 ? <span style={{ color: C.accent }}> · 극단 {outliers.size} 제외</span> : ""}</div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {disabled.size > 0 ? `숨김 ${disabled.size}: ${allActive.filter(r => disabled.has(r.platform_idx)).map(r => r.platform_name).slice(0, 3).join(", ")}${disabled.size > 3 ? " 외" : ""}` : "숨긴 매체 없음"}
+                  </div>
+                </div>
+                <button onClick={() => setItemsPop(v => !v)} title="항목 켜기/끄기" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 700, cursor: "pointer", border: `1px solid ${itemsPop ? C.accent : C.line}`, borderRadius: 7, padding: "5px 9px", background: itemsPop ? "rgba(56,189,248,0.16)" : "transparent", color: itemsPop ? "#bfe6ff" : C.dim, flexShrink: 0 }}><SlidersHorizontal size={12} />항목 관리</button>
+              </div>
+              {/* 미니 팝업(풍선창) */}
+              {itemsPop && (
+                <div style={{ position: "absolute", top: "100%", right: 8, marginTop: 4, width: 226, maxHeight: 320, zIndex: 20, background: C.surface, border: `1px solid ${C.accent}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,.4)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${C.line}` }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>매체 표시 온/오프</span>
+                    <span style={{ display: "inline-flex", gap: 8 }}>
+                      {disabled.size > 0 && <button onClick={() => setDisabled(new Set())} style={{ fontSize: 10, color: C.accent, background: "none", border: "none", cursor: "pointer" }}>전체 켜기</button>}
+                      <button onClick={() => setItemsPop(false)} style={{ display: "inline-flex", background: "none", border: "none", cursor: "pointer", color: C.dim }}><X size={13} /></button>
+                    </span>
+                  </div>
+                  <div style={{ overflowY: "auto" }}>
+                    {allActive.slice(0, 60).map(r => { const off = disabled.has(r.platform_idx); return (
+                      <div key={r.platform_idx} onClick={() => toggleItem(r.platform_idx)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 10px", cursor: "pointer", opacity: off ? 0.45 : 1, borderBottom: `1px solid ${C.grid}` }}>
+                        <span style={{ color: off ? C.faint : C.accent, display: "inline-flex" }}>{off ? <EyeOff size={13} /> : <Eye size={13} />}</span>
+                        <span style={{ width: 8, height: 8, borderRadius: 2, background: heat(cvr(r), maxCvr), flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.platform_name}</span>
+                        <span style={{ fontSize: 9.5, color: C.faint }}>{fmt(r.impressions)}</span>
+                      </div>
+                    ); })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 선택 항목 상세 */}
+            <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.line}` }}>
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: C.dim, marginBottom: 6 }}>선택 항목 상세</div>
+              {selRow ? (<>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 9, height: 9, borderRadius: 2, background: heat(cvr(selRow), maxCvr) }} />{selRow.platform_name}</div>
+                {([["노출", fmt(selRow.impressions)], ["클릭", fmt(selRow.clicks)], ["전환", fmt(selRow.conversions)], ["광고비", won(selRow.ad_spend)], ["CTR", pctS(ctr(selRow))], ["CVR", pctS(cvr(selRow))], ["CPA", won(cpa(selRow))]] as [string, string][]).map(([k, v]) => (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}><span style={{ color: C.faint }}>{k}</span><span style={{ color: C.ink, fontWeight: 600 }}>{v}</span></div>
+                ))}
+              </>) : <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>차트의 점·노드 또는 ‘항목 관리’ 목록을 클릭하면 상세가 표시됩니다.</div>}
+            </div>
+
+            {/* AI 인사이트 (우측 패널로 이관 · 압축) */}
+            <div style={{ padding: "10px 12px", flex: 1, minHeight: 0, overflowY: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: C.dim, display: "inline-flex", alignItems: "center", gap: 5 }}><Sparkles size={13} style={{ color: C.accent }} />AI 인사이트</span>
+                <button onClick={genAI} disabled={aiLoading} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 700, color: "#fff", background: aiLoading ? C.line : "linear-gradient(135deg,#2f80ed,#38bdf8)", border: "none", borderRadius: 7, padding: "5px 10px", cursor: aiLoading ? "wait" : "pointer" }}>{aiLoading ? <RefreshCw size={11} className="dmp-spin" /> : <Sparkles size={11} />}{ai ? "업데이트" : "해설 생성"}</button>
+              </div>
+              {ai ? (
+                <div style={{ fontSize: 11, lineHeight: 1.55, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {ai.summary && <div><span style={{ color: C.accent, fontWeight: 700 }}>상황</span> <span style={{ color: C.ink }}>{ai.summary}</span></div>}
+                  {ai.insights?.[0] && <div><span style={{ color: C.accent, fontWeight: 700 }}>인사이트</span> <span style={{ color: C.dim }}>{ai.insights.slice(0, 2).join(" · ")}</span></div>}
+                  {ai.recs?.[0] && <div><span style={{ color: C.accent, fontWeight: 700 }}>제안</span> <span style={{ color: C.dim }}>{ai.recs[0].label ? `${ai.recs[0].label} — ` : ""}{ai.recs[0].reason || ai.recs[0].label}</span></div>}
+                </div>
+              ) : <div style={{ fontSize: 10.5, color: C.faint, lineHeight: 1.6 }}>현재 분석·표시 매체 기준 자연어 해설을 상황·인사이트·제안으로 요약합니다. ‘해설 생성’을 눌러 요청하세요.</div>}
+            </div>
           </div>
         )}
       </div>
