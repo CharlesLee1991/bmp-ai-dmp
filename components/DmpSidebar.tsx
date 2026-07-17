@@ -103,7 +103,7 @@ export function DmpSidebar({
           {!collapsed && (
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15, minWidth: 0 }}>
               <span style={{ fontSize: 14, fontWeight: 800, color: SB.fg, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>DMP Explorer</span>
-              <span style={{ fontSize: 9.5, color: SB.fgDim, whiteSpace: "nowrap" }}>BizSpring · Audience</span>
+              <span style={{ fontSize: 9.5, color: SB.fgDim, whiteSpace: "nowrap" }}>BizSpring · Target Audience Manager</span>
             </div>
           )}
         </div>
@@ -115,7 +115,7 @@ export function DmpSidebar({
           const groupItems = items.filter(t => t.group === g);
           if (!groupItems.length) return null;
           return (
-            <div key={g} style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: gi > 0 ? (collapsed ? 6 : 8) : 0 }}>
+            <div key={g} style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: gi > 0 ? (collapsed ? 4 : 5) : 0 }}>
               {collapsed
                 ? (gi > 0 && <div style={{ height: 1, background: SB.border, margin: "2px 8px 4px" }} />)
                 : <div style={{ fontSize: 9.5, fontWeight: 700, color: SB.fgDim, letterSpacing: ".07em", padding: "4px 10px 3px" }}>{GROUP_LABEL[g]}</div>
@@ -130,7 +130,7 @@ export function DmpSidebar({
                     style={{
                       display: "flex", alignItems: "center", gap: 11,
                       justifyContent: collapsed ? "center" : "flex-start",
-                      width: "100%", padding: collapsed ? "9px 0" : "8px 11px",
+                      width: "100%", padding: collapsed ? "5px 0" : "5px 11px",
                       borderRadius: 9, cursor: "pointer", border: "none", textAlign: "left",
                       fontSize: 13, fontWeight: active ? 600 : 500, whiteSpace: "nowrap",
                       background: active ? SB.accent : "transparent",
