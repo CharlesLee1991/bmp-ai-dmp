@@ -258,8 +258,8 @@ export default function CardComparisonTab({ ymFrom, ymTo }: { ymFrom?: string; y
                       <span style={{
                         width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 10.5, fontWeight: 700, flexShrink: 0,
-                        background: i === 0 ? CARD_COLORS[src] || "var(--sub)" : "rgba(0,0,0,.06)",
-                        color: i === 0 ? "var(--card)" : P.sub
+                        background: i === 0 ? CARD_COLORS[src] || "var(--sub)" : "var(--bg-elevated)",
+                        color: i === 0 ? "#fff" : P.sub
                       }}>{i + 1}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.subcategory}</div>

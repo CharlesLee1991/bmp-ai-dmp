@@ -16,12 +16,17 @@
 | 3 | **echarts** | ✅ Echarts3D 토큰화 확인. BizViz는 **브랜드 격리 다크(도크트린)** → 정본 hex 유지 + 코드모드 회귀(`ink/dim`) 복구 |
 | 4 | **모달 스크림 (§8.1)** | ✅ Dashboard·Shopping 오버레이 → `var(--scrim)` + backdrop-blur (라이트=검정저알파 / 다크=elevation) |
 
+## 일괄 수정 완료 (2026-07-17, 3차 — 다크 가시성)
+
+| # | 항목 | 처리 |
+|---|---|---|
+| 1 | **랭크원·트랙 배경 `rgba(0,0,0,.04~.06)` 다크 가시성** | ✅ Spending·CardComparison 순위 뱃지 → `var(--bg-elevated)`, 트랙바 → `var(--border)`. ShoppingProducts 제휴처·플랫폼 바 트랙 동일 전환. 다크에서 옅어 안 보이던 문제 해소 (순위 텍스트 `#fff` 고정) |
+
 ## 남은 저우선 폴리시 (선택)
 
 | 위치 | 내용 | 판단 |
 |---|---|---|
 | Dashboard `filterParts` | `🛒💰🏦📡📱🏷️📤` 이모지 잔존 | **의도적** — 프리뷰 표시 + 전송 세그먼트명·AI API에 투입되는 dual-use 문자열. 제거 시 데이터/전송명 변경 → 백엔드 영향으로 미변경 |
 | ShoppingProductsTab | `CAT_EMOJI` 카테고리 데이터맵, `🥇🥈🥉` 순위 메달 | 데이터/로우 라벨 — 값별 아이콘 매핑 필요, 저우선 |
-| Spending/CardComparison | `rgba(0,0,0,.04~.06)` 랭크원·트랙 배경 | 다크에서 옅음(가시성 낮음). 배지/패널 아님 → 별도 폴리시 대상 |
 | Membership/Transit | 금·은·동 메달 metallic hex (#EAB308/#94A3B8/#B45309) | 토큰에 금속색 없음 — metallic 리터럴이 정직한 표현 |
 | Transit | 🟢/🔴 승하차 칩 색상 큐 상실(라벨만) | 색 복원 시 Chip에 color prop 필요, 저우선 |

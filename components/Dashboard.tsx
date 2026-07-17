@@ -333,8 +333,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any>(null);
-  const [aiModalOpen, setAiModalOpen] = useState(false);   // 아티팩트식 결과 모달
-  const [campaignOpen, setCampaignOpen] = useState(false);
+  const [assistOpen, setAssistOpen] = useState(false);           // AI 타겟 도우미 통합 모달
+  const [assistTab, setAssistTab] = useState<"analyze" | "find">("analyze");
   const [filterOpen, setFilterOpen] = useState(true);   // 필터 접기/펼치기 (기본 펼침)
   const [bcOpen, setBcOpen] = useState(false);           // 브레드크럼 메뉴 드롭다운
   const [sbCollapsed, setSbCollapsed] = useState(false); // 사이드바 접힘 (상단바 토글이 제어)
@@ -566,9 +566,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const toastCart = (msg: string) => { setCartToast(msg); setTimeout(() => setCartToast(""), 2200); };
 
   // ① 현재 화면 필터 조건 담기 (카드 탭 — EF 추출 가능 조건만)
-  const addCurrentToCart = () => {
+  const addCurrentToCart = (name?: string) => {
     const filters = buildEfFilters();
-    if (!Object.keys(filters).length) { toastCart("담을 필터 조건이 없습니다"); return; }
+    if (!Object.keys(filters).length) { toastCart("담을 필터 조건이 없습니다"); return false; }
     const dropped: string[] = [];
     if (amountFilters.length) dropped.push("금액구간");
     if (cardCompanies.length) dropped.push("카드사");
@@ -576,7 +576,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     if (mobileBrands.length) dropped.push("단말브랜드");
     addToCart({
       type: "filter",
-      label: `현재 조건 (${TAB_LABEL[tab as TabId]})`,
+      label: (name && name.trim()) ? name.trim().slice(0, 80) : `현재 조건 (${TAB_LABEL[tab as TabId]})`,
       summary: filterParts.join(" · ") || "조건 없음",
       sourceTab: tab,
       filters,
@@ -584,7 +584,17 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       dropped: dropped.length ? dropped : undefined,
     });
     toastCart("카트에 담았습니다");
+    return true;
   };
+  // 오디언스 담기 미니폼 — 담기 전 이름 지정
+  const [cartFormOpen, setCartFormOpen] = useState(false);
+  const [cartName, setCartName] = useState("");
+  const openCartForm = () => {
+    if (!Object.keys(buildEfFilters()).length) { toastCart("담을 필터 조건이 없습니다"); return; }
+    setCartName(`${EXPLORE_META[tab]?.title || TAB_LABEL[tab as TabId]} · ${filterParts.join(" · ") || "전체"}`.slice(0, 80));
+    setCartFormOpen(true);
+  };
+  const confirmAddToCart = () => { if (addCurrentToCart(cartName)) setCartFormOpen(false); };
 
   // ② 페르소나 담기 — 담는 시점 필터를 EF 스키마로 동결 (참조 + 사본)
   const addPersonaToCart = (p: Persona) => {
@@ -732,8 +742,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
-  /* ── AI 타겟 제안 — 도킹 바에서 실행(전 화면 공통). 카드 지표는 있을 때만 첨부. ── */
+  /* ── AI 타겟 도우미 ①현재 조건 효율 분석 (ai-recommend) — 전 화면 공통, 카드 지표는 있을 때만 첨부 ── */
   const runAiRecommend = async () => {
+    setAssistTab("analyze");
     setAiLoading(true); setAiResult(null);
     try {
       const body: any = {
@@ -748,11 +759,26 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
       }
       const res = await fetch("/api/ai-recommend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (data.success) { setAiResult(data.analysis); setAiModalOpen(true); }
+      if (data.success) setAiResult(data.analysis);
       else alert("AI 분석 실패: " + (data.error || ""));
     } catch (e: any) { alert("AI 분석 에러: " + e.message); }
     finally { setAiLoading(false); }
   };
+
+  /* ── AI 타겟 도우미 ②자연어로 타겟 찾기 (campaign-target) ── */
+  const runCampaignFind = async () => {
+    if (!campaignText.trim() || campaignLoading) return;
+    setCampaignLoading(true); setCampaignResult(null);
+    try {
+      const res = await fetch("/api/campaign-target", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ campaign: campaignText }) });
+      const data = await res.json();
+      if (data.success) setCampaignResult(data);
+      else alert("분석 실패: " + (data.error || ""));
+    } catch (e: any) { alert("에러: " + e.message); }
+    finally { setCampaignLoading(false); }
+  };
+  const openAssist = (t: "analyze" | "find") => { setAssistTab(t); setAssistOpen(true); };
+  const hasAssistResult = !!aiResult || !!campaignResult;
 
   return (
     <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text, display: "flex" }}>
@@ -886,16 +912,6 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           }}>
             <Sparkles size={12} strokeWidth={2.2} /> 페르소나 빌더
           </button>
-          {exploreTab && (
-            <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} title="자연어로 캠페인을 기술하면 AI가 타겟 조건을 추천합니다 (타겟 정의 보조)" style={{
-              display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 11px", borderRadius: 999,
-              fontSize: 11, fontWeight: 600, cursor: "pointer",
-              background: campaignOpen ? P.appGlow : "transparent",
-              border: `1px dashed ${campaignOpen ? "var(--accent-2)" : P.border}`, color: campaignOpen ? P.app : P.sub,
-            }}>
-              <Target size={12} strokeWidth={2.2} /> 캠페인 타겟 찾기
-            </button>
-          )}
           <span style={{ fontSize: 12, color: filterParts.length ? P.text : P.sub, fontWeight: filterParts.length ? 600 : 400, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {filterParts.length ? filterParts.join(" · ") : "전체 오디언스 (필터 미설정)"}
           </span>
@@ -911,21 +927,12 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 <span style={{ fontSize: 13, fontWeight: 900, color: P.accent, letterSpacing: "-0.02em" }}>≈{fmt(segEstimate.estimated_audience)}<span style={{ fontSize: 10, fontWeight: 500, color: P.sub }}>명</span></span>
               </span>
             )}
-            {aiResult ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 4px 3px 10px", borderRadius: 999, background: "var(--badge-violet-bg)", color: "var(--badge-violet-fg)", fontSize: 11, fontWeight: 700 }}>
-                <button onClick={() => setAiModalOpen(true)} title="AI 타겟 제안 열기" style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 11, fontWeight: 700, padding: 0 }}>
-                  <Bot size={13} strokeWidth={2.2} /> AI 제안 보기
-                </button>
-                <button onClick={runAiRecommend} disabled={aiLoading} title="다시 생성" style={{ display: "inline-flex", width: 18, height: 18, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "color-mix(in srgb, var(--badge-violet-fg) 14%, transparent)", border: "none", cursor: aiLoading ? "wait" : "pointer", color: "inherit" }}>
-                  <RefreshCw size={11} strokeWidth={2.4} className={aiLoading ? "dmp-spin" : undefined} />
-                </button>
-              </span>
-            ) : (
-              <button onClick={runAiRecommend} disabled={aiLoading} title="현재 타겟 모수에 대한 AI 효율 타겟 제안 생성" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--badge-violet-fg)", background: "var(--badge-violet-bg)", border: "1px solid color-mix(in srgb, var(--badge-violet-fg) 22%, transparent)", borderRadius: 999, padding: "5px 13px", cursor: aiLoading ? "wait" : "pointer", opacity: aiLoading ? 0.6 : 1 }}>
-                {aiLoading ? <RefreshCw size={13} strokeWidth={2.2} className="dmp-spin" /> : <Bot size={13} strokeWidth={2.2} />}
-                {aiLoading ? "생성 중…" : "AI 타겟 제안"}
-              </button>
-            )}
+            {/* AI 타겟 도우미 — 자연어 찾기 + 현재 조건 분석 통합 */}
+            <button onClick={() => openAssist("analyze")} title="AI 타겟 도우미 — 현재 조건 효율 분석 + 자연어로 타겟 찾기" style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--badge-violet-fg)", background: "var(--badge-violet-bg)", border: "1px solid color-mix(in srgb, var(--badge-violet-fg) 22%, transparent)", borderRadius: 999, padding: "5px 13px", cursor: aiLoading || campaignLoading ? "wait" : "pointer", opacity: (aiLoading || campaignLoading) ? 0.7 : 1 }}>
+              {(aiLoading || campaignLoading) ? <RefreshCw size={13} strokeWidth={2.2} className="dmp-spin" /> : <Bot size={13} strokeWidth={2.2} />}
+              AI 타겟 도우미
+              {hasAssistResult && <span title="생성된 제안 있음" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--badge-violet-fg)" }} />}
+            </button>
           </div>
         </div>
         {/* 공통 데모그래픽 (성별·연령·지역) — 소비 화면에서만 활성 */}
@@ -977,7 +984,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           </div>
           {/* 공통 액션 — 정의된 타겟에 대한 '담기 → 전송' (정의 보조는 상단 1차 모수 존으로 이관) */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <button onClick={addCurrentToCart} title="현재 1·2차 조건을 오디언스 카트에 담습니다 → ‘타겟 오디언스’에서 라벨·태그로 관리" style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: P.card, color: P.accent, border: `1px solid ${P.accent}` }}><ShoppingCart size={14} strokeWidth={2.2} /> 오디언스 담기</button>
+            <button onClick={openCartForm} title="현재 1·2차 조건에 이름을 붙여 오디언스 카트에 담습니다 → ‘생성된 오디언스’에서 라벨·태그로 관리" style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: P.card, color: P.accent, border: `1px solid ${P.accent}` }}><ShoppingCart size={14} strokeWidth={2.2} /> 오디언스 담기</button>
             <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none", boxShadow: P.shadowSoft }}><Send size={14} strokeWidth={2.2} /> 런컴 타겟 전송</button>
           </div>
         </div>
@@ -1265,100 +1272,128 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
       {/* 인라인 'AI 오디언스 탐색'은 사이드바 '퀵 AI 오디언스' 메뉴로 일원화(중복 제거) */}
 
-      {/* ─── CAMPAIGN TARGET FINDER ─── */}
-      {campaignOpen && exploreTab && (
-        <div style={{ margin: "12px 28px 0", padding: 18, borderRadius: 12, background: P.card, border: `1px solid ${P.border}` }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: P.app }}><Target size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.app }} />캠페인 타겟 찾기</div>
-            <button onClick={() => { setCampaignOpen(false); setCampaignResult(null); }} style={{ fontSize: 10, color: P.app, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
-          </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: campaignResult ? 16 : 0 }}>
-            <input value={campaignText} onChange={e => setCampaignText(e.target.value)} placeholder="예: 수입차를 많이 살 것 같은 고소득 고객, 20대 여성 뷰티 관심 타겟, 건강식품 구매 가능성 높은 중장년..." style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${P.border}`, fontSize: 13, outline: "none", background: P.bg, color: P.text }} onKeyDown={e => { if (e.key === "Enter" && campaignText.trim() && !campaignLoading) { e.preventDefault(); document.getElementById("campaign-btn")?.click(); }}} />
-            <button id="campaign-btn" disabled={!campaignText.trim() || campaignLoading} onClick={async () => {
-              setCampaignLoading(true); setCampaignResult(null);
-              try {
-                const res = await fetch("/api/campaign-target", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ campaign: campaignText }) });
-                const data = await res.json();
-                if (data.success) setCampaignResult(data);
-                else alert("분석 실패: " + (data.error || ""));
-              } catch (e: any) { alert("에러: " + e.message); }
-              finally { setCampaignLoading(false); }
-            }} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: campaignLoading ? "wait" : "pointer", background: P.app, color: "#fff", border: "none", opacity: (!campaignText.trim() || campaignLoading) ? .5 : 1, whiteSpace: "nowrap" }}>
-              {campaignLoading ? "분석 중..." : "타겟 추천"}
-            </button>
-          </div>
-          {campaignResult && (
-            <div>
-              {campaignResult.analysis && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, padding: "10px 14px", background: P.cardAlt, borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(campaignResult.recommendations?.length || 1, 3)}, 1fr)`, gap: 10 }}>
-                {(campaignResult.recommendations || []).map((rec: any, i: number) => (
-                  <div key={i} style={{ background: P.cardAlt, borderRadius: 10, padding: 14, border: `1px solid ${P.border}` }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: P.app, marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i]} {rec.label}</div>
-                    <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 8 }}>{rec.description}</div>
-                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 10px", background: "var(--badge-violet-bg)", borderRadius: 6, marginBottom: 8 }}>
-                      <span style={{ fontWeight: 600 }}>조건:</span> {rec.filter_summary}
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? P.app : "var(--sub-2)" }}>
-                      {rec.estimated_audience > 0 ? fmt(rec.estimated_audience) : "—"}<span style={{ fontSize: 11, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span>
-                    </div>
-                    <div style={{ fontSize: 9, color: "var(--sub-2)", marginTop: 2 }}>실시간 세그먼트 프리뷰 기반</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─── AI 타겟 제안 — 아티팩트 모달 (도킹 바 버튼/칩으로 토글) ─── */}
-      {aiModalOpen && aiResult && (
-        <div onClick={() => setAiModalOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 120, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "6vh 20px 40px", overflowY: "auto" }}>
+      {/* ─── AI 타겟 도우미 (통합 모달) — ①현재 조건 효율 분석 ②자연어로 타겟 찾기 ─── */}
+      {assistOpen && (
+        <div onClick={() => setAssistOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 120, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "6vh 20px 40px", overflowY: "auto" }}>
           <div onClick={e => e.stopPropagation()} style={{ width: "min(920px, 100%)", background: P.card, borderRadius: 16, border: `1px solid ${P.border}`, boxShadow: P.shadowLg, overflow: "hidden" }}>
             {/* 헤더 */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 22px", borderBottom: `1px solid ${P.border}`, background: "linear-gradient(135deg, var(--badge-violet-bg), transparent)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ display: "inline-flex", width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 9, background: "var(--badge-violet-bg)", color: "var(--badge-violet-fg)" }}><Bot size={18} strokeWidth={2.2} /></span>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: P.text }}>AI 효율 타겟 제안</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: P.text }}>AI 타겟 도우미</div>
                   <div style={{ fontSize: 11, color: P.sub, marginTop: 1, maxWidth: 640, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{filterParts.join(" · ") || "전체 오디언스"}{segEstimate ? ` · ≈${fmt(segEstimate.estimated_audience)}명` : ""}</div>
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button onClick={runAiRecommend} disabled={aiLoading} title="다시 생성" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "var(--badge-violet-fg)", background: "var(--badge-violet-bg)", border: "none", borderRadius: 8, padding: "6px 12px", cursor: aiLoading ? "wait" : "pointer" }}>
-                  <RefreshCw size={12} strokeWidth={2.4} className={aiLoading ? "dmp-spin" : undefined} /> 다시 생성
-                </button>
-                <button onClick={() => setAiModalOpen(false)} title="닫기" style={{ display: "inline-flex", width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "transparent", border: `1px solid ${P.border}`, color: P.sub, cursor: "pointer" }}><XCircle size={16} strokeWidth={2} /></button>
-              </div>
+              <button onClick={() => setAssistOpen(false)} title="닫기" style={{ display: "inline-flex", width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "transparent", border: `1px solid ${P.border}`, color: P.sub, cursor: "pointer" }}><XCircle size={16} strokeWidth={2} /></button>
             </div>
-            {/* 본문 */}
-            <div style={{ padding: 22, maxHeight: "70vh", overflowY: "auto" }}>
-              {aiResult.summary && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, marginBottom: 16, padding: "12px 16px", background: P.cardAlt, borderRadius: 10 }}>{aiResult.summary}</div>}
-              {aiResult.insights?.length > 0 && (
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: P.text, marginBottom: 8 }}><Lightbulb size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />핵심 인사이트</div>
-                  {aiResult.insights.map((ins: string, i: number) => (
-                    <div key={i} style={{ fontSize: 12.5, color: "var(--sub)", padding: "5px 0 5px 12px", borderLeft: "2px solid var(--accent)", marginBottom: 5 }}>{ins}</div>
-                  ))}
-                </div>
-              )}
-              {aiResult.recommendations?.length > 0 && (
+            {/* 탭 스위처 */}
+            <div style={{ display: "flex", gap: 6, padding: "12px 22px 0" }}>
+              {([["analyze", "현재 조건 효율 분석"], ["find", "자연어로 타겟 찾기"]] as [typeof assistTab, string][]).map(([id, label]) => (
+                <button key={id} onClick={() => setAssistTab(id)} style={{ padding: "7px 15px", borderRadius: "9px 9px 0 0", fontSize: 12.5, fontWeight: assistTab === id ? 800 : 500, cursor: "pointer", border: "none", borderBottom: `2px solid ${assistTab === id ? P.accent : "transparent"}`, background: "transparent", color: assistTab === id ? P.text : P.sub }}>{label}</button>
+              ))}
+            </div>
+            <div style={{ borderTop: `1px solid ${P.border}`, padding: 22, maxHeight: "68vh", overflowY: "auto" }}>
+              {/* ① 현재 조건 효율 분석 */}
+              {assistTab === "analyze" && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: P.text, marginBottom: 10 }}><Target size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />추천 타겟 조합</div>
-                  <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))`, gap: 12 }}>
-                    {aiResult.recommendations.map((rec: any, i: number) => (
-                      <div key={i} style={{ background: P.cardAlt, borderRadius: 12, padding: 16, border: `1px solid ${P.border}` }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: P.text, marginBottom: 7 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
-                        {rec.description && <div style={{ fontSize: 11.5, color: "var(--sub)", marginBottom: 8, lineHeight: 1.5 }}>{rec.description}</div>}
-                        <div style={{ fontSize: 11.5, color: "var(--text)", padding: "7px 10px", background: "var(--badge-violet-bg)", borderRadius: 8, marginBottom: 7 }}>
-                          <span style={{ fontWeight: 700 }}>조건:</span> {rec.filters}
-                        </div>
-                        {rec.estimated_audience && <div style={{ fontSize: 11.5, color: P.accent, fontWeight: 700 }}>추정 규모: {rec.estimated_audience}</div>}
-                        {rec.reason && <div style={{ fontSize: 10.5, color: "var(--sub-2)", marginTop: 5, lineHeight: 1.5 }}>{rec.reason}</div>}
-                      </div>
-                    ))}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                    <div style={{ fontSize: 12, color: P.sub, lineHeight: 1.5 }}>현재 1·2차 타겟 조건을 데이터로 분석해 효율 인사이트와 추천 조합을 제안합니다.</div>
+                    <button onClick={runAiRecommend} disabled={aiLoading} style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg, var(--male), var(--accent))", border: "none", borderRadius: 8, padding: "8px 16px", cursor: aiLoading ? "wait" : "pointer", opacity: aiLoading ? 0.6 : 1 }}>
+                      {aiLoading ? <RefreshCw size={13} strokeWidth={2.4} className="dmp-spin" /> : <Bot size={13} strokeWidth={2.2} />}{aiResult ? "다시 분석" : "분석 실행"}
+                    </button>
                   </div>
+                  {!aiResult && !aiLoading && <div style={{ padding: "36px 0", textAlign: "center", fontSize: 12.5, color: P.sub2 }}>‘분석 실행’을 누르면 현재 조건에 대한 AI 제안이 생성됩니다.</div>}
+                  {aiResult && (<>
+                    {aiResult.summary && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, marginBottom: 16, padding: "12px 16px", background: P.cardAlt, borderRadius: 10 }}>{aiResult.summary}</div>}
+                    {aiResult.insights?.length > 0 && (
+                      <div style={{ marginBottom: 18 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: P.text, marginBottom: 8 }}><Lightbulb size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />핵심 인사이트</div>
+                        {aiResult.insights.map((ins: string, i: number) => (
+                          <div key={i} style={{ fontSize: 12.5, color: "var(--sub)", padding: "5px 0 5px 12px", borderLeft: "2px solid var(--accent)", marginBottom: 5 }}>{ins}</div>
+                        ))}
+                      </div>
+                    )}
+                    {aiResult.recommendations?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: P.text, marginBottom: 10 }}><Target size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />추천 타겟 조합</div>
+                        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))`, gap: 12 }}>
+                          {aiResult.recommendations.map((rec: any, i: number) => (
+                            <div key={i} style={{ background: P.cardAlt, borderRadius: 12, padding: 16, border: `1px solid ${P.border}` }}>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: P.text, marginBottom: 7 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
+                              {rec.description && <div style={{ fontSize: 11.5, color: "var(--sub)", marginBottom: 8, lineHeight: 1.5 }}>{rec.description}</div>}
+                              <div style={{ fontSize: 11.5, color: "var(--text)", padding: "7px 10px", background: "var(--badge-violet-bg)", borderRadius: 8, marginBottom: 7 }}>
+                                <span style={{ fontWeight: 700 }}>조건:</span> {rec.filters}
+                              </div>
+                              {rec.estimated_audience && <div style={{ fontSize: 11.5, color: P.accent, fontWeight: 700 }}>추정 규모: {rec.estimated_audience}</div>}
+                              {rec.reason && <div style={{ fontSize: 10.5, color: "var(--sub-2)", marginTop: 5, lineHeight: 1.5 }}>{rec.reason}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>)}
                 </div>
               )}
+              {/* ② 자연어로 타겟 찾기 */}
+              {assistTab === "find" && (
+                <div>
+                  <div style={{ fontSize: 12, color: P.sub, lineHeight: 1.5, marginBottom: 12 }}>캠페인을 자연어로 기술하면 AI가 타겟 조건 후보를 추천합니다. (타겟 정의 보조)</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: campaignResult ? 16 : 0 }}>
+                    <input value={campaignText} onChange={e => setCampaignText(e.target.value)} placeholder="예: 수입차를 많이 살 것 같은 고소득 고객, 20대 여성 뷰티 관심 타겟, 건강식품 구매 가능성 높은 중장년..." style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${P.border}`, fontSize: 13, outline: "none", background: P.bg, color: P.text }} onKeyDown={e => { if (e.key === "Enter" && campaignText.trim() && !campaignLoading) { e.preventDefault(); runCampaignFind(); } }} />
+                    <button disabled={!campaignText.trim() || campaignLoading} onClick={runCampaignFind} style={{ padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: campaignLoading ? "wait" : "pointer", background: P.app, color: "#fff", border: "none", opacity: (!campaignText.trim() || campaignLoading) ? .5 : 1, whiteSpace: "nowrap" }}>
+                      {campaignLoading ? "분석 중..." : "타겟 추천"}
+                    </button>
+                  </div>
+                  {campaignResult && (
+                    <div>
+                      {campaignResult.analysis && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, padding: "10px 14px", background: P.cardAlt, borderRadius: 8, marginBottom: 12 }}>{campaignResult.analysis}</div>}
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`, gap: 10 }}>
+                        {(campaignResult.recommendations || []).map((rec: any, i: number) => (
+                          <div key={i} style={{ background: P.cardAlt, borderRadius: 10, padding: 14, border: `1px solid ${P.border}` }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: P.app, marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i]} {rec.label}</div>
+                            <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 8 }}>{rec.description}</div>
+                            <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 10px", background: "var(--badge-violet-bg)", borderRadius: 6, marginBottom: 8 }}>
+                              <span style={{ fontWeight: 600 }}>조건:</span> {rec.filter_summary}
+                            </div>
+                            <div style={{ fontSize: 18, fontWeight: 900, color: rec.estimated_audience > 0 ? P.app : "var(--sub-2)" }}>
+                              {rec.estimated_audience > 0 ? fmt(rec.estimated_audience) : "—"}<span style={{ fontSize: 11, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span>
+                            </div>
+                            <div style={{ fontSize: 9, color: "var(--sub-2)", marginTop: 2 }}>실시간 세그먼트 프리뷰 기반</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 오디언스 담기 미니폼 (이름 지정 후 카트 담기) ─── */}
+      {cartFormOpen && (
+        <div onClick={() => setCartFormOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 125, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "16vh 20px 40px" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "min(460px, 100%)", background: P.card, borderRadius: 14, border: `1px solid ${P.border}`, boxShadow: P.shadowLg, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${P.border}` }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: P.text }}><ShoppingCart size={15} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />오디언스 카트에 담기</div>
+              <button onClick={() => setCartFormOpen(false)} style={{ display: "inline-flex", width: 28, height: 28, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "transparent", border: `1px solid ${P.border}`, color: P.sub, cursor: "pointer" }}><XCircle size={15} strokeWidth={2} /></button>
+            </div>
+            <div style={{ padding: "16px 18px" }}>
+              <label style={{ fontSize: 10.5, fontWeight: 700, color: P.sub, display: "block", marginBottom: 5 }}>오디언스 이름</label>
+              <input autoFocus value={cartName} onChange={e => setCartName(e.target.value.slice(0, 80))}
+                onKeyDown={e => { if (e.key === "Enter" && cartName.trim()) confirmAddToCart(); }}
+                placeholder="예: 강남 3040 프리미엄 카드소비"
+                style={{ width: "100%", padding: "9px 12px", fontSize: 13, borderRadius: 9, border: `1px solid ${P.border}`, background: P.bg, color: P.text, outline: "none", boxSizing: "border-box" }} />
+              <div style={{ fontSize: 10.5, color: P.sub, marginTop: 8, lineHeight: 1.5, padding: "8px 11px", background: P.cardAlt, borderRadius: 8 }}>
+                <span style={{ fontWeight: 700, color: P.text }}>담기는 조건</span> · {filterParts.join(" · ") || "전체 오디언스"}{segEstimate ? ` · ≈${fmt(segEstimate.estimated_audience)}명` : ""}
+                <div style={{ marginTop: 4, color: P.sub2 }}>분류 라벨·태그·메모는 <b>생성된 오디언스</b> 화면에서 저장 시 지정합니다.</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                <button onClick={confirmAddToCart} disabled={!cartName.trim()} style={{ flex: 1, padding: "9px 0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: cartName.trim() ? "pointer" : "not-allowed", background: P.accent, color: "#fff", border: "none", opacity: cartName.trim() ? 1 : 0.5, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}><ShoppingCart size={13} strokeWidth={2.4} />카트에 담기</button>
+                <button onClick={() => setCartFormOpen(false)} style={{ padding: "9px 18px", borderRadius: 9, fontSize: 12.5, fontWeight: 600, cursor: "pointer", background: P.bg, color: P.sub, border: `1px solid ${P.border}` }}>취소</button>
+              </div>
             </div>
           </div>
         </div>
