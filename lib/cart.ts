@@ -13,12 +13,13 @@ import { useSyncExternalStore, useEffect } from "react";
 
 export interface CartItem {
   id: string;                       // ci_xxx
-  type: "filter" | "persona";
+  type: "filter" | "persona" | "ai_table";
   label: string;                    // 사람이 읽는 이름
   summary: string;                  // 필터 요약(한글)
   sourceTab: string;                // 담은 화면
-  filters: Record<string, string>;  // EF 전송용 평탄 스키마 (동결)
+  filters: Record<string, string>;  // EF 전송용 평탄 스키마 (동결) — ai_table은 {}
   personaId?: string;
+  bqTable?: string;                 // type=ai_table: BQ 오디언스 테이블명(EF bq_audience_table)
   estimated?: number | null;
   dropped?: string[];               // 송출 시 미적용되는 조건(정직 표기: 금액·카드사 등)
   addedAt: string;
@@ -35,6 +36,8 @@ export interface CartRow extends BundleMeta {
   name: string | null;
   status: "cart" | "saved" | "submitted";
   items: CartItem[];
+  user_id?: number;
+  user_name?: string | null;
   updated_at?: string;
 }
 
@@ -190,6 +193,102 @@ export function loadBundle(id: string) {
   S.cart = row.items.map(i => ({ ...i, id: newItemId() }));
   emit();
   void persistActive();
+}
+
+/* 묶음 복제 — 같은 조각/메타로 새 saved 행 생성 (이름 " (복제)") */
+export async function duplicateBundle(id: string): Promise<boolean> {
+  const src = S.saved.find(r => r.id === id);
+  if (!src) return false;
+  const row: CartRow = {
+    id: "ct_" + Math.random().toString(36).slice(2, 9),
+    name: ((src.name || "무제") + " (복제)").slice(0, 80),
+    status: "saved",
+    items: src.items.map(i => ({ ...i, id: newItemId() })),
+    label: src.label ?? null, tags: [...(src.tags || [])], memo: src.memo ?? null,
+  };
+  S.saved = [row, ...S.saved];
+  emit();
+  try {
+    const res = await fetch("/api/carts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row) });
+    return (await res.json())?.success === true;
+  } catch { return false; }
+}
+
+/* 여러 묶음 병합 — 조각 합집합(라벨·id 중복 제거)으로 새 saved 행 생성 */
+export async function mergeBundles(ids: string[], name: string, meta: BundleMeta = {}): Promise<boolean> {
+  const rows = S.saved.filter(r => ids.includes(r.id));
+  if (rows.length < 2) return false;
+  const seen = new Set<string>();
+  const items: CartItem[] = [];
+  for (const r of rows) {
+    for (const it of r.items) {
+      const key = it.type === "ai_table" ? `bq:${it.bqTable}` : `${it.type}:${JSON.stringify(it.filters)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push({ ...it, id: newItemId() });
+    }
+  }
+  const mergedTags = Array.from(new Set(rows.flatMap(r => r.tags || [])));
+  const row: CartRow = {
+    id: "ct_" + Math.random().toString(36).slice(2, 9),
+    name: name.trim().slice(0, 80) || "병합 타겟",
+    status: "saved",
+    items: items.slice(0, 20),
+    label: meta.label?.trim().slice(0, 40) || rows[0].label || null,
+    tags: normalizeTags(meta.tags?.length ? meta.tags : mergedTags),
+    memo: meta.memo?.slice(0, 500) || `병합: ${rows.map(r => r.name).join(" + ")}`,
+  };
+  S.saved = [row, ...S.saved];
+  emit();
+  try {
+    const res = await fetch("/api/carts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row) });
+    return (await res.json())?.success === true;
+  } catch { return false; }
+}
+
+/* ── 공용 런컴 송출 (드로어·허브 공용) — 조각별 EF 호출 ── */
+const DMP_EXPORT_FN_URL = "https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export";
+const SUPA_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+export type SubmitResult = { label: string; ok: boolean; count?: number; error?: string };
+
+export async function runcommSubmit(
+  items: CartItem[], name: string, env: "dev" | "prod",
+  onProgress?: (done: number, total: number, results: SubmitResult[]) => void,
+): Promise<SubmitResult[]> {
+  const results: SubmitResult[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const segName = items.length === 1 ? name : `${name} #${i + 1}/${items.length}`;
+    const payload = it.type === "ai_table" && it.bqTable
+      ? { segment_name: segName, bq_audience_table: it.bqTable, env }
+      : { segment_name: segName, filters: it.filters, env };
+    try {
+      const resp = await fetch(DMP_EXPORT_FN_URL, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPA_ANON_KEY}` },
+        body: JSON.stringify(payload),
+      });
+      const r = await resp.json();
+      const ok = !!r?.success;
+      results.push({ label: it.label, ok, count: r?.data?.ads_id_count, error: ok ? undefined : (r?.error || `HTTP ${resp.status}`) });
+      if (ok) {
+        try {
+          await fetch("/api/exports", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              segment_name: segName, filters: it.type === "ai_table" ? { bq_audience_table: it.bqTable || "" } : it.filters,
+              audience_count: r?.data?.ads_id_count || 0, env: r?.data?.env || env,
+              runcomm_target_id: r?.data?.runcomm_target_id || null,
+              status: "success", memo: `카트 묶음: ${name} (${it.label})`, response_data: r,
+            }),
+          });
+        } catch {}
+      }
+    } catch (e: any) {
+      results.push({ label: it.label, ok: false, error: e.message });
+    }
+    onProgress?.(i + 1, items.length, [...results]);
+  }
+  return results;
 }
 
 /* ── 구독 훅 ── */

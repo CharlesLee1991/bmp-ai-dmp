@@ -73,11 +73,15 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       const segName = items.length === 1 ? n : `${n} #${i + 1}/${items.length}`;
+      // ai_table 조각은 BQ 오디언스 테이블 모드, 그 외는 필터 모드
+      const payload = it.type === "ai_table" && it.bqTable
+        ? { segment_name: segName, bq_audience_table: it.bqTable, env }
+        : { segment_name: segName, filters: it.filters, env };
       try {
         const resp = await fetch(DMP_EXPORT_FN_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPA_ANON_KEY}` },
-          body: JSON.stringify({ segment_name: segName, filters: it.filters, env }),
+          body: JSON.stringify(payload),
         });
         const r = await resp.json();
         const ok = !!r?.success;
@@ -88,7 +92,7 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
             await fetch("/api/exports", {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                segment_name: segName, filters: it.filters,
+                segment_name: segName, filters: it.type === "ai_table" ? { bq_audience_table: it.bqTable || "" } : it.filters,
                 audience_count: r?.data?.ads_id_count || 0,
                 env: r?.data?.env || env,
                 runcomm_target_id: r?.data?.runcomm_target_id || null,
