@@ -38,6 +38,8 @@ export interface CartRow extends BundleMeta {
   items: CartItem[];
   user_id?: number;
   user_name?: string | null;
+  last_sent_at?: string | null;
+  send_count?: number;
   updated_at?: string;
 }
 
@@ -161,6 +163,21 @@ export async function updateBundleMeta(id: string, meta: BundleMeta & { name?: s
   if (meta.label !== undefined) row.label = meta.label?.trim().slice(0, 40) || null;
   if (meta.tags !== undefined) row.tags = normalizeTags(meta.tags);
   if (meta.memo !== undefined) row.memo = meta.memo?.slice(0, 500) || null;
+  S.saved = [...S.saved];
+  emit();
+  try {
+    await fetch("/api/carts", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row),
+    });
+  } catch {}
+}
+
+/* 송출 기록 — 허브에서 저장 묶음 송출 성공 시 last_sent_at·send_count 갱신(상태는 유지=재사용) */
+export async function markBundleSent(id: string) {
+  const row = S.saved.find(r => r.id === id);
+  if (!row) return;
+  row.last_sent_at = new Date().toISOString();
+  row.send_count = (row.send_count || 0) + 1;
   S.saved = [...S.saved];
   emit();
   try {

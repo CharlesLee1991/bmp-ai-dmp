@@ -52,7 +52,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   failed: { label: "실패", color: "var(--badge-danger-fg)" },
 };
 
-export default function AiExploreTab() {
+export default function AiExploreTab({ onGoToTargets }: { onGoToTargets?: () => void }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
@@ -179,6 +179,12 @@ export default function AiExploreTab() {
                   style={{ padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "var(--card)", color: "var(--badge-danger-fg)", border: "1px solid var(--border)" }}>✕ 거절</button>
               </div>
             )}
+            {r.result_table && r.status !== "pending" && onGoToTargets && (
+              <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "var(--badge-success-bg)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--badge-success-fg)" }}>✓ 오디언스 생성 완료 — 이제 송출·관리할 수 있습니다.</span>
+                <button onClick={onGoToTargets} style={{ fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>생성된 오디언스로 이동 →</button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -187,7 +193,12 @@ export default function AiExploreTab() {
       <div style={{ padding: 18, borderRadius: 12, background: "var(--card)", border: "1px solid var(--border)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}><ClipboardList size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />탐색/생성 이력 <span style={{ fontSize: 11, color: "var(--neutral)", fontWeight: 400 }}>최근 {history.length}건 · 생성된 오디언스는 30일 보관</span></div>
-          <button onClick={loadHistory} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer" }}>{histLoading ? "..." : "↻ 새로고침"}</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {onGoToTargets && (
+              <button onClick={onGoToTargets} title="생성된 오디언스 화면에서 이 오디언스를 송출·관리" style={{ fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", cursor: "pointer" }}>생성된 오디언스에서 보기 →</button>
+            )}
+            <button onClick={loadHistory} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer" }}>{histLoading ? "..." : "↻ 새로고침"}</button>
+          </div>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>

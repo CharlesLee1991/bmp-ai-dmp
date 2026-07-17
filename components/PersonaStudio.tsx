@@ -16,7 +16,7 @@ import {
 import { P, badge, tooltipStyle } from "@/lib/theme";
 import {
   Sparkles, Wand2, Save, Loader2, Users, Target, Quote, Trash2,
-  Pencil, CheckCircle2, UserRound, RotateCcw, MousePointerClick,
+  Pencil, CheckCircle2, UserRound, RotateCcw, MousePointerClick, ShoppingCart,
 } from "lucide-react";
 import { AGE_ORDER, AGE_LABEL, SIDO_LIST, PARTNER_MAP, fmt } from "@/lib/data";
 import type { DmpUser } from "@/lib/auth";
@@ -57,13 +57,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function PersonaStudio({
-  user, personas, personaIds, onPersonasChange, onApply,
+  user, personas, personaIds, onPersonasChange, onApply, onGoExplore, onAddToCart,
 }: {
   user: DmpUser;
   personas: Persona[];
   personaIds: string[];
   onPersonasChange: (list: Persona[]) => void;
   onApply: (ids: string[], list?: Persona[]) => void;
+  onGoExplore?: () => void;          // 적용 후 오디언스 탐색(카드) 탭으로 이동
+  onAddToCart?: (p: Persona) => void; // 페르소나를 바로 카트에 담기
 }) {
   const isAdmin = user.role === "admin";
 
@@ -204,7 +206,7 @@ export default function PersonaStudio({
     if (!ok) { setErr("서버 저장 실패 — 권한 또는 네트워크를 확인하세요"); setSaving(false); return; }
     const next = editId ? personas.map(x => (x.id === editId ? p : x)) : [...personas, p];
     onPersonasChange(next); savePersonas(next);
-    if (applyAfter) onApply(Array.from(new Set([...personaIds, p.id])), next);
+    if (applyAfter) { onApply(Array.from(new Set([...personaIds, p.id])), next); onGoExplore?.(); }
     setSavedFlash(p.name); setTimeout(() => setSavedFlash(""), 2200);
     setSaving(false);
     if (!editId) resetEditor();
@@ -270,6 +272,12 @@ export default function PersonaStudio({
                       style={{ ...iconBtn(applied ? P.accent : P.sub), borderColor: applied ? P.accent : P.border }}>
                       <MousePointerClick size={13} strokeWidth={2.2} />
                     </button>
+                    {onAddToCart && (
+                      <button onClick={() => onAddToCart(p)} title="오디언스 카트에 담기"
+                        style={iconBtn(P.sub)}>
+                        <ShoppingCart size={13} strokeWidth={2} />
+                      </button>
+                    )}
                     <button onClick={() => loadForEdit(p)} disabled={!mine} title={mine ? "불러와서 편집" : `소유자(${p.userName})만 편집 가능`}
                       style={{ ...iconBtn(P.sub), opacity: mine ? 1 : 0.35, cursor: mine ? "pointer" : "not-allowed" }}>
                       <Pencil size={13} strokeWidth={2} />
@@ -364,7 +372,7 @@ export default function PersonaStudio({
               color: anyFilter ? "#fff" : P.sub, border: "none", boxShadow: anyFilter ? P.shadowSoft : "none",
               opacity: saving ? .6 : 1,
             }}>
-              {saving ? <Loader2 size={14} className="dmp-spin" /> : <MousePointerClick size={14} strokeWidth={2.2} />} 저장 후 화면에 적용
+              {saving ? <Loader2 size={14} className="dmp-spin" /> : <MousePointerClick size={14} strokeWidth={2.2} />} 저장 후 탐색 화면에 적용
             </button>
           </div>
         </div>
