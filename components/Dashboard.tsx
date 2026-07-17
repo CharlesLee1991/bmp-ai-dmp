@@ -1626,7 +1626,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           onApply={applyPersonas}
         />
       )}
-      {tab === "targets" && <TargetAudienceTab userId={user.id} />}
+      {tab === "targets" && <TargetAudienceTab user={user} />}
 
       {/* ── 오디언스 카트 드로어 + 담기 토스트 ── */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} userId={user.id} />
