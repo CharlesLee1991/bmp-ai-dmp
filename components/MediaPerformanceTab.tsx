@@ -137,7 +137,7 @@ export default function MediaPerformanceTab() {
 
       {/* 시각화: 현재 = 미니 바차트 / 정제 2D = recharts / 3D 탐색 = 탭 기반 3-축 탐색기 */}
       {viz === "explore3d" ? (
-        <Media3DExplorer rows={rows} days={days} />
+        <Media3DExplorer rows={rows} days={days} onDays={setDays} />
       ) : viz === "clean" ? (
         <CleanMediaCharts rows={rows} daily={daily} />
       ) : (
