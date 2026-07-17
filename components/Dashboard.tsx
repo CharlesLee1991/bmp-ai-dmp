@@ -446,7 +446,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     }
     return m;
   }, [allSubData]);
-  // 시스템관리에서 지정한 강제 라벨 오버라이드(로컬) — 업종 라벨 표기에 우선 적용.
+  // 시스템관리에서 지정한 강제 라벨 오버라이드(DB 영속) — 업종 라벨 표기에 우선 적용.
   const industryOverrides = useOverrides("industry");
 
   /* dashboard API */

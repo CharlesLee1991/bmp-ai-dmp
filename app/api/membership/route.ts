@@ -25,6 +25,23 @@ async function getPartnerLabelMap(): Promise<Record<string, string>> {
   }
 }
 
+// 강제지정분류(오버라이드) — 편집 가능 데이터라 캐시 없이 요청마다 조회(소규모 테이블). 실패 시 빈 맵.
+async function getIndustryOverrides(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/de_dmp_label_overrides?ns=eq.industry&select=code,label`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }, cache: "no-store" }
+    );
+    if (!res.ok) return {};
+    const rows: { code: string; label: string }[] = await res.json();
+    const map: Record<string, string> = {};
+    for (const r of rows) map[r.code] = r.label;
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 export async function POST(req: NextRequest) {
   if (!SUPABASE_ANON_KEY)
     return NextResponse.json({ success: false, error: "Missing SUPABASE_ANON_KEY" }, { status: 500 });
@@ -94,11 +111,12 @@ export async function POST(req: NextRequest) {
     if (!res.ok) return NextResponse.json({ success: false, error: data }, { status: res.status });
 
     // 가맹점 필터(partner_top)의 코드에 한글 업종 라벨 부착 → 화면에서 "4120" 대신 "전자상거래PG" 노출.
+    // 우선순위: 강제지정분류(de_dmp_label_overrides) > DB 정본(de_dmp_category_code) > 코드.
     if (data && Array.isArray(data.partner_top)) {
-      const labelMap = await getPartnerLabelMap();
+      const [labelMap, overrides] = await Promise.all([getPartnerLabelMap(), getIndustryOverrides()]);
       data.partner_top = data.partner_top.map((p: any) => ({
         ...p,
-        partner_name: labelMap[String(p.partner_cd)] || p.partner_name || p.partner_cd,
+        partner_name: overrides[String(p.partner_cd)] || labelMap[String(p.partner_cd)] || p.partner_name || p.partner_cd,
       }));
     }
 
