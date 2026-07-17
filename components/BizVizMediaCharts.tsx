@@ -227,7 +227,7 @@ function RibbonCanvas({ daily }: { daily: DailyRow[] }) {
 
 // ④ 궤도계 — 매체 우주 조망 (반경=ad_spend, 크기=impressions, 색=팔레트)
 //    자체 궤도(force-graph 미사용) — 번들 = three 단독
-function CosmosCanvas({ rows }: { rows: MediaRow[] }) {
+export function CosmosCanvas({ rows, height = 420 }: { rows: MediaRow[]; height?: number | string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current || !rows.length) return;
@@ -275,8 +275,8 @@ function CosmosCanvas({ rows }: { rows: MediaRow[] }) {
       dispose = () => { cancelAnimationFrame(raf); cleanup(); };
     });
     return () => dispose();
-  }, [rows]);
-  return <div ref={ref} style={{ width: "100%", height: 420 }} />;
+  }, [rows, height]);
+  return <div ref={ref} style={{ width: "100%", height }} />;
 }
 
 // ═══ 컨테이너 — 다크 격리 (브랜드 충돌 방지) ═══

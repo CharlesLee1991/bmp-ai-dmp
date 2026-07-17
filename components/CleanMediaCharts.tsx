@@ -4,10 +4,21 @@
   recharts 기반, 앱 라이트 팔레트 정합. 회전·발광·3D 왜곡 없음.
   BizViz 코스믹(임팩트 컷)과 대비되는 데일리 운영 대시보드 톤.
 */
+import { useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend, LabelList,
 } from "recharts";
+
+// IQR(1.5×) 기반 극단값 경계 — 어느 한 축이라도 경계를 벗어나면 극단값으로 판정
+function iqrBounds(vals: number[]) {
+  const s = [...vals].filter(v => Number.isFinite(v)).sort((a, b) => a - b);
+  const n = s.length;
+  if (n < 4) return { lo: -Infinity, hi: Infinity };
+  const q = (p: number) => { const i = (n - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+  const q1 = q(0.25), q3 = q(0.75), iqr = q3 - q1;
+  return { lo: q1 - 1.5 * iqr, hi: q3 + 1.5 * iqr };
+}
 
 export type MediaRow = {
   platform_name: string; platform_idx: number;
@@ -42,6 +53,7 @@ function TT({ active, payload, label, fmtVal }: any) {
 }
 
 export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; daily: DailyRow[] }) {
+  const [excludeOutliers, setExcludeOutliers] = useState(false);   // 극단값 일시 제외 토글
   // ① 가로 막대 랭킹 — 매체별 노출 TOP8 (정확 비교)
   const barData = [...rows].filter(r => r.impressions > 0).sort((a, b) => b.impressions - a.impressions)
     .slice(0, 8).map(r => ({ name: short(r.platform_name, 12), full: r.platform_name, 노출: r.impressions }));
@@ -54,16 +66,38 @@ export default function CleanMediaCharts({ rows, daily }: { rows: MediaRow[]; da
   const lineData = daily.map(d => ({ date: d.date.slice(5), 노출: d.impressions, 전환: d.conversions }));
 
   // ④ 버블 — 광고비 × 전환율 (크기=노출) — 효율 진단
-  const bubbleData = [...rows].filter(r => r.impressions > 0).slice(0, 30).map(r => ({
+  const bubbleAll = [...rows].filter(r => r.impressions > 0).slice(0, 30).map(r => ({
     x: r.ad_spend, y: r.impressions > 0 ? (r.conversions / r.impressions) * 100 : 0,
     z: r.impressions, name: r.platform_name,
   }));
+  // 극단값(IQR 1.5×) 판정 — x/y/z 어느 한 축이라도 경계 밖이면 극단값
+  const bx = iqrBounds(bubbleAll.map(d => d.x)), by = iqrBounds(bubbleAll.map(d => d.y)), bz = iqrBounds(bubbleAll.map(d => d.z));
+  const isOutlier = (d: { x: number; y: number; z: number }) =>
+    d.x < bx.lo || d.x > bx.hi || d.y < by.lo || d.y > by.hi || d.z < bz.lo || d.z > bz.hi;
+  const outlierCount = bubbleAll.filter(isOutlier).length;
+  const bubbleData = excludeOutliers ? bubbleAll.filter(d => !isOutlier(d)) : bubbleAll;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* 상단: 버블(효율 진단, 전폭) */}
       <div style={panel}>
-        <div style={head}>🫧 매체 효율 진단<span style={sub}>x = 광고비 · y = 전환율(%) · 크기 = 노출 · 우상단일수록 고효율</span></div>
+        <div style={{ ...head, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span>🫧 매체 효율 진단</span>
+          <span style={sub}>x = 광고비 · y = 전환율(%) · 크기 = 노출 · 우상단일수록 고효율</span>
+          {/* 극단값 제외 토글 스위치 */}
+          <button
+            onClick={() => setExcludeOutliers(v => !v)}
+            title="IQR 1.5× 기준 극단적 예외 매체를 일시적으로 제외하고 조회 (원본 데이터 불변)"
+            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            <span style={{ fontSize: 11, fontWeight: excludeOutliers ? 700 : 500, color: excludeOutliers ? P.accent : P.sub, whiteSpace: "nowrap" }}>
+              극단값 제외{outlierCount > 0 ? ` (${outlierCount})` : ""}
+            </span>
+            <span style={{ position: "relative", width: 34, height: 18, borderRadius: 999, background: excludeOutliers ? P.accent : "var(--border-strong)", transition: "background .15s", flexShrink: 0 }}>
+              <span style={{ position: "absolute", top: 2, left: excludeOutliers ? 18 : 2, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left .15s", boxShadow: "0 1px 2px rgba(0,0,0,.25)" }} />
+            </span>
+          </button>
+        </div>
         <div style={{ height: 300, padding: "12px 16px 4px" }}>
           <ResponsiveContainer>
             <ScatterChart margin={{ top: 8, right: 24, bottom: 20, left: 8 }}>
