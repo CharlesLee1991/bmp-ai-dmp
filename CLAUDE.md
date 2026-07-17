@@ -95,3 +95,4 @@ npx next build       # 배포 전 필수 (Vercel과 동일 조건)
 - 📖 상세 구조·DB·로직 → `docs/ARCHITECTURE.md`
 - 📘 사용자 매뉴얼(런컴 전달용) → `docs/USER-GUIDE.md`
 - 🎨 프론트 디자인 표준(SSOT) → `docs/DMP_UI_UX_표준.md` (토큰·다크모드·버튼톤·아이콘·차트 규칙)
+- 🔀 사용자 UX 흐름 정본 → `docs/USER-FLOW.md` (오디언스 정의→담기→확정→송출 2흐름·메뉴·핸드오프·EF 추출한계). **화면/흐름 변경 시 반드시 동기 업데이트**
