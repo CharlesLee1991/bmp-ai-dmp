@@ -118,9 +118,9 @@ export default function AiExploreTab() {
     <div style={{ padding: "20px 28px" }}>
       {/* 헤드라인 */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: "var(--badge-sky-fg)" }}><FlaskConical size={18} style={{ verticalAlign: "-3px", marginRight: 6, color: "var(--accent)" }} />AI 오디언스 탐색</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: "var(--badge-sky-fg)" }}><FlaskConical size={18} style={{ verticalAlign: "-3px", marginRight: 6, color: "var(--accent)" }} />퀵 AI 오디언스 생성</div>
         <div style={{ fontSize: 12, color: "var(--sub)", marginTop: 4 }}>
-          문장으로 타겟을 설명하면 AI가 SQL로 변환합니다 · 피처스토어 533만 ADID · <b>승인 전에는 아무것도 실행되지 않습니다</b>
+          페르소나 없이 문장 한 번으로 타겟 정의부터 오디언스 생성까지 — AI가 SQL로 변환합니다 · 피처스토어 533만 ADID · <b>승인 전에는 아무것도 실행되지 않습니다</b>
         </div>
       </div>
 
@@ -186,7 +186,7 @@ export default function AiExploreTab() {
       {/* ③ 요청 이력 */}
       <div style={{ padding: 18, borderRadius: 12, background: "var(--card)", border: "1px solid var(--border)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}><ClipboardList size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />탐색 이력 <span style={{ fontSize: 11, color: "var(--neutral)", fontWeight: 400 }}>최근 {history.length}건 · 생성된 오디언스는 30일 보관</span></div>
+          <div style={{ fontSize: 14, fontWeight: 700 }}><ClipboardList size={14} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent)" }} />탐색/생성 이력 <span style={{ fontSize: 11, color: "var(--neutral)", fontWeight: 400 }}>최근 {history.length}건 · 생성된 오디언스는 30일 보관</span></div>
           <button onClick={loadHistory} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer" }}>{histLoading ? "..." : "↻ 새로고침"}</button>
         </div>
         <div style={{ overflowX: "auto" }}>
@@ -224,7 +224,7 @@ export default function AiExploreTab() {
                 </tr>
               ))}
               {history.length === 0 && !histLoading && (
-                <tr><td colSpan={6} style={{ padding: 16, textAlign: "center", color: "var(--neutral)" }}>아직 탐색 이력이 없습니다 — 위 예시를 눌러 시작해보세요</td></tr>
+                <tr><td colSpan={6} style={{ padding: 16, textAlign: "center", color: "var(--neutral)" }}>아직 탐색/생성 이력이 없습니다 — 위 예시를 눌러 시작해보세요</td></tr>
               )}
             </tbody>
           </table>

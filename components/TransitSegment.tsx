@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
-import { TrainFront, Bus, MapPin, Clock, Users, Medal, Circle } from "lucide-react";
+import { TrainFront, Bus, MapPin, Clock, Users, Medal, Circle, Search, X } from "lucide-react";
 
 const P = {
   bg: "var(--bg)", card: "var(--card)", border: "var(--border)",
@@ -61,12 +61,16 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
   const [cat, setCat] = useState(defaultCat);
   const [onOff, setOnOff] = useState("");
   const [selectedStation, setSelectedStation] = useState<string>("");
+  const [stationPickerOpen, setStationPickerOpen] = useState(false);   // 전체 역 검색 팝업
+  const [stationQuery, setStationQuery] = useState("");
 
   // tab 변경 시 필터 리셋 (지하철↔버스 전환)
   useEffect(() => {
     setCat(defaultCat);
     setOnOff("");
     setSelectedStation("");
+    setStationPickerOpen(false);
+    setStationQuery("");
   }, [tab]);
 
   const fetchKey = `/api/transit#${tab}|${defaultCat}|${cat}|${onOff}|${selectedStation}|${sidos.join(",")}|${sexes.join(",")}|${ages.join(",")}`;
@@ -119,14 +123,11 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
 
   return (
     <div style={{ padding: "24px 28px 40px", background: P.bg, minHeight: 600 }}>
-      {/* 헤더 */}
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: P.text, marginBottom: 3 }}>
-          {tab === "subway"
-            ? <><TrainFront size={16} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 6, color: P.accent }} />지하철</>
-            : <><Bus size={16} strokeWidth={2} style={{ verticalAlign: "-3px", marginRight: 6, color: P.accent }} />버스</>} 이용 세그먼트
-        </div>
-        <div style={{ fontSize: 12, color: P.sub }}>교통카드 이용 데이터 기반 오디언스 분석</div>
+      {/* 2차 필터 라벨 — 상단 콘텐츠 헤더(제목·설명)와 중복 제거, 화면 내 상세 필터임을 명시 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: "var(--badge-teal-fg)", background: "var(--badge-teal-bg)", padding: "2px 7px", borderRadius: 6 }}>2차 필터</span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: P.text }}>{tab === "subway" ? "지하철" : "버스"} 이용 상세</span>
+        <span style={{ fontSize: 10.5, color: P.sub }}>1차 모수를 좁히는 {tab === "subway" ? "지하철" : "버스"} 전용 조건 (교통유형·승하차·{tab === "subway" ? "역" : "정류장"})</span>
       </div>
 
       {/* 기본 필터 */}
@@ -149,18 +150,25 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
         </div>
       </div>
 
-      {/* 역 선택 (TOP 20 가로 스크롤) */}
+      {/* 역/정류장 선택 — 이용량 상위 빠른선택 + 전체 검색 팝업 */}
       {stationTop.length > 0 && (
         <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: P.sub }}><MapPin size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4, color: P.sub }} /> 역별 필터 (이용량 TOP {stationTop.length})</div>
-            {selectedStation && (
-              <button onClick={() => setSelectedStation("")}
-                style={{ fontSize: 10, color: P.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
-                × 선택 해제
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: P.text }}><MapPin size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 4, color: P.accent }} /> {tab === "subway" ? "역" : "정류장"}별 필터 <span style={{ fontWeight: 500, color: P.sub }}>· 이용량 상위 {stationTop.length}곳</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={() => setStationPickerOpen(true)}
+                style={{ fontSize: 10.5, color: P.accent, background: P.glow, border: `1px solid ${P.accent}`, borderRadius: 8, padding: "4px 11px", cursor: "pointer", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <Search size={12} strokeWidth={2.2} /> 전체 {tab === "subway" ? "역" : "정류장"} 검색
               </button>
-            )}
+              {selectedStation && (
+                <button onClick={() => setSelectedStation("")}
+                  style={{ fontSize: 10, color: P.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                  × 선택 해제
+                </button>
+              )}
+            </div>
           </div>
+          <div style={{ fontSize: 10, color: P.sub, marginBottom: 10 }}>빠른 선택으로 이용량 상위 {tab === "subway" ? "역" : "정류장"}을 고르거나, <b style={{ color: P.text }}>전체 검색</b>에서 이름으로 찾아 선택하세요. (1곳 선택 시 해당 {tab === "subway" ? "역" : "정류장"} 기준으로 아래 지표가 갱신됩니다.)</div>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
             {stationTop.map((s) => {
               const active = selectedStation === s.station_id;
@@ -185,6 +193,48 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
         </div>
       )}
 
+      {/* 전체 역/정류장 검색 팝업 — 이름으로 찾아 선택 (단일 선택) */}
+      {stationPickerOpen && (
+        <div onClick={() => setStationPickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 120, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "8vh 20px 40px" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "min(560px, 100%)", maxHeight: "76vh", display: "flex", flexDirection: "column", background: P.card, borderRadius: 16, border: `1px solid ${P.border}`, boxShadow: "var(--shadow-lg)", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${P.border}` }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: P.text }}><MapPin size={15} strokeWidth={2.1} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />{tab === "subway" ? "역" : "정류장"} 검색 · 선택</div>
+              <button onClick={() => setStationPickerOpen(false)} style={{ display: "inline-flex", width: 28, height: 28, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "transparent", border: `1px solid ${P.border}`, color: P.sub, cursor: "pointer" }}><X size={15} strokeWidth={2.2} /></button>
+            </div>
+            <div style={{ padding: "12px 18px 8px" }}>
+              <div style={{ position: "relative" }}>
+                <Search size={14} strokeWidth={2} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: P.sub }} />
+                <input autoFocus value={stationQuery} onChange={e => setStationQuery(e.target.value)} placeholder={`${tab === "subway" ? "역" : "정류장"} 이름 검색…`}
+                  style={{ width: "100%", padding: "9px 12px 9px 32px", borderRadius: 9, border: `1px solid ${P.border}`, fontSize: 13, outline: "none", background: P.bg, color: P.text, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ fontSize: 10, color: P.sub, marginTop: 6 }}>이용량 상위 {stationTop.length}곳 중 검색 · 전체 {tab === "subway" ? "역" : "정류장"} 로드는 추후 확장 예정</div>
+            </div>
+            <div style={{ overflowY: "auto", padding: "4px 10px 12px", flex: 1 }}>
+              {stationTop
+                .filter(s => !stationQuery.trim() || s.station_name.includes(stationQuery.trim()))
+                .map(s => {
+                  const active = selectedStation === s.station_id;
+                  return (
+                    <button key={s.station_id} onClick={() => { setSelectedStation(active ? "" : s.station_id); setStationPickerOpen(false); }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "10px 12px", borderRadius: 9, cursor: "pointer", border: "none", background: active ? P.glow : "transparent", textAlign: "left", marginBottom: 2 }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = "var(--bg-elevated)"; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+                      <span>
+                        <span style={{ fontSize: 13, fontWeight: active ? 800 : 600, color: active ? P.accent : P.text }}>{s.station_name}</span>
+                        <span style={{ fontSize: 10.5, color: P.sub, marginLeft: 8 }}>{s.infra_name} {s.line_no}호선</span>
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: P.sub }}>{fmt(Number(s.cnt))}명</span>
+                    </button>
+                  );
+                })}
+              {stationTop.filter(s => !stationQuery.trim() || s.station_name.includes(stationQuery.trim())).length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", fontSize: 12, color: P.sub }}>검색 결과가 없습니다.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {isLoading && (
         <div style={{ textAlign: "center", padding: 40, color: P.sub, fontSize: 13 }}>분석 중…</div>
       )}
@@ -202,7 +252,7 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
           {/* KPI 4개 */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
             {[
-              { label: "총 오디언스", value: fmt(total) + "명", sub: selectedStation ? `선택 역 기준` : "전체 대비" },
+              { label: `${tab === "subway" ? "지하철" : "버스"} 이용자`, value: fmt(total) + "명", sub: selectedStation ? `선택 ${tab === "subway" ? "역" : "정류장"} 기준` : "교통 데이터 · 현재 필터" },
               { label: "남녀 비율", value: `${mPct}:${fPct}`, sub: `남성 ${fmt(male)} · 여성 ${fmt(female)}` },
               { label: "피크 이용시간", value: peakHour != null ? `${peakHour}시` : "–",
                 sub: peakHour != null ? (peakHour >= 6 && peakHour <= 10 ? "출근 시간대" : peakHour >= 17 && peakHour <= 20 ? "퇴근 시간대" : "낮 시간대") : "" },
@@ -214,6 +264,9 @@ export default function TransitSegment({ tab, sidos = [], sexes = [], ages = [] 
                 <div style={{ fontSize: 10, color: P.sub }}>{sub}</div>
               </div>
             ))}
+          </div>
+          <div style={{ fontSize: 10.5, color: P.sub, lineHeight: 1.5, margin: "-8px 0 18px" }}>
+            <b style={{ color: P.text }}>{tab === "subway" ? "지하철" : "버스"} 이용자</b>는 교통카드 데이터 기준 현재 필터 모수입니다. 상단 <b style={{ color: P.accent }}>1차 타겟 모수</b>(전 데이터소스 통합 추정치)와 정의가 달라 수치가 다를 수 있습니다.
           </div>
 
           {/* 시간대별 이용 분포 */}

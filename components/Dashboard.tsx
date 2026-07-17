@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import AiExplore from "./AiExplore";
 import AiExploreTab from "./AiExploreTab";
 import useSWR from "swr";
 import {
@@ -37,7 +36,7 @@ import { type Persona, savePersonas, mergePersonaFilters, syncPersonas, deletePe
 import {
   CreditCard, TrainFront, Bus, Ticket, FlaskConical, ClipboardList,
   BarChart3, TrendingUp, Landmark, ShoppingCart, Sparkles, Send, Target,
-  RotateCcw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
+  RotateCcw, RefreshCw, Package, MapPin, Wallet, Bot, Lightbulb, Smartphone,
   SlidersHorizontal, Rocket, Loader2, CheckCircle2, XCircle,
   Filter, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Users,
 } from "lucide-react";
@@ -47,6 +46,16 @@ const SYSTEM_NAME = "RUNCOMM";   // 고객(시스템명) — 브레드크럼 중
 // 공통 데모그래픽 필터(성별/연령/지역)를 실제 소비하는 화면 (조사 결과 기반).
 // 그 외 화면(AI탐색·전송이력·매체·카드사·쇼핑)은 자체 필터를 쓰므로 공통필터 비활성 표기.
 const DEMO_TABS: string[] = ["card", "subway", "bus", "membership", "spending"];
+
+// 오디언스 탐색 4화면 — 화면별 콘텐츠 헤더(제목·설명) 통일용 메타.
+// 데이터종류는 다르지만 상단 제목/설명/액션 구성을 일관화한다.
+const EXPLORE_TABS: string[] = ["card", "subway", "bus", "membership"];
+const EXPLORE_META: Record<string, { title: string; desc: string }> = {
+  card: { title: "카드 소비 오디언스", desc: "카드 결제 행동(업종·금액·매체·통신·결제)으로 1차 타겟 모수를 정제합니다." },
+  subway: { title: "지하철 이동 오디언스", desc: "역별 승하차 이동 패턴으로 생활권·동선 기반 타겟을 정제합니다." },
+  bus: { title: "버스 이동 오디언스", desc: "정류장·노선 이용 패턴으로 생활 반경 기반 타겟을 정제합니다." },
+  membership: { title: "멤버십 이용 오디언스", desc: "제휴 멤버십 이용 행동으로 관심·소비 성향 기반 타겟을 정제합니다." },
+};
 
 const SEX_OPTIONS = [
   { id: "M", label: "남성" },
@@ -324,8 +333,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any>(null);
+  const [aiModalOpen, setAiModalOpen] = useState(false);   // 아티팩트식 결과 모달
   const [campaignOpen, setCampaignOpen] = useState(false);
-  const [aiExploreOpen, setAiExploreOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(true);   // 필터 접기/펼치기 (기본 펼침)
   const [bcOpen, setBcOpen] = useState(false);           // 브레드크럼 메뉴 드롭다운
   const [sbCollapsed, setSbCollapsed] = useState(false); // 사이드바 접힘 (상단바 토글이 제어)
@@ -361,6 +370,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const [tab, setTab] = useState<TabId>("card");
   const isAdmin = user.role === "admin";
   const demoActive = DEMO_TABS.includes(tab);   // 공통 데모그래픽 필터 활성 화면 여부
+  const exploreTab = EXPLORE_TABS.includes(tab);   // 오디언스 탐색 4화면 여부 (헤더·액션 통일)
 
   // 브레드크럼 메뉴 드롭다운 — 외부 클릭 닫기
   useEffect(() => {
@@ -722,6 +732,28 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
 
   const sidoShort = (s: string) => s.replace(/특별시|광역시|특별자치시|특별자치도/, "").replace(/도$/, "");
 
+  /* ── AI 타겟 제안 — 도킹 바에서 실행(전 화면 공통). 카드 지표는 있을 때만 첨부. ── */
+  const runAiRecommend = async () => {
+    setAiLoading(true); setAiResult(null);
+    try {
+      const body: any = {
+        filters: filterParts.join(" · ") || "전체 오디언스",
+        segmentPreview: segEstimate ? { estimated: segEstimate.estimated_audience, selectivity: (segEstimate.selectivity * 100).toFixed(1) } : null,
+      };
+      if (tab === "card") {
+        body.categories = industryData.slice(0, 12).map((it: any) => `${(PARTNER_MAP as any)[it.code] || it.code}: ${fmt(it.users)}명`).join("\n");
+        body.ageGender = ageChart.map(a => `${AGE_LABEL[a.a]}: 남${fmt(a.M)} 여${fmt(a.F)}`).join("\n");
+        body.regions = regionRank.slice(0, 10).map(r => `${r.name}: ${fmt(r.users)}명`).join("\n");
+        body.amountBuckets = amountBuckets.map(b => `${b.label}: ${fmt(b.ads_count)}건`).join("\n");
+      }
+      const res = await fetch("/api/ai-recommend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (data.success) { setAiResult(data.analysis); setAiModalOpen(true); }
+      else alert("AI 분석 실패: " + (data.error || ""));
+    } catch (e: any) { alert("AI 분석 에러: " + e.message); }
+    finally { setAiLoading(false); }
+  };
+
   return (
     <div style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: P.bg, minHeight: "100vh", color: P.text, display: "flex" }}>
 
@@ -812,12 +844,15 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
       </header>
 
-      {/* ─── 타겟 정의(페르소나) + 공통 데모그래픽 필터 · 브레드크럼 하단 도킹 고정 ─── */}
+      {/* ─── 타겟 정의(페르소나) + 공통 데모그래픽 필터 · 브레드크럼 하단 도킹 고정 ───
+           오디언스 탐색 4화면(card/subway/bus/membership)에서만 노출 — 그 외 화면은
+           타겟 정의가 무관하므로 숨김(과거 dimmed 표기 → 혼란 제거). */}
+      {exploreTab && (
       <div style={{ position: "sticky", top: 56, zIndex: 45, background: P.chrome, borderBottom: `1px solid ${P.border}`, boxShadow: P.shadowSoft }}>
         {/* 타겟 정의(페르소나) — 데이터종류별 + 데모그래픽 결합 정의 (전 화면 고정) */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 28px", borderBottom: `1px dashed ${P.border}`, flexWrap: "wrap" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: P.accent, whiteSpace: "nowrap" }}>
-            <Target size={14} strokeWidth={2.2} /> 타겟 정의
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: P.accent, whiteSpace: "nowrap" }} title="데모그래픽·페르소나로 정의한 1차 타겟 모수 — 전 화면 공통 유지">
+            <Target size={14} strokeWidth={2.2} /> 1차 타겟 모수
           </span>
           {/* 저장된 페르소나 칩 — 다중 선택 = 필터 합집합 적용 */}
           {personas.map(p => {
@@ -851,14 +886,47 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           }}>
             <Sparkles size={12} strokeWidth={2.2} /> 페르소나 빌더
           </button>
+          {exploreTab && (
+            <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} title="자연어로 캠페인을 기술하면 AI가 타겟 조건을 추천합니다 (타겟 정의 보조)" style={{
+              display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 11px", borderRadius: 999,
+              fontSize: 11, fontWeight: 600, cursor: "pointer",
+              background: campaignOpen ? P.appGlow : "transparent",
+              border: `1px dashed ${campaignOpen ? "var(--accent-2)" : P.border}`, color: campaignOpen ? P.app : P.sub,
+            }}>
+              <Target size={12} strokeWidth={2.2} /> 캠페인 타겟 찾기
+            </button>
+          )}
           <span style={{ fontSize: 12, color: filterParts.length ? P.text : P.sub, fontWeight: filterParts.length ? 600 : 400, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {filterParts.length ? filterParts.join(" · ") : "전체 오디언스 (필터 미설정)"}
           </span>
-          {segEstimate && (
-            <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: P.accent, whiteSpace: "nowrap" }}>
-              ≈ {fmt(segEstimate.estimated_audience)}명
-            </span>
-          )}
+
+          {/* ── 우측: 모수 다단계 도출 + AI 제안(아티팩트) ── */}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+            {segEstimate && (
+              <span title="전체 DMP 모수 → 필터 선택도 → 추정 오디언스" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, color: P.sub, whiteSpace: "nowrap", opacity: segValidating ? 0.5 : 1, transition: "opacity .2s" }}>
+                <span>전체 <b style={{ color: P.text, fontWeight: 700 }}>{fmt(segEstimate.total_audience)}</b></span>
+                <ChevronRight size={11} strokeWidth={2.4} style={{ color: P.sub2 }} />
+                <span>선택 <b style={{ color: P.text, fontWeight: 700 }}>{(segEstimate.selectivity * 100).toFixed(1)}%</b></span>
+                <ChevronRight size={11} strokeWidth={2.4} style={{ color: P.sub2 }} />
+                <span style={{ fontSize: 13, fontWeight: 900, color: P.accent, letterSpacing: "-0.02em" }}>≈{fmt(segEstimate.estimated_audience)}<span style={{ fontSize: 10, fontWeight: 500, color: P.sub }}>명</span></span>
+              </span>
+            )}
+            {aiResult ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 4px 3px 10px", borderRadius: 999, background: "var(--badge-violet-bg)", color: "var(--badge-violet-fg)", fontSize: 11, fontWeight: 700 }}>
+                <button onClick={() => setAiModalOpen(true)} title="AI 타겟 제안 열기" style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 11, fontWeight: 700, padding: 0 }}>
+                  <Bot size={13} strokeWidth={2.2} /> AI 제안 보기
+                </button>
+                <button onClick={runAiRecommend} disabled={aiLoading} title="다시 생성" style={{ display: "inline-flex", width: 18, height: 18, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "color-mix(in srgb, var(--badge-violet-fg) 14%, transparent)", border: "none", cursor: aiLoading ? "wait" : "pointer", color: "inherit" }}>
+                  <RefreshCw size={11} strokeWidth={2.4} className={aiLoading ? "dmp-spin" : undefined} />
+                </button>
+              </span>
+            ) : (
+              <button onClick={runAiRecommend} disabled={aiLoading} title="현재 타겟 모수에 대한 AI 효율 타겟 제안 생성" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--badge-violet-fg)", background: "var(--badge-violet-bg)", border: "1px solid color-mix(in srgb, var(--badge-violet-fg) 22%, transparent)", borderRadius: 999, padding: "5px 13px", cursor: aiLoading ? "wait" : "pointer", opacity: aiLoading ? 0.6 : 1 }}>
+                {aiLoading ? <RefreshCw size={13} strokeWidth={2.2} className="dmp-spin" /> : <Bot size={13} strokeWidth={2.2} />}
+                {aiLoading ? "생성 중…" : "AI 타겟 제안"}
+              </button>
+            )}
+          </div>
         </div>
         {/* 공통 데모그래픽 (성별·연령·지역) — 소비 화면에서만 활성 */}
         <div style={{ padding: "8px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", opacity: demoActive ? 1 : 0.45, pointerEvents: demoActive ? "auto" : "none", filter: demoActive ? "none" : "grayscale(0.6)" }}>
@@ -895,6 +963,25 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           )}
         </div>
       </div>
+      )}
+
+      {/* ─── 콘텐츠 헤더 (오디언스 탐색 4화면 통일: 제목 + 설명 + 공통 액션) ─── */}
+      {exploreTab && (
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "16px 28px 4px" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              {(() => { const T = TABS.find(t => t.id === tab); const Icon = T?.icon; return Icon ? <span style={{ display: "inline-flex", width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 9, background: "var(--badge-teal-bg)", color: "var(--badge-teal-fg)" }}><Icon size={17} strokeWidth={2.1} /></span> : null; })()}
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: P.text, margin: 0, letterSpacing: "-0.02em" }}>{EXPLORE_META[tab]?.title || TAB_LABEL[tab]}</h2>
+            </div>
+            <p style={{ fontSize: 12, color: P.sub, margin: "5px 0 0", lineHeight: 1.5 }}>{EXPLORE_META[tab]?.desc}</p>
+          </div>
+          {/* 공통 액션 — 정의된 타겟에 대한 '담기 → 전송' (정의 보조는 상단 1차 모수 존으로 이관) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <button onClick={addCurrentToCart} title="현재 1·2차 조건을 오디언스 카트에 담습니다 → ‘타겟 오디언스’에서 라벨·태그로 관리" style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: P.card, color: P.accent, border: `1px solid ${P.accent}` }}><ShoppingCart size={14} strokeWidth={2.2} /> 오디언스 담기</button>
+            <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none", boxShadow: P.shadowSoft }}><Send size={14} strokeWidth={2.2} /> 런컴 타겟 전송</button>
+          </div>
+        </div>
+      )}
 
       {/* ─── 화면 필터 (카드 전용 · 접기/펼치기 · 2컬럼) ─── */}
       {tab === "card" && (
@@ -912,8 +999,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         >
           <ChevronDown size={16} strokeWidth={2.4} style={{ color: P.accent, transform: filterOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .16s" }} />
           <Filter size={14} strokeWidth={2} style={{ color: P.accent }} />
-          <span style={{ fontSize: 12.5, fontWeight: 700 }}>화면 필터</span>
-          <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 400 }}>카드 데이터 전용</span>
+          <span style={{ fontSize: 10, fontWeight: 800, color: "var(--badge-teal-fg)", background: "var(--badge-teal-bg)", padding: "2px 7px", borderRadius: 6 }}>2차 필터</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700 }}>카드 데이터 상세</span>
+          <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 400 }}>1차 모수를 좁히는 카드 전용 조건</span>
           <span style={{ fontSize: 10.5, color: P.sub, fontWeight: 500 }}>· {filterOpen ? "펼침" : "접힘"}</span>
           {filterParts.length > 0 && (
             <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "var(--badge-teal-bg)", color: "var(--badge-teal-fg)" }}>
@@ -1168,25 +1256,17 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
             {anyFilter && <button onClick={reset} style={{ fontSize: 10, color: P.accent, background: "none", border: `1px solid color-mix(in srgb, var(--accent) 27%, transparent)`, borderRadius: 16, padding: "4px 14px", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</button>}
             {filterParts.length > 0 && <span style={{ fontSize: 10, color: P.sub }}>{filterParts.join(" · ")}</span>}
           </div>
-          {tab === "card" && (
-            <div style={{ display: "flex", gap: 8 }}>
-              {/* CL 표준 §1 버튼 톤: 옵션 = outline / 필수(전송) = 단일 solid primary */}
-              <button onClick={() => { setCampaignOpen(!campaignOpen); setCampaignResult(null); }} style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: campaignOpen ? P.appGlow : "transparent", color: campaignOpen ? P.app : P.sub, border: `1px solid ${campaignOpen ? "var(--accent-2)" : P.border}` }}><Target size={14} strokeWidth={2} /> 캠페인 타겟 찾기</button>
-              <button onClick={() => setAiExploreOpen(!aiExploreOpen)} style={{ padding: "7px 15px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: aiExploreOpen ? P.glow : "transparent", color: aiExploreOpen ? P.accent : P.sub, border: `1px solid ${aiExploreOpen ? P.accent : P.border}` }}><FlaskConical size={14} strokeWidth={2} /> AI 오디언스 탐색</button>
-              <button onClick={addCurrentToCart} title="현재 필터 조건을 오디언스 카트에 담습니다" style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: P.card, color: P.accent, border: `1px solid ${P.accent}` }}><ShoppingCart size={13} strokeWidth={2.2} /> 현재 조건 담기</button>
-              <button onClick={() => { setExportOpen(true); setExportResult(null); setExportName(""); setExportMemo(""); }} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none", boxShadow: P.shadowSoft }}><Send size={14} strokeWidth={2.2} /> 런컴 타겟 전송</button>
-            </div>
-          )}
+          {/* 액션 버튼은 상단 콘텐츠 헤더로 통일 이관됨 (4화면 공통) — 정의/담기/전송 3존 */}
         </div>
         </div>
         )}
       </div>
       )}
 
-      {aiExploreOpen && tab === "card" && <AiExplore />}
+      {/* 인라인 'AI 오디언스 탐색'은 사이드바 '퀵 AI 오디언스' 메뉴로 일원화(중복 제거) */}
 
       {/* ─── CAMPAIGN TARGET FINDER ─── */}
-      {campaignOpen && tab === "card" && (
+      {campaignOpen && exploreTab && (
         <div style={{ margin: "12px 28px 0", padding: 18, borderRadius: 12, background: P.card, border: `1px solid ${P.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: P.app }}><Target size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.app }} />캠페인 타겟 찾기</div>
@@ -1230,98 +1310,71 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
         </div>
       )}
 
-      {/* ─── SEGMENT PREVIEW BANNER ─── */}
-      {anyFilter && (
-        <div style={{ position: "relative", overflow: "hidden", margin: "12px 28px 0", padding: "12px 18px", borderRadius: 10, background: "linear-gradient(135deg, rgba(59,130,246,0.04), var(--accent-glow))", border: `1px solid color-mix(in srgb, var(--accent) 20%, transparent)`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          {(segLoading || segValidating) && (
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `color-mix(in srgb, var(--accent) 13%, transparent)` }}>
-              <div className="dmp-seg-prog" style={{ height: "100%", width: "35%", background: P.accent, borderRadius: 2 }} />
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Target size={16} strokeWidth={2} style={{ color: P.accent, flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: P.accent }}>세그먼트 프리뷰{(segLoading || segValidating) && <span style={{ fontWeight: 400, color: P.sub, marginLeft: 8 }}>갱신 중…</span>}</div>
-              <div style={{ fontSize: 11, color: P.sub, marginTop: 2 }}>{filterParts.join(" · ") || "필터 적용 중"}</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <button onClick={async () => {
-              setAiLoading(true); setAiResult(null);
-              try {
-                const res = await fetch("/api/ai-recommend", {
-                  method: "POST", headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    filters: filterParts.join(" · "),
-                    segmentPreview: segEstimate ? { estimated: segEstimate.estimated_audience, selectivity: (segEstimate.selectivity * 100).toFixed(1) } : null,
-                    categories: industryData.slice(0, 12).map((it: any) => `${(PARTNER_MAP as any)[it.code] || it.code}: ${fmt(it.users)}명`).join("\n"),
-                    ageGender: ageChart.map(a => `${AGE_LABEL[a.a]}: 남${fmt(a.M)} 여${fmt(a.F)}`).join("\n"),
-                    regions: regionRank.slice(0, 10).map(r => `${r.name}: ${fmt(r.users)}명`).join("\n"),
-                    amountBuckets: amountBuckets.map(b => `${b.label}: ${fmt(b.ads_count)}건`).join("\n"),
-                  }),
-                });
-                const data = await res.json();
-                if (data.success) setAiResult(data.analysis);
-                else alert("AI 분석 실패: " + (data.error || ""));
-              } catch (e: any) { alert("AI 분석 에러: " + e.message); }
-              finally { setAiLoading(false); }
-            }} disabled={aiLoading} style={{ fontSize: 11, fontWeight: 600, color: "var(--badge-violet-fg)", background: "var(--badge-violet-bg)", border: "1px solid var(--badge-violet-bg)", borderRadius: 20, padding: "6px 16px", cursor: aiLoading ? "wait" : "pointer", opacity: aiLoading ? .6 : 1, display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Bot size={13} strokeWidth={2} />{aiLoading ? "분석 중..." : "AI 타겟 제안"}
-            </button>
-            {segEstimate && (
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: P.accent, letterSpacing: "-0.03em", opacity: segValidating ? 0.4 : 1, transition: "opacity 0.2s" }}>{fmt(segEstimate.estimated_audience)}<span style={{ fontSize: 12, fontWeight: 500, color: P.sub, marginLeft: 4 }}>명</span></div>
-                <div style={{ fontSize: 10, color: P.sub }}>전체 {fmt(segEstimate.total_audience)}명 중 {(segEstimate.selectivity * 100).toFixed(1)}%{segData?.meta?.response_time_ms && ` · ${segData.meta.response_time_ms}ms`}</div>
+      {/* ─── AI 타겟 제안 — 아티팩트 모달 (도킹 바 버튼/칩으로 토글) ─── */}
+      {aiModalOpen && aiResult && (
+        <div onClick={() => setAiModalOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 120, background: "var(--scrim)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "6vh 20px 40px", overflowY: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "min(920px, 100%)", background: P.card, borderRadius: 16, border: `1px solid ${P.border}`, boxShadow: P.shadowLg, overflow: "hidden" }}>
+            {/* 헤더 */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 22px", borderBottom: `1px solid ${P.border}`, background: "linear-gradient(135deg, var(--badge-violet-bg), transparent)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ display: "inline-flex", width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 9, background: "var(--badge-violet-bg)", color: "var(--badge-violet-fg)" }}><Bot size={18} strokeWidth={2.2} /></span>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: P.text }}>AI 효율 타겟 제안</div>
+                  <div style={{ fontSize: 11, color: P.sub, marginTop: 1, maxWidth: 640, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{filterParts.join(" · ") || "전체 오디언스"}{segEstimate ? ` · ≈${fmt(segEstimate.estimated_audience)}명` : ""}</div>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ─── AI RECOMMENDATION RESULT ─── */}
-      {aiResult && (
-        <div style={{ margin: "8px 28px 0", padding: 18, borderRadius: 12, background: P.card, border: `1px solid ${P.border}` }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: P.app }}><Bot size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.app }} />AI 효율 타겟 분석</div>
-            <button onClick={() => setAiResult(null)} style={{ fontSize: 10, color: P.app, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>닫기</button>
-          </div>
-          {aiResult.summary && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, marginBottom: 14, padding: "10px 14px", background: P.cardAlt, borderRadius: 8 }}>{aiResult.summary}</div>}
-          {aiResult.insights?.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: P.app, marginBottom: 6 }}><Lightbulb size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5, color: P.app }} />핵심 인사이트</div>
-              {aiResult.insights.map((ins: string, i: number) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--sub)", padding: "4px 0 4px 12px", borderLeft: "2px solid var(--accent-2)", marginBottom: 4 }}>{ins}</div>
-              ))}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button onClick={runAiRecommend} disabled={aiLoading} title="다시 생성" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "var(--badge-violet-fg)", background: "var(--badge-violet-bg)", border: "none", borderRadius: 8, padding: "6px 12px", cursor: aiLoading ? "wait" : "pointer" }}>
+                  <RefreshCw size={12} strokeWidth={2.4} className={aiLoading ? "dmp-spin" : undefined} /> 다시 생성
+                </button>
+                <button onClick={() => setAiModalOpen(false)} title="닫기" style={{ display: "inline-flex", width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "transparent", border: `1px solid ${P.border}`, color: P.sub, cursor: "pointer" }}><XCircle size={16} strokeWidth={2} /></button>
+              </div>
             </div>
-          )}
-          {aiResult.recommendations?.length > 0 && (
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: P.app, marginBottom: 8 }}><Target size={13} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5, color: P.app }} />추천 타겟 조합</div>
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(aiResult.recommendations.length, 3)}, 1fr)`, gap: 10 }}>
-                {aiResult.recommendations.map((rec: any, i: number) => (
-                  <div key={i} style={{ background: P.cardAlt, borderRadius: 10, padding: 14, border: `1px solid ${P.border}` }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: P.app, marginBottom: 6 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
-                    {rec.description && <div style={{ fontSize: 11, color: "var(--sub)", marginBottom: 6 }}>{rec.description}</div>}
-                    <div style={{ fontSize: 11, color: "var(--text)", padding: "6px 8px", background: "var(--badge-violet-bg)", borderRadius: 6, marginBottom: 6 }}>
-                      <span style={{ fontWeight: 600 }}>조건:</span> {rec.filters}
-                    </div>
-                    {rec.estimated_audience && <div style={{ fontSize: 11, color: P.app, fontWeight: 600 }}>추정 규모: {rec.estimated_audience}</div>}
-                    {rec.reason && <div style={{ fontSize: 10, color: "var(--sub-2)", marginTop: 4 }}>{rec.reason}</div>}
+            {/* 본문 */}
+            <div style={{ padding: 22, maxHeight: "70vh", overflowY: "auto" }}>
+              {aiResult.summary && <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, marginBottom: 16, padding: "12px 16px", background: P.cardAlt, borderRadius: 10 }}>{aiResult.summary}</div>}
+              {aiResult.insights?.length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: P.text, marginBottom: 8 }}><Lightbulb size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />핵심 인사이트</div>
+                  {aiResult.insights.map((ins: string, i: number) => (
+                    <div key={i} style={{ fontSize: 12.5, color: "var(--sub)", padding: "5px 0 5px 12px", borderLeft: "2px solid var(--accent)", marginBottom: 5 }}>{ins}</div>
+                  ))}
+                </div>
+              )}
+              {aiResult.recommendations?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: P.text, marginBottom: 10 }}><Target size={14} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6, color: P.accent }} />추천 타겟 조합</div>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))`, gap: 12 }}>
+                    {aiResult.recommendations.map((rec: any, i: number) => (
+                      <div key={i} style={{ background: P.cardAlt, borderRadius: 12, padding: 16, border: `1px solid ${P.border}` }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: P.text, marginBottom: 7 }}>{"ⓐⓑⓒⓓ"[i] || "●"} {rec.label}</div>
+                        {rec.description && <div style={{ fontSize: 11.5, color: "var(--sub)", marginBottom: 8, lineHeight: 1.5 }}>{rec.description}</div>}
+                        <div style={{ fontSize: 11.5, color: "var(--text)", padding: "7px 10px", background: "var(--badge-violet-bg)", borderRadius: 8, marginBottom: 7 }}>
+                          <span style={{ fontWeight: 700 }}>조건:</span> {rec.filters}
+                        </div>
+                        {rec.estimated_audience && <div style={{ fontSize: 11.5, color: P.accent, fontWeight: 700 }}>추정 규모: {rec.estimated_audience}</div>}
+                        {rec.reason && <div style={{ fontSize: 10.5, color: "var(--sub-2)", marginTop: 5, lineHeight: 1.5 }}>{rec.reason}</div>}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
       {/* ─── AUDIENCE TAB ─── */}
       {tab === "card" && (<>
-        <div style={{ padding: "16px 28px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-          <Stat label="총 이용자" value={fmt(total)} sub={anyFilter ? "필터 적용" : "전체"} />
+        <div style={{ padding: "16px 28px 4px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          <Stat label="카드 이용자" value={fmt(total)} sub={anyFilter ? "카드 결제 데이터 · 2차 필터 반영" : "카드 결제 데이터 · 전체"} />
           <Stat label="남녀 비율" value={total > 0 ? `${Math.round(mT / total * 100)}:${Math.round(fT / total * 100)}${uT > 0 ? `:${Math.round(uT / total * 100)}` : ""}` : "-"} sub={`M ${fmt(mT)} · F ${fmt(fT)}${uT > 0 ? ` · ? ${fmt(uT)}` : ""}`} color={P.m} />
           <Stat label="주력 연령대" value={AGE_LABEL[topAge.a] || "-"} sub={`${fmt(topAge.M + topAge.F + topAge.U)}명`} color={P.f} />
-          <Stat label="응답 속도" value={responseMs ? `${responseMs}ms` : "< 50ms"} sub={isLive ? "Supabase RPC LIVE" : "Supabase RPC"} color={P.green} />
+        </div>
+        {/* 수치 정의 안내 — 상단 '1차 모수'와 화면 지표의 산출 근거 차이 명시 (혼란 방지) */}
+        <div style={{ padding: "0 28px 12px", fontSize: 10.5, color: P.sub, lineHeight: 1.5 }}>
+          <b style={{ color: P.text }}>카드 이용자</b>는 카드 결제 데이터 기준 현재 필터 모수입니다. 상단 <b style={{ color: P.accent }}>1차 타겟 모수</b>는 전 데이터소스 통합 추정치로 데이터 정의가 달라 수치가 다를 수 있습니다.
+          {responseMs && <span style={{ color: P.sub2, marginLeft: 8 }}>· 조회 {responseMs}ms{isLive ? " · LIVE" : ""}</span>}
         </div>
 
         <div style={{ padding: "0 28px 28px", display: "grid", gridTemplateColumns: "260px 1fr 240px", gap: 16 }}>
