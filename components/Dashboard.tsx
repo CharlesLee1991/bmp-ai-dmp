@@ -31,7 +31,7 @@ import { useOverrides } from "@/lib/labelOverrides";
 import type { DmpUser } from "@/lib/auth";
 import { P, tooltipStyle, tooltipCursor } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
-import { DmpSidebar, TABS, TAB_LABEL, type TabId } from "./DmpSidebar";
+import { DmpSidebar, TABS, TAB_LABEL, GROUP_LABEL, type TabId } from "./DmpSidebar";
 import PersonaStudio from "./PersonaStudio";
 import { type Persona, savePersonas, mergePersonaFilters, syncPersonas, deletePersonaServer } from "@/lib/persona";
 import {
@@ -42,7 +42,7 @@ import {
   Filter, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Users,
 } from "lucide-react";
 
-const SYSTEM_NAME = "런컴";   // 고객(시스템명) — 브레드크럼 중간 세그먼트
+const SYSTEM_NAME = "RUNCOMM";   // 고객(시스템명) — 브레드크럼 중간 세그먼트
 
 // 공통 데모그래픽 필터(성별/연령/지역)를 실제 소비하는 화면 (조사 결과 기반).
 // 그 외 화면(AI탐색·전송이력·매체·카드사·쇼핑)은 자체 필터를 쓰므로 공통필터 비활성 표기.
@@ -758,6 +758,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
           <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>DMP Explorer</span>
           <ChevronRight size={13} strokeWidth={2} style={{ opacity: .45, flexShrink: 0 }} />
           <span style={{ whiteSpace: "nowrap" }}>{SYSTEM_NAME}</span>
+          <ChevronRight size={13} strokeWidth={2} style={{ opacity: .45, flexShrink: 0 }} />
+          {/* 메뉴 그룹(카테고리) — 번호 접두 제거 */}
+          <span style={{ whiteSpace: "nowrap" }}>{(GROUP_LABEL[TABS.find(t => t.id === tab)?.group ?? "explore"] || "").replace(/^\d+\s*·\s*/, "")}</span>
           <ChevronRight size={13} strokeWidth={2} style={{ opacity: .45, flexShrink: 0 }} />
           {/* 현재 메뉴 + 드롭다운(바로 이동) */}
           <div data-bc-menu style={{ position: "relative" }}>
