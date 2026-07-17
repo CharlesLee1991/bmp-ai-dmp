@@ -234,14 +234,20 @@ export default function CartDrawer({ open, onClose, userId }: { open: boolean; o
 
           {saveMsg && <div style={{ fontSize: 11, color: P.accent, marginBottom: 6 }}>{saveMsg}</div>}
           <div style={{ display: "flex", gap: 8 }}>
-            <button disabled={!name.trim() || !cart.length} onClick={doSave}
-              style={footBtn(false, !name.trim() || !cart.length)}>
-              <Save size={12} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 5 }} />묶음 저장
-            </button>
-            <button disabled={!name.trim() || !cart.length || sub.phase === "sending"} onClick={() => setConfirmOpen(true)}
-              style={footBtn(true, !name.trim() || !cart.length || sub.phase === "sending")}>
-              <Rocket size={12} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 5 }} />이름 붙여 송출
-            </button>
+            {/* 메인 = 타겟으로 저장(생성된 오디언스 보관). 송출은 거기서 언제든. */}
+            <Tip content={"'생성된 오디언스' 메뉴에 타겟으로 보관됩니다.\n라벨·태그·메모로 관리하고 언제든 송출할 수 있어요."} side="top">
+              <button disabled={!name.trim() || !cart.length} onClick={doSave}
+                style={footBtn(true, !name.trim() || !cart.length)}>
+                <Save size={12} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 5 }} />타겟으로 저장
+              </button>
+            </Tip>
+            {/* 서브 = 바로 송출(저장 겸용) */}
+            <Tip content={"저장과 동시에 즉시 런컴으로 송출합니다.\n'생성된 오디언스' 메뉴에 '송출됨'으로 기록돼요."} side="top">
+              <button disabled={!name.trim() || !cart.length || sub.phase === "sending"} onClick={() => setConfirmOpen(true)}
+                style={footBtn(false, !name.trim() || !cart.length || sub.phase === "sending")}>
+                <Rocket size={12} strokeWidth={2.2} style={{ verticalAlign: "-2px", marginRight: 5 }} />바로 송출
+              </button>
+            </Tip>
           </div>
         </div>
 
