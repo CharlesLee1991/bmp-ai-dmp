@@ -8,7 +8,7 @@
    - 렌더러: ECharts(2D graph/scatter/bar) + ECharts-GL(3D). 색은 고정 hex(브랜드 격리 다크).
    ══════════════════════════════════════════════════════════════════ */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Maximize2, Minimize2, Box, Target, Filter, GitCompareArrows, Share2, Grid3x3, BarChart2, Sparkles, RefreshCw, Eye, EyeOff, PanelRightClose, PanelRightOpen, SlidersHorizontal, X } from "lucide-react";
+import { Maximize2, Minimize2, Box, Target, Filter, Share2, Grid3x3, BarChart2, Sparkles, RefreshCw, Eye, EyeOff, PanelRightClose, PanelRightOpen, SlidersHorizontal, X } from "lucide-react";
 
 export type MediaRow = { platform_name: string; platform_idx: number; impressions: number; clicks: number; conversions: number; ad_spend: number; ctr_pct: number };
 export type DailyRow = { date: string; impressions: number; clicks: number; conversions: number; ad_spend: number };
@@ -81,13 +81,17 @@ const AX = {
   clicks: { name: "클릭", fmt, get: (r: MediaRow) => r.clicks } as Axis,
 };
 type Form = "scatter3d" | "bar3d" | "network";
-type Analysis = { key: string; title: string; icon: any; desc: string; kind: "axis" | "time" | "network"; x?: Axis; y?: Axis; z?: Axis; forms: Form[] };
+type Guide = { x?: string; y?: string; z?: string; good: string };
+type Analysis = { key: string; title: string; icon: any; q: string; guide: Guide; kind: "axis" | "time" | "network"; x?: Axis; y?: Axis; z?: Axis; forms: Form[] };
 const ANALYSES: Analysis[] = [
-  { key: "eff", title: "효율 공간 분석", icon: Target, kind: "axis", x: AX.spend, y: AX.cvr, z: AX.imp, forms: ["scatter3d", "bar3d"], desc: "광고비 대비 전환율·노출 — 저비용·고전환·고노출이 이상적" },
-  { key: "acq", title: "획득 효율 분석", icon: Filter, kind: "axis", x: AX.cpa, y: AX.ctr, z: AX.conv, forms: ["scatter3d", "bar3d"], desc: "획득비용(CPA)·클릭률(CTR)·전환 규모 — 저CPA·고CTR·고전환이 우위" },
-  { key: "funnel", title: "퍼널 3축 분석", icon: GitCompareArrows, kind: "axis", x: AX.imp, y: AX.clicks, z: AX.conv, forms: ["scatter3d", "bar3d"], desc: "노출→클릭→전환 퍼널 균형 — 대각선에 가까울수록 균형적" },
-  { key: "time", title: "시계열 지형 분석", icon: Box, kind: "time", forms: ["scatter3d"], desc: "시간×매체×노출 입체 지형 — 특정 매체가 특정일에 터진 봉우리" },
-  { key: "network", title: "매체 상관 관계망", icon: Share2, kind: "network", forms: ["network"], desc: "성과 프로파일 유사도로 매체를 연결 — 가까운 매체는 성향이 닮은 매체" },
+  { key: "eff", title: "효율 지도", icon: Target, kind: "axis", x: AX.spend, y: AX.cvr, z: AX.imp, forms: ["scatter3d", "bar3d"],
+    q: "돈을 잘 쓰는 매체는?", guide: { x: "광고비 →많이 씀", y: "전환율 ↑잘 전환", z: "크기=노출(규모)", good: "적게 쓰고 잘 전환하는 좌상단 큰 점이 알짜 매체" } },
+  { key: "acq", title: "획득비용 지형", icon: Filter, kind: "axis", x: AX.cpa, y: AX.ctr, z: AX.conv, forms: ["scatter3d", "bar3d"],
+    q: "전환 1건을 얼마에 사고 있나?", guide: { x: "CPA →비쌈", y: "CTR ↑클릭 매력", z: "크기=전환수", good: "싸게 많이 전환하는 좌상단 큰 점이 우위" } },
+  { key: "time", title: "시간 지형", icon: Box, kind: "time", forms: ["scatter3d"],
+    q: "언제, 어떤 매체가 터졌나?", guide: { x: "날짜", y: "매체", z: "높이=노출", good: "솟은 봉우리 = 특정 매체가 특정일에 터진 지점" } },
+  { key: "network", title: "닮은 매체 묶음", icon: Share2, kind: "network", forms: ["network"],
+    q: "성향이 비슷한 매체는?", guide: { good: "노드=매체 · 선=성과 프로파일 유사 · 가까이 붙은 매체끼리 성향이 닮음" } },
 ];
 const FORM_META: Record<Form, { label: string; icon: any }> = {
   scatter3d: { label: "3D 산점", icon: Grid3x3 },
@@ -190,6 +194,47 @@ function ChartArea({ rows, series, analysis, form, height, onPick }: { rows: Med
   return option ? el : <Empty msg={analysis.kind === "time" ? "일별 데이터 로딩 중…" : "데이터 없음"} h={height} />;
 }
 
+// ── 드릴다운 상세: 단일 매체 일별 추이(2D) ──
+function DrillDetail({ row, days, height }: { row: MediaRow; days: number; height: number | string }) {
+  const [daily, setDaily] = useState<DailyRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    let alive = true; setLoading(true); setDaily([]);
+    fetch(`/api/media?view=daily&days=${days}&platform_idx=${row.platform_idx}`).then(r => r.json())
+      .then(d => { if (alive) setDaily((d.rows || []) as DailyRow[]); }).catch(() => {}).finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [row.platform_idx, days]);
+  const dates = daily.map(d => mmdd(d.date));
+  const option = dates.length ? {
+    tooltip: { trigger: "axis", backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink } },
+    legend: { data: ["노출", "전환"], textStyle: { color: C.dim }, top: 4, right: 8 },
+    grid: { left: 56, right: 56, top: 36, bottom: 40 },
+    xAxis: { type: "category", data: dates, axisLabel: { color: C.dim, fontSize: 9, interval: Math.max(0, Math.floor(dates.length / 10)) }, axisLine: { lineStyle: { color: C.line } } },
+    yAxis: [
+      { type: "value", name: "노출", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, formatter: (v: number) => fmt(v) }, splitLine: { lineStyle: { color: C.grid } } },
+      { type: "value", name: "전환", nameTextStyle: { color: C.dim }, position: "right", axisLabel: { color: C.dim, fontSize: 9, formatter: (v: number) => fmt(v) }, splitLine: { show: false } },
+    ],
+    series: [
+      { name: "노출", type: "line", smooth: true, data: daily.map(d => d.impressions), itemStyle: { color: C.accent }, areaStyle: { color: "rgba(56,189,248,0.12)" } },
+      { name: "전환", type: "line", smooth: true, yAxisIndex: 1, data: daily.map(d => d.conversions), itemStyle: { color: "#3bd6b4" } },
+    ],
+  } : null;
+  const el = useChart(option, [row.platform_idx, days, dates.length, height], height);
+  if (loading && !dates.length) return <Empty msg={`${row.platform_name} 일별 추이 조달 중…`} h={height} />;
+  return option ? el : <Empty msg="이 매체의 일별 데이터가 없습니다." h={height} />;
+}
+
+// 읽는 법 배지
+function ReadingGuide({ a }: { a: Analysis }) {
+  const parts = [a.guide.x, a.guide.y, a.guide.z].filter(Boolean) as string[];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 3 }}>
+      {parts.map((p, i) => <span key={i} style={{ fontSize: 10, color: C.dim, background: C.bg, border: `1px solid ${C.line}`, borderRadius: 5, padding: "1px 7px" }}>{p}</span>)}
+      <span style={{ fontSize: 10, color: "#bfe6ff", display: "inline-flex", alignItems: "center", gap: 3 }}><Sparkles size={10} style={{ color: C.accent }} />{a.guide.good}</span>
+    </div>
+  );
+}
+
 export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow[]; days: number; onDays?: (d: number) => void }) {
   const [aKey, setAKey] = useState("eff");
   const [form, setForm] = useState<Form>("scatter3d");
@@ -203,9 +248,12 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
   const [excludeOutliers, setExcludeOutliers] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);      // 우측 패널 숨김/보임
   const [itemsPop, setItemsPop] = useState(false);        // 항목 온/오프 미니 팝업
+  const [drillIdx, setDrillIdx] = useState<number | null>(null);  // 드릴다운: 단일 매체 상세
 
   const analysis = ANALYSES.find(a => a.key === aKey)!;
   useEffect(() => { if (!analysis.forms.includes(form)) setForm(analysis.forms[0]); }, [aKey]); // eslint-disable-line
+  useEffect(() => { setDrillIdx(null); }, [aKey]); // 분석 전환 시 드릴 해제
+  const drillRow = drillIdx != null ? rows.find(r => r.platform_idx === drillIdx) : null;
 
   const allActive = useMemo(() => rows.filter(r => r.impressions > 0), [rows]);
   const shownRows = useMemo(() => allActive.filter(r => !disabled.has(r.platform_idx)).slice(0, 60), [allActive, disabled]);
@@ -263,8 +311,15 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <span style={{ display: "inline-flex", width: 28, height: 28, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "rgba(56,189,248,0.16)", color: C.accent }}><analysis.icon size={16} strokeWidth={2.1} /></span>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: C.ink, letterSpacing: "-0.01em" }}>{analysis.title}</div>
-              <div style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 520 }}>{analysis.desc}</div>
+              {drillRow ? (
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.ink, display: "flex", alignItems: "center", gap: 7 }}>
+                  <button onClick={() => setDrillIdx(null)} title="전체로 돌아가기" style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600, color: C.dim, background: "transparent", border: `1px solid ${C.line}`, borderRadius: 7, padding: "2px 8px", cursor: "pointer" }}>← 전체</button>
+                  <span style={{ color: C.faint, fontSize: 12 }}>{analysis.title} ›</span> {drillRow.platform_name}
+                </div>
+              ) : (
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.ink, letterSpacing: "-0.01em" }}>{analysis.title} <span style={{ fontSize: 11.5, fontWeight: 500, color: C.faint }}>· {analysis.q}</span></div>
+              )}
+              {drillRow ? <div style={{ fontSize: 10.5, color: C.faint, marginTop: 3 }}>이 매체의 일별 노출·전환 추이 — 언제 오르내렸는지 파고들어 봅니다.</div> : <ReadingGuide a={analysis} />}
             </div>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -295,7 +350,7 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
         {/* 탐색 탭 */}
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {ANALYSES.map(a => { const on = a.key === aKey; const Icon = a.icon; return (
-            <button key={a.key} onClick={() => setAKey(a.key)} title={a.desc} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 7, fontSize: 11.5, fontWeight: on ? 700 : 500, cursor: "pointer", border: `1px solid ${on ? C.accent : C.line}`, background: on ? "rgba(56,189,248,0.12)" : "transparent", color: on ? "#bfe6ff" : C.dim, whiteSpace: "nowrap" }}><Icon size={13} strokeWidth={2.1} />{a.title}</button>
+            <button key={a.key} onClick={() => setAKey(a.key)} title={a.q} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 7, fontSize: 11.5, fontWeight: on ? 700 : 500, cursor: "pointer", border: `1px solid ${on ? C.accent : C.line}`, background: on ? "rgba(56,189,248,0.12)" : "transparent", color: on ? "#bfe6ff" : C.dim, whiteSpace: "nowrap" }}><Icon size={13} strokeWidth={2.1} />{a.title}</button>
           ); })}
         </div>
       </div>
@@ -303,8 +358,9 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
       {/* 본문: 차트 | (선택) 우측 패널 */}
       <div style={{ display: "grid", gridTemplateColumns: panelOpen ? "minmax(0,1fr) 250px" : "minmax(0,1fr)", flex: 1, minHeight: 0 }}>
         <div style={{ minWidth: 0, borderRight: panelOpen ? `1px solid ${C.line}` : "none" }}>
-          {analysis.kind === "time" && tLoading && !series.length ? <Empty msg="매체별 일별 시계열 조달 중…" h={chartHeight} />
-            : <ChartArea key={`${aKey}-${form}-${fullscreen}-${excludeOutliers}`} rows={chartRows} series={series} analysis={analysis} form={form} height={chartHeight} onPick={(n) => nameToIdx[n] != null && setSelected(nameToIdx[n])} />}
+          {drillRow ? <DrillDetail key={`drill-${drillRow.platform_idx}-${fullscreen}`} row={drillRow} days={days} height={chartHeight} />
+            : analysis.kind === "time" && tLoading && !series.length ? <Empty msg="매체별 일별 시계열 조달 중…" h={chartHeight} />
+            : <ChartArea key={`${aKey}-${form}-${fullscreen}-${excludeOutliers}`} rows={chartRows} series={series} analysis={analysis} form={form} height={chartHeight} onPick={(n) => { if (nameToIdx[n] != null) { setSelected(nameToIdx[n]); setDrillIdx(nameToIdx[n]); } }} />}
         </div>
 
         {/* 우측 분석 패널 */}
@@ -338,10 +394,10 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
                   </div>
                   <div style={{ overflowY: "auto" }}>
                     {allActive.slice(0, 60).map(r => { const off = disabled.has(r.platform_idx); return (
-                      <div key={r.platform_idx} onClick={() => toggleItem(r.platform_idx)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 10px", cursor: "pointer", opacity: off ? 0.45 : 1, borderBottom: `1px solid ${C.grid}` }}>
-                        <span style={{ color: off ? C.faint : C.accent, display: "inline-flex" }}>{off ? <EyeOff size={13} /> : <Eye size={13} />}</span>
+                      <div key={r.platform_idx} style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 10px", opacity: off ? 0.45 : 1, borderBottom: `1px solid ${C.grid}` }}>
+                        <button onClick={() => toggleItem(r.platform_idx)} title={off ? "표시 켜기" : "표시 끄기"} style={{ color: off ? C.faint : C.accent, display: "inline-flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>{off ? <EyeOff size={13} /> : <Eye size={13} />}</button>
                         <span style={{ width: 8, height: 8, borderRadius: 2, background: heat(cvr(r), maxCvr), flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.platform_name}</span>
+                        <span onClick={() => { setSelected(r.platform_idx); setDrillIdx(r.platform_idx); setItemsPop(false); }} title="클릭해 이 매체로 파고들기" style={{ fontSize: 11, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, cursor: "pointer" }}>{r.platform_name}</span>
                         <span style={{ fontSize: 9.5, color: C.faint }}>{fmt(r.impressions)}</span>
                       </div>
                     ); })}
@@ -358,7 +414,10 @@ export default function Media3DExplorer({ rows, days, onDays }: { rows: MediaRow
                 {([["노출", fmt(selRow.impressions)], ["클릭", fmt(selRow.clicks)], ["전환", fmt(selRow.conversions)], ["광고비", won(selRow.ad_spend)], ["CTR", pctS(ctr(selRow))], ["CVR", pctS(cvr(selRow))], ["CPA", won(cpa(selRow))]] as [string, string][]).map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0" }}><span style={{ color: C.faint }}>{k}</span><span style={{ color: C.ink, fontWeight: 600 }}>{v}</span></div>
                 ))}
-              </>) : <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>차트의 점·노드 또는 ‘항목 관리’ 목록을 클릭하면 상세가 표시됩니다.</div>}
+                {drillIdx !== selRow.platform_idx && (
+                  <button onClick={() => setDrillIdx(selRow.platform_idx)} style={{ marginTop: 8, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#bfe6ff", background: "rgba(56,189,248,0.16)", border: `1px solid ${C.accent}`, borderRadius: 7, padding: "6px 0", cursor: "pointer" }}>이 매체 일별 추이 파고들기 →</button>
+                )}
+              </>) : <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>차트의 점·노드를 클릭하면 상세가 표시되고, 클릭 한 번으로 그 매체의 일별 추이로 파고듭니다.</div>}
             </div>
 
             {/* AI 인사이트 (우측 패널로 이관 · 압축) */}
