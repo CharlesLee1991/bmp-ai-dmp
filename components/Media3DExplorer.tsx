@@ -102,32 +102,7 @@ function heat(v: number, max: number) {
   return HEAT[i];
 }
 
-// ── 관계망: 성과 프로파일 유사도 kNN 그래프 + 커뮤니티(군집) 채색 ──
-// 군집 팔레트 (categories) — 성향이 닮은 매체 묶음을 색으로 구분
-const CLUSTER_COLORS = ["#38bdf8", "#3bd6b4", "#f2a154", "#c084fc", "#f2685a", "#8fd14f", "#5b8def", "#e879a6"];
-const FEAT_LABELS = ["CTR", "전환율", "광고비", "노출"] as const;
-
-// 라벨 전파(Label Propagation) — 경량 커뮤니티 탐지. 인접(kNN 엣지) 다수결로 라벨 수렴.
-function labelPropagation(n: number, adj: number[][], iters = 12): number[] {
-  const label = Array.from({ length: n }, (_, i) => i);
-  for (let t = 0; t < iters; t++) {
-    let changed = false;
-    const order = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
-    for (const i of order) {
-      if (!adj[i].length) continue;
-      const cnt: Record<number, number> = {};
-      for (const j of adj[i]) cnt[label[j]] = (cnt[label[j]] || 0) + 1;
-      let best = label[i], bestC = -1;
-      for (const key of Object.keys(cnt)) { const lab = Number(key), c = cnt[lab]; if (c > bestC || (c === bestC && lab < best)) { best = lab; bestC = c; } }
-      if (best !== label[i]) { label[i] = best; changed = true; }
-    }
-    if (!changed) break;
-  }
-  // 라벨을 0..k 연속 인덱스로 압축
-  const remap: Record<number, number> = {}; let next = 0;
-  return label.map(l => { if (!(l in remap)) remap[l] = next++; return remap[l]; });
-}
-
+// ── 관계망: 성과 프로파일 유사도 kNN 그래프 ──
 function buildNetwork(rows: MediaRow[]) {
   const rs = rows.slice(0, 40);
   const feats = rs.map(r => [ctr(r), cvr(r), Math.log10(r.ad_spend + 1), Math.log10(r.impressions + 1)]);
@@ -135,41 +110,20 @@ function buildNetwork(rows: MediaRow[]) {
   feats.forEach(f => f.forEach((v, d) => { if (v < mn[d]) mn[d] = v; if (v > mx[d]) mx[d] = v; }));
   const norm = feats.map(f => f.map((v, d) => mx[d] > mn[d] ? (v - mn[d]) / (mx[d] - mn[d]) : 0.5));
   const dist = (a: number[], b: number[]) => Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
+  const maxCvr = Math.max(1e-6, ...rs.map(cvr));
   const maxImp = Math.max(1, ...rs.map(r => r.impressions));
-
-  // kNN 엣지 + 인접리스트 (군집 탐지용)
-  const adj: number[][] = rs.map(() => []);
-  const rawLinks: { i: number; j: number; d: number }[] = []; const seen = new Set<string>();
+  const nodes = rs.map((r, i) => ({
+    name: r.platform_name, symbolSize: 14 + Math.sqrt(r.impressions / maxImp) * 34,
+    itemStyle: { color: heat(cvr(r), maxCvr), borderColor: "rgba(255,255,255,.14)", borderWidth: 1 },
+    label: { show: true, color: C.ink, fontSize: 10, position: "right" as const },
+  }));
+  const links: any[] = []; const seen = new Set<string>();
   norm.forEach((a, i) => {
     const nn = norm.map((b, j) => ({ j, d: i === j ? Infinity : dist(a, b) })).sort((p, q) => p.d - q.d).slice(0, 2);
     nn.forEach(({ j, d }) => { const k = i < j ? `${i}-${j}` : `${j}-${i}`; if (seen.has(k)) return; seen.add(k);
-      rawLinks.push({ i, j, d }); adj[i].push(j); adj[j].push(i); });
+      links.push({ source: rs[i].platform_name, target: rs[j].platform_name, lineStyle: { color: C.line, width: 1 + (1 - Math.min(1, d)) * 2, opacity: 0.55, curveness: 0.06 } }); });
   });
-
-  const comm = labelPropagation(rs.length, adj);
-  const nCat = Math.max(1, ...comm) + 1;
-  const categories = Array.from({ length: nCat }, (_, c) => ({ name: `군집 ${c + 1}`, itemStyle: { color: CLUSTER_COLORS[c % CLUSTER_COLORS.length] } }));
-
-  const nodes = rs.map((r, i) => ({
-    name: r.platform_name, category: comm[i],
-    symbolSize: 14 + Math.sqrt(r.impressions / maxImp) * 34,
-    itemStyle: { borderColor: "rgba(255,255,255,.16)", borderWidth: 1 },
-    label: { show: true, color: C.ink, fontSize: 10, position: "right" as const },
-    // 노드 상세 툴팁용 원지표
-    _detail: `CTR ${ctr(r).toFixed(2)}% · 전환율 ${cvr(r).toFixed(2)}% · 광고비 ${won(r.ad_spend)} · 노출 ${fmt(r.impressions)}`,
-  }));
-
-  const links = rawLinks.map(({ i, j, d }) => {
-    // "왜 닮았나": 정규화 특성 중 두 매체가 가장 가까운(차이 작은) 지표 2개
-    const diffs = norm[i].map((v, k) => ({ k, gap: Math.abs(v - norm[j][k]) })).sort((p, q) => p.gap - q.gap);
-    const why = diffs.slice(0, 2).map(x => FEAT_LABELS[x.k]).join("·");
-    const sameComm = comm[i] === comm[j];
-    return {
-      source: rs[i].platform_name, target: rs[j].platform_name, _why: why,
-      lineStyle: { color: sameComm ? CLUSTER_COLORS[comm[i] % CLUSTER_COLORS.length] : C.line, width: 1 + (1 - Math.min(1, d)) * 2.4, opacity: sameComm ? 0.6 : 0.3, curveness: 0.06 },
-    };
-  });
-  return { nodes, links, categories };
+  return { nodes, links };
 }
 
 // ── 옵션 빌더 ──
@@ -205,23 +159,11 @@ function bar3dAxisOption(rows: MediaRow[], a: Analysis) {
   };
 }
 function networkOption(rows: MediaRow[]) {
-  const { nodes, links, categories } = buildNetwork(rows);
+  const { nodes, links } = buildNetwork(rows);
   if (!nodes.length) return null;
   return {
-    tooltip: {
-      formatter: (p: any) => p.dataType === "node"
-        ? `<b>${p.name}</b><br/><span style="color:${C.dim}">${categories[p.data.category]?.name || ""}</span><br/>${p.data._detail || "클릭해 상세 보기"}`
-        : `${p.data.source} <span style="color:${C.dim}">↔</span> ${p.data.target}<br/><span style="color:${C.dim}">닮은 이유: <b>${p.data._why || "-"}</b> 가 유사</span>`,
-      backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink },
-    },
-    legend: [{ data: categories.map((c: any) => c.name), textStyle: { color: C.dim, fontSize: 10 }, top: 6, right: 8, orient: "vertical" as const, itemWidth: 10, itemHeight: 10 }],
-    series: [{
-      type: "graph", layout: "force", roam: true, draggable: true, data: nodes, links, categories,
-      force: { repulsion: 240, edgeLength: [50, 130], gravity: 0.09 },
-      lineStyle: { opacity: 0.5 },
-      emphasis: { focus: "adjacency", lineStyle: { width: 3.4 }, label: { fontWeight: "bold" as const } },
-      label: { color: C.ink },
-    }],
+    tooltip: { formatter: (p: any) => p.dataType === "node" ? `<b>${p.name}</b> — 클릭해 상세 보기` : `${p.data.source} ↔ ${p.data.target}`, backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink } },
+    series: [{ type: "graph", layout: "force", roam: true, draggable: true, data: nodes, links, force: { repulsion: 220, edgeLength: [50, 130], gravity: 0.08 }, lineStyle: { color: C.line, opacity: 0.5 }, emphasis: { focus: "adjacency", lineStyle: { color: C.accent, width: 3 }, itemStyle: { color: C.hot } }, label: { color: C.ink } }],
   };
 }
 
@@ -229,29 +171,16 @@ function ChartArea({ rows, series, analysis, form, height, onPick }: { rows: Med
   let option: any = null;
   if (analysis.kind === "time") {
     const dates = series[0]?.rows.map(r => mmdd(r.date)) || []; const names = series.map(s => shortName(s.name));
-    // 연속 지형면(surface): [xi, yi, 노출] 격자. 봉우리(평균+2σ) 자동 라벨.
-    const grid: number[][] = []; const flat: number[] = []; let maxV = 1;
-    series.forEach((s, yi) => s.rows.forEach((r, xi) => { (grid[yi] ||= [])[xi] = r.impressions; flat.push(r.impressions); if (r.impressions > maxV) maxV = r.impressions; }));
-    const mean = flat.reduce((a, b) => a + b, 0) / (flat.length || 1);
-    const sd = Math.sqrt(flat.reduce((a, b) => a + (b - mean) ** 2, 0) / (flat.length || 1));
-    const peakThr = mean + 2 * sd;
-    const surfData: any[] = [];
-    grid.forEach((row, yi) => row?.forEach((v, xi) => surfData.push([xi, yi, v ?? 0])));
-    // 봉우리 마커 — 평균+2σ 초과 지점 (매체가 특정일 급증)
-    const peaks: any[] = [];
-    grid.forEach((row, yi) => row?.forEach((v, xi) => { if (v > peakThr && v > 0) peaks.push({ value: [xi, yi, v], name: `${names[yi]} ${dates[xi]}` }); }));
-    peaks.sort((a, b) => b.value[2] - a.value[2]);
+    const data: any[] = []; let maxV = 1;
+    series.forEach((s, yi) => s.rows.forEach((r, xi) => { data.push([xi, yi, r.impressions]); if (r.impressions > maxV) maxV = r.impressions; }));
     option = dates.length ? {
-      tooltip: { formatter: (p: any) => Array.isArray(p.value) ? `${names[p.value[1]]}<br/>${dates[p.value[0]]}<br/><b>노출 ${fmt(p.value[2])}</b>${p.value[2] > peakThr ? '<br/><span style="color:#f2a154">▲ 급증 봉우리</span>' : ""}` : "", backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink } },
-      visualMap: { max: maxV, show: true, right: 8, top: "center", calculable: true, textStyle: { color: C.dim, fontSize: 10 }, formatter: (v: number) => fmt(v), inRange: { color: ["#0b3d91", "#2f80ed", "#4a90e2", "#38bdf8", "#7ff0d0", "#f2a154"] } },
+      tooltip: { formatter: (p: any) => `${names[p.value[1]]}<br/>${dates[p.value[0]]}<br/><b>노출 ${fmt(p.value[2])}</b>`, backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink } },
+      visualMap: { max: maxV, show: true, right: 8, top: "center", calculable: true, textStyle: { color: C.dim, fontSize: 10 }, formatter: (v: number) => fmt(v), inRange: { color: ["#e3f0ff", "#9ec5f2", "#4a90e2", "#2f80ed", "#0b3d91"] } },
       xAxis3D: { type: "category", data: dates, name: "날짜", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, interval: Math.max(0, Math.floor(dates.length / 8)) } },
       yAxis3D: { type: "category", data: names, name: "매체", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9 } },
       zAxis3D: { type: "value", name: "노출", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, formatter: (v: number) => fmt(v) } },
-      grid3D: { boxWidth: 150, boxDepth: 82, boxHeight: 70, viewControl: { distance: 210, alpha: 26, beta: 34 }, light: { main: { intensity: 1.2, shadow: true, alpha: 40, beta: 30 }, ambient: { intensity: 0.4 } }, axisLine: { lineStyle: { color: C.line } }, splitLine: { lineStyle: { color: C.grid } }, environment: C.bg },
-      series: [
-        { type: "surface", data: surfData, shading: "lambert", wireframe: { show: true, lineStyle: { color: "rgba(255,255,255,0.06)", width: 0.6 } }, itemStyle: { opacity: 0.9 } },
-        ...(peaks.length ? [{ type: "scatter3D", data: peaks.slice(0, 8), symbolSize: 8, itemStyle: { color: "#f2a154", opacity: 0.95 }, label: { show: true, formatter: (p: any) => p.data.name, textStyle: { color: C.ink, fontSize: 9, backgroundColor: "rgba(22,28,40,.82)", padding: 3, borderRadius: 3 }, distance: 4 } }] : []),
-      ],
+      grid3D: { boxWidth: 150, boxDepth: 82, boxHeight: 66, viewControl: { distance: 215, alpha: 22, beta: 32 }, light: { main: { intensity: 1.15, shadow: true, alpha: 40, beta: 30 }, ambient: { intensity: 0.42 } }, axisLine: { lineStyle: { color: C.line } }, splitLine: { lineStyle: { color: C.grid } }, environment: C.bg },
+      series: [{ type: "bar3D", data, shading: "lambert", barSize: 4.2, itemStyle: { opacity: 0.94 }, emphasis: { itemStyle: { color: C.hot } } }],
     } : null;
   } else if (analysis.kind === "network") option = networkOption(rows);
   else if (form === "bar3d") option = bar3dAxisOption(rows, analysis);
