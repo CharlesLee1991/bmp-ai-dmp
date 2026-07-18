@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { P } from "@/lib/theme";
 import { ThemeMenu } from "@/lib/ThemeContext";
-import { LogIn, Lock, User as UserIcon } from "lucide-react";
+import { LogIn, Lock, User as UserIcon, Compass } from "lucide-react";
 
 export default function LoginPage({ onLogin }: { onLogin: (user: any) => void }) {
   const [username, setUsername] = useState("");
@@ -62,8 +62,8 @@ export default function LoginPage({ onLogin }: { onLogin: (user: any) => void })
             width: 58, height: 58, borderRadius: 16, margin: "0 auto 16px",
             background: "linear-gradient(135deg, var(--male), var(--accent))",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 25, fontWeight: 900, color: "#fff", boxShadow: P.shadowMd,
-          }}>D</div>
+            color: "#fff", boxShadow: P.shadowMd,
+          }}><Compass size={32} strokeWidth={2.1} /></div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 6px", color: P.text, letterSpacing: "-0.03em" }}>
             DMP Audience Explorer
           </h1>
