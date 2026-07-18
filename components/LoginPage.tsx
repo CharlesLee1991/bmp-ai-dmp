@@ -63,7 +63,7 @@ export default function LoginPage({ onLogin }: { onLogin: (user: any) => void })
             background: "linear-gradient(135deg, var(--male), var(--accent))",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "#fff", boxShadow: P.shadowMd,
-          }}><Compass size={32} strokeWidth={2.1} /></div>
+          }}><Compass size={38} strokeWidth={2.4} /></div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 6px", color: P.text, letterSpacing: "-0.03em" }}>
             DMP Audience Explorer
           </h1>

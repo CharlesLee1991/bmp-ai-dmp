@@ -102,7 +102,7 @@ export function DmpSidebar({
             background: "linear-gradient(135deg, var(--male), var(--accent))",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "#fff", boxShadow: P.shadowSoft,
-          }}><Compass size={19} strokeWidth={2.2} /></div>
+          }}><Compass size={22} strokeWidth={2.4} /></div>
           {!collapsed && (
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15, minWidth: 0 }}>
               <span style={{ fontSize: 14, fontWeight: 800, color: SB.fg, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>DMP Explorer</span>
