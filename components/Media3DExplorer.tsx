@@ -175,14 +175,20 @@ function ChartArea({ rows, series, analysis, form, height, onPick }: { rows: Med
   let option: any = null;
   if (analysis.kind === "time") {
     const dates = series[0]?.rows.map(r => mmdd(r.date)) || []; const names = series.map(s => shortName(s.name));
-    const data: any[] = []; let maxV = 1;
-    series.forEach((s, yi) => s.rows.forEach((r, xi) => { data.push([xi, yi, r.impressions]); if (r.impressions > maxV) maxV = r.impressions; }));
+    // z축 = 노출의 log10(v+1). 특정 매체(예: KBPay) 노출이 타 매체를 압도해 봉우리가 한 매체에 몰리는 편중을
+    // 완화하기 위한 로그 정규화. 표시값(툴팁·축·범례)은 원래 노출로 역표기 → 사용자에겐 실제 노출로 보이고
+    // 3D 지형 높이만 로그로 눌러 중·하위 매체 봉우리도 함께 읽히게 한다. (3원칙 ① 로그 정규화)
+    const zlog = (v: number) => Math.log10(Math.max(0, v) + 1);
+    const zinv = (z: number) => Math.max(0, Math.pow(10, z) - 1);
+    const data: any[] = []; let maxRaw = 1;
+    series.forEach((s, yi) => s.rows.forEach((r, xi) => { data.push([xi, yi, zlog(r.impressions), r.impressions]); if (r.impressions > maxRaw) maxRaw = r.impressions; }));
+    const maxZ = zlog(maxRaw);
     option = dates.length ? {
-      tooltip: { formatter: (p: any) => `${names[p.value[1]]}<br/>${dates[p.value[0]]}<br/><b>노출 ${fmt(p.value[2])}</b>`, backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink } },
-      visualMap: { max: maxV, show: true, right: 8, top: "center", calculable: true, textStyle: { color: C.dim, fontSize: 10 }, formatter: (v: number) => fmt(v), inRange: { color: ["#e3f0ff", "#9ec5f2", "#4a90e2", "#2f80ed", "#0b3d91"] } },
+      tooltip: { formatter: (p: any) => `${names[p.value[1]]}<br/>${dates[p.value[0]]}<br/><b>노출 ${fmt(p.value[3])}</b>`, backgroundColor: C.surface, borderColor: C.line, textStyle: { color: C.ink } },
+      visualMap: { max: maxZ, min: 0, dimension: 2, show: true, right: 8, top: "center", calculable: true, textStyle: { color: C.dim, fontSize: 10 }, formatter: (v: number) => fmt(zinv(v)), inRange: { color: ["#e3f0ff", "#9ec5f2", "#4a90e2", "#2f80ed", "#0b3d91"] } },
       xAxis3D: { type: "category", data: dates, name: "날짜", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, interval: Math.max(0, Math.floor(dates.length / 8)) } },
       yAxis3D: { type: "category", data: names, name: "매체", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9 } },
-      zAxis3D: { type: "value", name: "노출", nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, formatter: (v: number) => fmt(v) } },
+      zAxis3D: { type: "value", name: "노출(로그)", min: 0, max: maxZ, nameTextStyle: { color: C.dim }, axisLabel: { color: C.dim, fontSize: 9, formatter: (v: number) => fmt(zinv(v)) } },
       grid3D: { boxWidth: 150, boxDepth: 82, boxHeight: 66, viewControl: { distance: 215, alpha: 22, beta: 32 }, light: { main: { intensity: 1.15, shadow: true, alpha: 40, beta: 30 }, ambient: { intensity: 0.42 } }, axisLine: { lineStyle: { color: C.line } }, splitLine: { lineStyle: { color: C.grid } }, environment: C.bg },
       series: [{ type: "bar3D", data, shading: "lambert", barSize: 4.2, itemStyle: { opacity: 0.94 }, emphasis: { itemStyle: { color: C.hot } } }],
     } : null;
