@@ -10,6 +10,9 @@ export async function GET(req: NextRequest) {
   const age_group = searchParams.get("age") || undefined;
   const ymFrom = searchParams.get("ym_from") || undefined;
   const ymTo = searchParams.get("ym_to") || undefined;
+  const cat1 = searchParams.get("cat1") || undefined;
+  const cat2 = searchParams.get("cat2") || undefined;
+  const cat3 = searchParams.get("cat3") || undefined;
 
   if (!SUPABASE_ANON_KEY) {
     return NextResponse.json({ success: false, error: "Missing SUPABASE_ANON_KEY" }, { status: 500 });
@@ -22,6 +25,9 @@ export async function GET(req: NextRequest) {
     if (age_group) body.p_age_group = age_group;
     if (ymFrom) body.p_ym_from = ymFrom;
     if (ymTo) body.p_ym_to = ymTo;
+    if (cat1) body.p_cat1 = cat1;
+    if (cat2) body.p_cat2 = cat2;
+    if (cat3) body.p_cat3 = cat3;
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/dmp_dashboard_data`, {
       method: "POST",
