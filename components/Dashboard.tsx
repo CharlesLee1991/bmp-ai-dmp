@@ -487,6 +487,9 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     if (ages.length) p.set("age", ages.join(","));
     if (ymFrom) p.set("ym_from", ymFrom);
     if (ymTo) p.set("ym_to", ymTo);
+    if (majorCats.length) p.set("cat1", majorCats.join(","));
+    if (middleCats.length) p.set("cat2", middleCats.join(","));
+    if (subCats.length) p.set("cat3", subCats.join(","));
     const qs = p.toString();
     return `/api/dashboard${qs ? "?" + qs : ""}`;
   }
