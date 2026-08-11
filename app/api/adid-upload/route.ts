@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+// A-3: 대용량 업로드(≈10만건)는 실측 50초 소요 → 기본 한계 초과 방지
+export const maxDuration = 300;
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://ihzttwgqahhzlrqozleh.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
@@ -39,25 +41,26 @@ export async function POST(req: NextRequest) {
     const sessionId = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // Batch upsert — ON CONFLICT (session_id, ads_id) DO NOTHING (server-side deduplicate)
-    const batchSize = 1000;
-    for (let i = 0; i < adids.length; i += batchSize) {
-      const batch = adids.slice(i, i + batchSize).map(ads_id => ({
-        session_id: sessionId,
-        ads_id,
-      }));
+    // A-3: 순차 → 제한 병렬(동시 5). 실측 11.5만건 51초 → 함수 한계 근접 문제 완화.
+    const batchSize = 2000;
+    const CONCURRENCY = 5;
+    const chunks: string[][] = [];
+    for (let i = 0; i < adids.length; i += batchSize) chunks.push(adids.slice(i, i + batchSize));
 
+    const insertChunk = async (chunk: string[]) => {
       const insertRes = await fetch(
         `${SUPABASE_URL}/rest/v1/de_dmp_uploaded_audience?on_conflict=session_id,ads_id`,
         {
           method: "POST",
           headers,
-          body: JSON.stringify(batch),
+          body: JSON.stringify(chunk.map(ads_id => ({ session_id: sessionId, ads_id }))),
         }
       );
-      if (!insertRes.ok) {
-        const err = await insertRes.text();
-        return NextResponse.json({ success: false, error: `Insert failed: ${err}` }, { status: 500 });
-      }
+      if (!insertRes.ok) throw new Error(`Insert failed: ${await insertRes.text()}`);
+    };
+
+    for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+      await Promise.all(chunks.slice(i, i + CONCURRENCY).map(insertChunk));
     }
 
     // Match (DISTINCT 기반 집계로 수정된 RPC)
