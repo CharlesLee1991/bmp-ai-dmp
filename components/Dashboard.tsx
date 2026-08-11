@@ -1239,11 +1239,37 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
                 <input type="file" accept=".csv,.txt,.tsv" style={{ display: "none" }} disabled={uploading} onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  // A-1: 서버(Vercel) 요청 본문 한계 4.5MB — 초과분은 서버에 닿기 전 차단되므로 사전 안내
+                  const MB = 1024 * 1024;
+                  if (file.size > 3.5 * MB) {
+                    alert(
+                      `파일이 너무 큽니다 (${(file.size / MB).toFixed(1)}MB).\n\n` +
+                      `한 번에 업로드 가능한 크기는 3.5MB까지입니다.\n` +
+                      `ADID만 담긴 파일 기준 약 10만 건에 해당합니다.\n\n` +
+                      `파일을 나누어 순서대로 업로드해 주세요.\n` +
+                      `(ADID 외 다른 열이 함께 있으면 건수가 더 적어질 수 있습니다)`
+                    );
+                    e.target.value = "";
+                    return;
+                  }
                   setUploading(true);
                   try {
                     const fd = new FormData();
                     fd.append("file", file);
                     const res = await fetch("/api/adid-upload", { method: "POST", body: fd });
+                    // A-2: 서버가 JSON이 아닌 응답(413/504 등)을 줄 때 원인을 그대로 알린다
+                    const ct = res.headers.get("content-type") || "";
+                    if (!ct.includes("application/json")) {
+                      const raw = (await res.text()).slice(0, 200);
+                      alert(
+                        res.status === 413
+                          ? `파일이 너무 커서 서버가 거부했습니다 (413).\n파일을 나누어 업로드해 주세요.`
+                          : res.status === 504
+                            ? `처리 시간이 초과되었습니다 (504).\n파일을 더 작게 나누어 업로드해 주세요.`
+                            : `업로드 실패 (HTTP ${res.status})\n${raw}`
+                      );
+                      return;
+                    }
                     const data = await res.json();
                     if (data.success) {
                       setUploadSession(data.session_id);
