@@ -567,6 +567,32 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
   const adOs: { os: string; users: number; imps: number; clicks: number }[] = adEngData?.os || [];
 
   /* export */
+  // 금액구간(이산 버킷) → EF apprl(연속 조건) 변환
+  // 기본값: metric=amt(승인금액) / period=90일 (③-a, 2026-08-13 확정)
+  // 다중 선택은 RPC가 단일 조건만 수용 → 선택 버킷의 최소~최대 범위로 병합 (비연속 선택 시 사이 구간 포함)
+  const AMOUNT_RANGE: Record<string, [number, number | null]> = {
+    under_5k: [0, 5000], "5k_10k": [5000, 10000], "10k_30k": [10000, 30000],
+    "30k_50k": [30000, 50000], "50k_100k": [50000, 100000], "100k_300k": [100000, 300000],
+    over_300k: [300000, null],
+  };
+  const amountToApprl = (list?: string[]): string | undefined => {
+    const rs = (list || []).map(b => AMOUNT_RANGE[b]).filter(Boolean);
+    if (!rs.length) return undefined;
+    const lo = Math.min(...rs.map(r => r[0]));
+    const openEnded = rs.some(r => r[1] === null);
+    const base = { metric: "amt", period: "90" };
+    if (openEnded) { if (lo === 0) return undefined; return JSON.stringify({ ...base, oper: ">=", value: lo }); }  // 전 구간 선택 = 조건 없음
+    const hi = Math.max(...rs.map(r => r[1] as number));
+    if (lo === 0) return JSON.stringify({ ...base, oper: "<=", value: hi });
+    return JSON.stringify({ ...base, oper: "between", value: lo, value2: hi });
+  };
+  // 선택 버킷이 연속인지 판정 (비연속 시 사용자에게 병합 사실을 고지)
+  const AMOUNT_ORDER = ["under_5k", "5k_10k", "10k_30k", "30k_50k", "50k_100k", "100k_300k", "over_300k"];
+  const isAmountContiguous = (list?: string[]): boolean => {
+    const idx = (list || []).map(b => AMOUNT_ORDER.indexOf(b)).filter(i => i >= 0).sort((a, b) => a - b);
+    return idx.length <= 1 || idx.every((v, i) => i === 0 || v === idx[i - 1] + 1);
+  };
+
   // EF(dmp-target-export) 전송용 평탄 필터 — 현재 화면 필터 상태 스냅샷 (전송·카트 담기 공용)
   const buildEfFilters = (): Record<string, string> => {
     const filters: Record<string, string> = {};
@@ -582,6 +608,7 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     if (uploadSession) filters.upload_session = uploadSession;
     if (audCats.length) filters.cat1 = audCats.join(",");
     if (apprlValueC && tab === "card") filters.apprl = JSON.stringify({ metric: apprlMetric, period: apprlPeriod, oper: apprlOper, value: Number(apprlValueC), ...(apprlOper === "between" ? { value2: Number(apprlValue2C || apprlValueC) } : {}) });
+    else { const a = amountToApprl(amountFilters); if (a) filters.apprl = a; }  // 카드탭 직접입력이 우선, 없을 때만 금액구간 변환
     return filters;
   };
 
@@ -595,7 +622,8 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     const filters = buildEfFilters();
     if (!Object.keys(filters).length) { toastCart("담을 필터 조건이 없습니다"); return false; }
     const dropped: string[] = [];
-    if (amountFilters.length) dropped.push("금액구간");
+    if (amountFilters.length && !filters.apprl) dropped.push("금액구간");
+    else if (amountFilters.length && !isAmountContiguous(amountFilters)) dropped.push("금액구간(비연속 선택 → 최소~최대 범위로 병합)");
     if (cardCompanies.length) dropped.push("카드사");
     if (telecoms.length) dropped.push("통신사");
     if (mobileBrands.length) dropped.push("단말브랜드");
@@ -632,9 +660,11 @@ export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout:
     if (f.ages?.length) filters.age_group = f.ages.join(",");
     if (f.sidos?.length) filters.region = f.sidos.join(",");
     if (f.majorCats?.length) filters.major_category = f.majorCats.join(",");
+    { const a = amountToApprl(f.amountFilters); if (a) filters.apprl = a; }
     if (!Object.keys(filters).length) { toastCart("EF 추출 가능한 조건이 없는 페르소나입니다"); return; }
     const dropped: string[] = [];
-    if (f.amountFilters?.length) dropped.push("금액구간");
+    if (f.amountFilters?.length && !filters.apprl) dropped.push("금액구간");
+    else if (f.amountFilters?.length && !isAmountContiguous(f.amountFilters)) dropped.push("금액구간(비연속 선택 → 최소~최대 범위로 병합)");
     if (f.cardCompanies?.length) dropped.push("카드사");
     if (f.telecoms?.length) dropped.push("통신사");
     addToCart({
