@@ -45,3 +45,24 @@ jobs:
             echo "::error::CLAUDE.md or AGENTS.md missing (STD-GITHUB-CONTEXT-LAYER v1.1)."
             exit 1
           fi
+
+      # 4. PLAN 무접촉 파일 가드 (AP-53 v1.4)
+      #    다른 세션이 들고 있는 파일을 모른 채 착수해 rebase·충돌로 시간이 녹는 것을 막는다.
+      #    인덱스가 없는 동안과 PR이 아닌 경우는 통과 — 빈 가드로 CI를 늑대소년 만들지 않는다.
+      - name: PLAN no-touch guard
+        run: |
+          IDX=docs/agent/PLAN-INDEX-bmp-ai-dmp.md
+          if [ ! -f "$IDX" ]; then echo "PLAN-INDEX 없음 — 건너뜀"; exit 0; fi
+          if [ "${{ github.event_name }}" != "pull_request" ]; then echo "PR 아님 — 건너뜀"; exit 0; fi
+          git fetch -q origin ${{ github.base_ref }}
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          NOTOUCH=$(sed -n '/건드리면 안 되는 파일/,/이 길은 벽이다/p' "$IDX" | grep -oE '`[^`]+`' | tr -d '`')
+          HIT=""
+          for f in $CHANGED; do
+            for n in $NOTOUCH; do case "$f" in *"$n"*) HIT="$HIT $f($n)";; esac; done
+          done
+          if [ -n "$HIT" ]; then
+            echo "::error::다른 사람이 들고 있는 파일입니다:$HIT — PLAN-INDEX 무접촉 목록 확인 후 소유자와 먼저 협의하세요."
+            exit 1
+          fi
+          echo "OK: 무접촉 위반 없음"
