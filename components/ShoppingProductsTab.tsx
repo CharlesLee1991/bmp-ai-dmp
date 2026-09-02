@@ -64,6 +64,7 @@ export default function ShoppingProductsTab() {
   const [useCustom, setUseCustom] = useState(false);
   const [selectedMajor, setSelectedMajor] = useState<string | null>(null);
   const [selectedMinor, setSelectedMinor] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10); // 동적 최대 선택일(하드코딩 2026-03-17 제거, 8/31 런컴 문의 대응)
 
   const params = new URLSearchParams();
   if (useCustom && customFrom && customTo) { params.set("from", customFrom); params.set("to", customTo); } else { params.set("days", String(days)); }
@@ -212,9 +213,9 @@ export default function ShoppingProductsTab() {
           {PERIOD_OPTIONS.map(o => <Chip key={o.id} label={o.label} active={!useCustom && days === o.id} onClick={() => { setDays(o.id); setUseCustom(false); }} />)}
           <Chip label="직접선택" active={useCustom} onClick={() => setUseCustom(true)} />
           {useCustom && (<div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
-            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} min="2025-12-16" max="2026-03-17" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none" }} />
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} min="2025-12-16" max={today} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none" }} />
             <span style={{ fontSize: 10, color: P.sub }}>~</span>
-            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} min={customFrom || "2025-12-16"} max="2026-03-17" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none" }} />
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} min={customFrom || "2025-12-16"} max={today} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: `1px solid ${P.border}`, color: P.text, background: P.card, outline: "none" }} />
           </div>)}
         </div>
       </div>
