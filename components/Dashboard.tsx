@@ -305,7 +305,7 @@ function getStaticRegion(sidos: string[], sexes: string[], ages: string[]) {
 // MAIN
 // ═══════════════════════════════════════
 // TODO(보안 백로그): anon key 하드코딩 — env 이관 대상 (기존 Dashboard.tsx:475 이슈와 동일 건)
-const DMP_EXPORT_FN_URL = "https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export";
+const DMP_EXPORT_FN_URL = "/api/export"; // EF 직접 호출 금지 — 서버 프록시 경유(로그인 검증 + X-API-Key)
 const SUPA_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 export default function Dashboard({ user, onLogout }: { user: DmpUser; onLogout: () => void }) {

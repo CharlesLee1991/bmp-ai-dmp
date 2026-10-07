@@ -264,7 +264,7 @@ export async function mergeBundles(ids: string[], name: string, meta: BundleMeta
 }
 
 /* ── 공용 런컴 송출 (드로어·허브 공용) — 조각별 EF 호출 ── */
-const DMP_EXPORT_FN_URL = "https://ihzttwgqahhzlrqozleh.supabase.co/functions/v1/dmp-target-export";
+const DMP_EXPORT_FN_URL = "/api/export"; // EF 직접 호출 금지 — 서버 프록시 경유(로그인 검증 + X-API-Key)
 const SUPA_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 export type SubmitResult = { label: string; ok: boolean; count?: number; error?: string };
 
