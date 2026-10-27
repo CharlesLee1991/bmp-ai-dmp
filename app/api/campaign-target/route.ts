@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,10 @@ async function getSegmentCount(segments: any[]): Promise<number> {
 }
 
 export async function POST(req: NextRequest) {
+  const token = req.cookies.get("dmp_token")?.value;
+  const user = token ? await verifyToken(token) : null;
+  if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
   const ANTHROPIC_API_KEY = await getAnthropicKey();
   if (!ANTHROPIC_API_KEY) {
     return NextResponse.json({ success: false, error: "Missing API key" }, { status: 500 });
