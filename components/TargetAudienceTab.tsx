@@ -14,7 +14,7 @@ import { P, badge, cardStyle } from "@/lib/theme";
 import { fmt } from "@/lib/data";
 import {
   useCart, deleteBundle, loadBundle, updateBundleMeta, duplicateBundle, mergeBundles,
-  addToCart, runcommSubmit, markBundleSent, allLabels, allTags,
+  addToCart, runcommSubmit, runcommDownload, markBundleSent, allLabels, allTags,
   type CartRow, type CartItem, type SubmitResult,
 } from "@/lib/cart";
 import { BundleMetaFields, LabelChip, TagChips, type MetaValue } from "./BundleMetaFields";
@@ -22,7 +22,7 @@ import type { DmpUser } from "@/lib/auth";
 import {
   Boxes, Search, Tag as TagIcon, FolderOpen, Trash2, Pencil, Check, X,
   StickyNote, ChevronDown, Rocket, FlaskConical, Copy, GitMerge, ShoppingCart,
-  UserRound, Bot, SlidersHorizontal, ChevronLeft, ChevronRight, Loader2,
+  UserRound, Bot, SlidersHorizontal, ChevronLeft, ChevronRight, Loader2, Download,
 } from "lucide-react";
 
 const PAGE_SIZE = 10;
@@ -141,6 +141,12 @@ export default function TargetAudienceTab({ user }: { user: DmpUser }) {
     const results = await runcommSubmit(send.items, send.name.trim() || "타겟", env, (d, t, rs) => setSendState({ phase: "sending", env, done: d, total: t, results: rs }));
     if (send.bundleId && results.some(r => r.ok)) await markBundleSent(send.bundleId);  // 상태 유지, 송출 기록만
     setSendState({ phase: "done", env, done: send.items.length, total: send.items.length, results });
+  };
+  const runDownload = async () => {
+    if (!send) return;
+    setSendState({ phase: "sending", env: "csv", done: 0, total: send.items.length, results: [] });
+    const results = await runcommDownload(send.items, send.name.trim() || "타겟", (d, t, rs) => setSendState({ phase: "sending", env: "csv", done: d, total: t, results: rs }));
+    setSendState({ phase: "done", env: "csv", done: send.items.length, total: send.items.length, results });
   };
 
   /* ── 병합 모달 ── */
@@ -338,13 +344,18 @@ export default function TargetAudienceTab({ user }: { user: DmpUser }) {
                   <button onClick={() => runSend("dev")} disabled={!send.name.trim()} style={{ ...ghostBtn({ flex: 1, padding: "9px 0", textAlign: "center" }), color: P.f, borderColor: "color-mix(in srgb, var(--female) 30%, transparent)", opacity: send.name.trim() ? 1 : .5 }}><FlaskConical size={11} strokeWidth={2} style={{ verticalAlign: "-1px", marginRight: 4 }} />개발</button>
                   <button onClick={() => runSend("prod")} disabled={!send.name.trim()} style={{ flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, var(--male), var(--accent))", color: "#fff", border: "none", opacity: send.name.trim() ? 1 : .5 }}><Rocket size={11} strokeWidth={2.2} style={{ verticalAlign: "-1px", marginRight: 4 }} />상용</button>
                 </div>
+                {user.role === "admin" && (
+                  <button onClick={runDownload} disabled={!send.name.trim()} style={ghostBtn({ width: "100%", marginTop: 8, padding: "8px 0", textAlign: "center", opacity: send.name.trim() ? 1 : .5 })}>
+                    <Download size={11} strokeWidth={2} style={{ verticalAlign: "-1px", marginRight: 4 }} />ADID CSV 다운로드 (런컴 전송 없음 · 링크 10분 유효)
+                  </button>
+                )}
               </>
             )}
             {sendState.phase !== "form" && (
               <>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: P.text, margin: "8px 0 10px" }}>
                   {sendState.phase === "sending" ? <><Loader2 size={13} className="dmp-spin" style={{ verticalAlign: "-2px", marginRight: 5 }} />송출 중… {sendState.done}/{sendState.total}</> : "송출 결과"}
-                  <span style={{ ...badge(sendState.env === "prod" ? "danger" : "info"), fontSize: 9.5, padding: "2px 7px", borderRadius: 6, marginLeft: 8 }}>{sendState.env === "prod" ? "상용" : "개발"}</span>
+                  <span style={{ ...badge(sendState.env === "prod" ? "danger" : "info"), fontSize: 9.5, padding: "2px 7px", borderRadius: 6, marginLeft: 8 }}>{sendState.env === "prod" ? "상용" : sendState.env === "csv" ? "CSV" : "개발"}</span>
                 </div>
                 {(sendState.results || []).map((r, i) => (
                   <div key={i} style={{ display: "flex", gap: 8, fontSize: 11.5, padding: "3px 0", color: r.ok ? P.text : P.danger }}>
