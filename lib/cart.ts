@@ -308,6 +308,38 @@ export async function runcommSubmit(
   return results;
 }
 
+/* ── ADID CSV 다운로드 (조각별) — EF mode=download → 10분 서명 URL. 런컴 전송 없음, admin 전용(프록시 검사) ── */
+export async function runcommDownload(
+  items: CartItem[], name: string,
+  onProgress?: (done: number, total: number, results: SubmitResult[]) => void,
+): Promise<SubmitResult[]> {
+  const results: SubmitResult[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const segName = items.length === 1 ? name : `${name} #${i + 1}/${items.length}`;
+    const payload = it.type === "ai_table" && it.bqTable
+      ? { segment_name: segName, bq_audience_table: it.bqTable, mode: "download" }
+      : { segment_name: segName, filters: it.filters, mode: "download" };
+    try {
+      const resp = await fetch(DMP_EXPORT_FN_URL, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      const r = await resp.json();
+      const ok = !!r?.success && !!r?.data?.download_url;
+      results.push({ label: it.label, ok, count: r?.data?.ads_id_count, error: ok ? undefined : (r?.error || `HTTP ${resp.status}`) });
+      if (ok) {
+        const a = document.createElement("a");
+        a.href = r.data.download_url; a.rel = "noopener";
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+    } catch (e: any) {
+      results.push({ label: it.label, ok: false, error: e.message });
+    }
+    onProgress?.(i + 1, items.length, [...results]);
+  }
+  return results;
+}
+
 /* ── 구독 훅 ── */
 function getSnapshot() { return S; }
 const SERVER_SNAPSHOT: CartState = { cart: [], saved: [], loaded: false, userId: null };

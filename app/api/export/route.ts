@@ -16,11 +16,21 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.DMP_MCP_API_KEY || "";
   if (!apiKey) return NextResponse.json({ success: false, error: "DMP_MCP_API_KEY 미설정" }, { status: 500 });
 
+  let body: any;
+  try { body = await req.json(); } catch { return NextResponse.json({ success: false, error: "invalid JSON" }, { status: 400 }); }
+  // CSV 다운로드 = ADID 파일 반출 → admin만. 누가 받았는지는 EF가 Storage 객체 경로에 남긴다(requested_by).
+  if (body?.mode === "download") {
+    if (user.role !== "admin") return NextResponse.json({ success: false, error: "CSV 다운로드는 관리자 계정만 가능합니다" }, { status: 403 });
+    body.requested_by = user.id;
+  } else {
+    delete body.requested_by;
+  }
+
   try {
     const res = await fetch(EF_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
-      body: await req.text(),
+      body: JSON.stringify(body),
     });
     const text = await res.text();
     return new NextResponse(text, { status: res.status, headers: { "Content-Type": "application/json" } });
